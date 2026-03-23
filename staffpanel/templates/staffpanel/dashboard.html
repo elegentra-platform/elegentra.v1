@@ -1,0 +1,45 @@
+{% extends "staffpanel/base.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="text-xl font-semibold">Dashboard</h2>
+<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <p class="text-sm text-slate-600">Pending vendor approvals</p>
+    <p class="mt-2 text-3xl font-semibold">{{ pending_saloon_approvals }}</p>
+  </div>
+  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <p class="text-sm text-slate-600">Pending service category approvals</p>
+    <p class="mt-2 text-3xl font-semibold">{{ pending_service_category_approvals }}</p>
+  </div>
+  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <p class="text-sm text-slate-600">Staff online</p>
+    <p class="mt-2 text-3xl font-semibold">{{ online_staff_count }}</p>
+  </div>
+</div>
+
+<div class="mt-6 rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+  <h3 class="text-base font-semibold">Vendor approval status</h3>
+  <div class="mt-3 overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-500">
+          <th class="py-2">Status</th>
+          <th class="py-2">Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in saloon_status_breakdown %}
+          <tr class="border-t border-slate-100">
+            <td class="py-2">{{ row.approval_status }}</td>
+            <td class="py-2">{{ row.total }}</td>
+          </tr>
+        {% empty %}
+          <tr><td class="py-2 text-slate-500" colspan="2">No data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

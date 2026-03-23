@@ -1,0 +1,120 @@
+{% extends "staffpanel/base.html" %}
+
+{% block title %}Review Vendor{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between gap-3">
+  <h2 class="text-xl font-semibold">Vendor Review</h2>
+  <a href="{% url 'staffpanel:saloon_queue' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to queue</a>
+</div>
+
+<div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+  <section class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <h3 class="text-base font-semibold">Basic</h3>
+    <div class="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+      <div><span class="text-slate-500">Saloon name:</span> {{ saloon.name|default:"(No name)" }}</div>
+      <div><span class="text-slate-500">Owner email:</span> {{ saloon.owner.email }}</div>
+      <div><span class="text-slate-500">WhatsApp:</span> {{ saloon.whatsapp_number }}</div>
+      <div><span class="text-slate-500">Status:</span> {{ saloon.approval_status }}</div>
+    </div>
+
+    {% if saloon.banner_image %}
+      <div class="mt-4">
+        <p class="mb-2 text-sm text-slate-500">Banner image</p>
+        <img src="{{ saloon.banner_image.url }}" alt="Banner" class="h-56 w-full rounded-lg object-cover border border-slate-200">
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <h3 class="text-base font-semibold">Profile Details</h3>
+    {% if saloon.profile %}
+      <div class="mt-3 space-y-2 text-sm">
+        <div><span class="text-slate-500">Display name:</span> {{ saloon.profile.saloon_name|default:"-" }}</div>
+        <div><span class="text-slate-500">Owner full name:</span> {{ saloon.profile.owner_full_name }}</div>
+        <div><span class="text-slate-500">Contact:</span> {{ saloon.profile.contact_number }}</div>
+        <div><span class="text-slate-500">Category:</span> {{ saloon.profile.get_category_display }}</div>
+        <div><span class="text-slate-500">City:</span> {{ saloon.profile.city }}</div>
+        <div><span class="text-slate-500">Locality:</span> {{ saloon.profile.locality }}</div>
+        <div><span class="text-slate-500">About:</span> {{ saloon.profile.about|default:"-" }}</div>
+        {% if saloon.profile.google_map_link %}
+          <div>
+            <a href="{{ saloon.profile.google_map_link }}" target="_blank" class="text-blue-700 underline">View map link</a>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="mt-3 text-sm text-slate-500">Profile details not submitted.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="mt-4 rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+  <h3 class="text-base font-semibold">Verification Uploads</h3>
+  {% if verification %}
+    <div class="mt-3 grid gap-4 lg:grid-cols-2">
+      <div>
+        <p class="mb-2 text-sm text-slate-500">Owner ID</p>
+        <a href="{{ verification.owner_id_proof.url }}" target="_blank" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm inline-block">Open ID proof</a>
+        <p class="mt-2 text-sm"><span class="text-slate-500">ID number:</span> {{ verification.owner_id_number }}</p>
+      </div>
+      <div class="text-sm space-y-1">
+        <p><span class="text-slate-500">Account holder:</span> {{ verification.account_holder_name|default:"-" }}</p>
+        <p><span class="text-slate-500">Account number:</span> {{ verification.account_number|default:"-" }}</p>
+        <p><span class="text-slate-500">IFSC:</span> {{ verification.ifsc_code|default:"-" }}</p>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <p class="mb-2 text-sm text-slate-500">Inside images</p>
+      <div class="grid gap-3 sm:grid-cols-3">
+        {% if verification.inside_image_1 %}<img src="{{ verification.inside_image_1.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Inside 1">{% endif %}
+        {% if verification.inside_image_2 %}<img src="{{ verification.inside_image_2.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Inside 2">{% endif %}
+        {% if verification.inside_image_3 %}<img src="{{ verification.inside_image_3.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Inside 3">{% endif %}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <p class="mb-2 text-sm text-slate-500">Outside images</p>
+      <div class="grid gap-3 sm:grid-cols-3">
+        {% if verification.outside_image_1 %}<img src="{{ verification.outside_image_1.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Outside 1">{% endif %}
+        {% if verification.outside_image_2 %}<img src="{{ verification.outside_image_2.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Outside 2">{% endif %}
+        {% if verification.outside_image_3 %}<img src="{{ verification.outside_image_3.url }}" class="h-36 w-full rounded-lg border border-slate-200 object-cover" alt="Outside 3">{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <p class="mt-3 text-sm text-slate-500">Verification documents not submitted.</p>
+  {% endif %}
+</section>
+
+<section class="mt-4 rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+  <h3 class="text-base font-semibold">Approval Action</h3>
+  <div class="mt-3 flex flex-wrap gap-2">
+    <form method="post" action="{% url 'staffpanel:saloon_approve' saloon.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'staffpanel:saloon_review' saloon.id %}">
+      <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 text-white">Approve vendor</button>
+    </form>
+    <form method="post" action="{% url 'staffpanel:saloon_reject' saloon.id %}" class="flex flex-wrap items-center gap-2">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'staffpanel:saloon_review' saloon.id %}">
+      <input type="text" name="reason" required placeholder="Rejection reason" class="rounded-md border border-slate-300 px-3 py-2 text-sm w-64">
+      <button type="submit" class="rounded-md bg-rose-600 px-4 py-2 text-white">Reject vendor</button>
+    </form>
+  </div>
+</section>
+
+{% if rejection_history %}
+<section class="mt-4 rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+  <h3 class="text-base font-semibold">Recent rejection history</h3>
+  <div class="mt-3 space-y-2 text-sm">
+    {% for row in rejection_history %}
+      <div class="rounded-md border border-slate-200 p-2">
+        <div class="text-slate-700">{{ row.message }}</div>
+        <div class="text-xs text-slate-500 mt-1">{{ row.created_at }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

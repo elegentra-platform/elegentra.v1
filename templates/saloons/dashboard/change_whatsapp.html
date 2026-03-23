@@ -1,0 +1,166 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/css/intlTelInput.css"
+/>
+
+<div class="max-w-sm mx-auto px-2 sm:px-4">
+  <div class="bg-white shadow-xl rounded-2xl p-6 text-center">
+    <h2 class="text-2xl font-bold mb-4">Change WhatsApp</h2>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+          {% if message.tags == 'error' %}
+            bg-red-100 text-red-700
+          {% else %}
+            bg-blue-100 text-blue-700
+          {% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if step == "input" %}
+      <form method="post" id="change-phone-form">
+        {% csrf_token %}
+
+        <input
+          type="tel"
+          id="new_whatsapp"
+          name="new_whatsapp"
+          placeholder="New WhatsApp number"
+          class="w-full border rounded-lg px-4 py-2 mb-4 text-left"
+          required
+        />
+
+        <button
+          name="save_new_number"
+          class="w-full bg-black text-white py-2 rounded-lg font-semibold">
+          Continue
+        </button>
+      </form>
+    {% endif %}
+
+    {% if step == "choose" %}
+      <form method="post" class="space-y-3 text-left">
+        {% csrf_token %}
+        <p class="text-sm text-gray-600 text-center">Send OTP to a trusted channel</p>
+        <label class="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer">
+          <input type="radio" name="channel" value="email" required>
+          <span class="text-sm">Email: {{ masked_email }}</span>
+        </label>
+        <label class="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer">
+          <input type="radio" name="channel" value="whatsapp" required>
+          <span class="text-sm">WhatsApp: {{ masked_phone }}</span>
+        </label>
+        <button
+          type="submit"
+          name="send_otp"
+          class="w-full bg-black text-white py-2 rounded-lg font-semibold"
+        >
+          Send OTP
+        </button>
+      </form>
+      <div class="mt-3">
+        <a href="{% url 'saloon_dashboard_change_whatsapp' username=saloon.owner.username %}" class="text-sm text-gray-600">Change number</a>
+      </div>
+    {% endif %}
+
+    {% if step == "otp" %}
+      <p class="text-gray-600 mb-2 text-sm">
+        We sent an OTP to
+        {% if otp_channel == "email" %}
+          <strong>{{ masked_email }}</strong>
+        {% else %}
+          <strong>{{ masked_phone }}</strong>
+        {% endif %}
+      </p>
+
+      <form method="post" id="change-otp-form">
+        {% csrf_token %}
+        <input type="hidden" name="channel" value="{{ otp_channel }}">
+        <input
+          type="text"
+          name="otp"
+          placeholder="Enter OTP"
+          class="w-full border rounded-lg px-4 py-2 mb-4"
+          required
+        />
+        <button
+          name="verify_otp"
+          class="w-full bg-black text-white py-2 rounded-lg font-semibold mb-3">
+          Verify
+        </button>
+      </form>
+
+      <form method="post" id="change-resend-form">
+        {% csrf_token %}
+        <input type="hidden" name="channel" value="{{ otp_channel }}">
+        <button
+          type="submit"
+          name="send_otp"
+          id="change-resend-btn"
+          class="text-sm text-gray-500 hover:text-black disabled:text-gray-300"
+          disabled>
+          Resend OTP
+        </button>
+      </form>
+
+      <p id="change-cooldown-text" class="text-xs text-gray-400 mt-2">
+        Resend available in <span id="change-timer">5</span>s
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/intlTelInput.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js"></script>
+
+{% if step == "input" %}
+<script>
+  const phoneInput = document.querySelector("#new_whatsapp");
+  const iti = window.intlTelInput(phoneInput, {
+    initialCountry: "auto",
+    geoIpLookup: function (callback) {
+      fetch("https://ipapi.co/json/")
+        .then(res => res.json())
+        .then(data => callback(data.country_code.toLowerCase()))
+        .catch(() => callback("in"));
+    },
+    utilsScript:
+      "https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js",
+  });
+
+  document
+    .querySelector("#change-phone-form")
+    .addEventListener("submit", function () {
+      phoneInput.value = iti.getNumber();
+    });
+</script>
+{% endif %}
+
+{% if step == "otp" %}
+<script>
+  let cooldown = 5;
+  const timerEl = document.getElementById("change-timer");
+  const resendBtn = document.getElementById("change-resend-btn");
+  const cooldownText = document.getElementById("change-cooldown-text");
+
+  const interval = setInterval(() => {
+    cooldown--;
+    timerEl.textContent = cooldown;
+
+    if (cooldown <= 0) {
+      clearInterval(interval);
+      resendBtn.disabled = false;
+      cooldownText.textContent = "Didn’t receive it? You can resend now.";
+    }
+  }, 1000);
+</script>
+{% endif %}
+{% endblock %}

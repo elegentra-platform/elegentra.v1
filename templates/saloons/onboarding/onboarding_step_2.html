@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Salon onboarding – Documents</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+<div class="max-w-3xl mx-auto px-4 py-10">
+
+  <p class="text-sm text-gray-500">Step 2 of 4</p>
+  <h1 class="text-2xl font-semibold mt-1">Verify your salon</h1>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-10 mt-8">
+    {% csrf_token %}
+
+    <!-- OWNER ID -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm">
+      <h2 class="text-lg font-medium mb-3">Owner ID proof</h2>
+
+      {% if existing_images.owner_id_proof %}
+        <img src="{{ existing_images.owner_id_proof }}"
+             class="h-32 rounded-lg border mb-3">
+      {% endif %}
+
+      <input type="file" name="owner_id_proof">
+
+      <input
+        type="text"
+        name="owner_id_number"
+        value="{{ existing_images.owner_id_number }}"
+        placeholder="Enter ID number"
+        class="w-full mt-4 rounded-xl border px-4 py-3"
+      >
+
+      {% if rejection_map.owner_id_proof %}
+        <p class="text-sm text-red-600 mt-2">
+          {{ rejection_map.owner_id_proof }}
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- INSIDE IMAGES -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm">
+      <h2 class="text-lg font-medium mb-3">Inside images</h2>
+
+      <div class="flex gap-3 mb-3">
+        {% for img in existing_images.inside_images %}
+          <img src="{{ img }}" class="h-24 rounded-lg border">
+        {% endfor %}
+      </div>
+
+      <input type="file" name="inside_images" multiple>
+
+      {% if rejection_map.inside_images %}
+        <p class="text-sm text-red-600 mt-2">
+          {{ rejection_map.inside_images }}
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- OUTSIDE IMAGES -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm">
+      <h2 class="text-lg font-medium mb-3">Outside images</h2>
+
+      <div class="flex gap-3 mb-3">
+        {% for img in existing_images.outside_images %}
+          <img src="{{ img }}" class="h-24 rounded-lg border">
+        {% endfor %}
+      </div>
+
+      <input type="file" name="outside_images" multiple>
+
+      {% if rejection_map.outside_images %}
+        <p class="text-sm text-red-600 mt-2">
+          {{ rejection_map.outside_images }}
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="flex justify-end">
+      <button class="bg-black text-white px-10 py-3 rounded-xl">
+        Continue
+      </button>
+    </div>
+
+  </form>
+</div>
+</body>
+</html>

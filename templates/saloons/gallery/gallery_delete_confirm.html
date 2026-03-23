@@ -1,0 +1,30 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-2 sm:px-4">
+  <div class="bg-white rounded-2xl border border-gray-100 p-5">
+    <h2 class="text-lg font-semibold mb-2">Delete this post?</h2>
+    <p class="text-sm text-gray-600 mb-4">
+      This will remove the entire post and all its media.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="flex items-center gap-2">
+        <button
+          type="submit"
+          class="bg-red-500 text-white px-5 h-10 rounded-xl text-sm font-semibold"
+        >
+          Delete
+        </button>
+        <a
+          href="{% url 'saloon_gallery_detail' username=saloon.owner.username post_id=post.id %}"
+          class="px-5 h-10 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 flex items-center"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

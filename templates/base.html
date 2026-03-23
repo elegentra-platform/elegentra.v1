@@ -1,0 +1,584 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ELEGENTRA{% endblock %}</title>
+
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @font-face {
+      font-family: "Bauserif";
+      src: url("{% static 'fonts/bauserif.ttf' %}") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    .media-skeleton {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(247, 240, 232, 0.95), rgba(241, 231, 216, 0.95));
+    }
+
+    .media-skeleton__placeholder {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(242, 232, 217, 0.88)),
+        linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.58) 50%, rgba(255,255,255,0) 100%);
+      background-size: auto, 220px 100%;
+      background-repeat: no-repeat;
+      background-position: 0 0, -220px 0;
+      animation: mediaSkeletonShimmer 1.5s ease-in-out infinite;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .media-skeleton__placeholder::before {
+      content: "";
+      position: absolute;
+      left: 1rem;
+      right: 32%;
+      bottom: 1.15rem;
+      height: 0.85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.52);
+      box-shadow: 0 1.05rem 0 0 rgba(255, 255, 255, 0.34);
+    }
+
+    .media-skeleton__placeholder::after {
+      content: "";
+      position: absolute;
+      right: 1rem;
+      bottom: 1rem;
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.34);
+    }
+
+    .media-skeleton[data-skeleton-type="banner"] .media-skeleton__placeholder::before {
+      left: 1.25rem;
+      right: 45%;
+      bottom: 1.4rem;
+      height: 1rem;
+      box-shadow:
+        0 1.3rem 0 0 rgba(255, 255, 255, 0.32),
+        0 2.35rem 0 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .media-skeleton[data-skeleton-type="banner"] .media-skeleton__placeholder::after {
+      width: 4rem;
+      height: 1.85rem;
+      bottom: 1.25rem;
+      border-radius: 999px;
+    }
+
+    .media-skeleton[data-skeleton-type="card"] .media-skeleton__placeholder::before {
+      left: 0.85rem;
+      right: 42%;
+      bottom: 0.95rem;
+      height: 0.7rem;
+      box-shadow:
+        0 0.95rem 0 0 rgba(255, 255, 255, 0.28),
+        0 1.75rem 0 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .media-skeleton[data-skeleton-type="card"] .media-skeleton__placeholder::after {
+      width: 3.75rem;
+      height: 3.75rem;
+      right: 0.85rem;
+      bottom: 0.85rem;
+      border-radius: 0.9rem;
+    }
+
+    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder::before,
+    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder::after,
+    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder::before,
+    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder::after {
+      display: none;
+    }
+
+    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder,
+    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(242, 232, 217, 0.92)),
+        linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.52) 50%, rgba(255,255,255,0) 100%);
+      background-size: auto, 160px 100%;
+      background-repeat: no-repeat;
+      background-position: 0 0, -160px 0;
+    }
+
+    .media-skeleton[data-skeleton-ready="true"] .media-skeleton__placeholder {
+      opacity: 0;
+    }
+
+    [data-skeleton-image] {
+      opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+
+    [data-skeleton-image][data-loaded="true"] {
+      opacity: 1;
+    }
+
+    @keyframes mediaSkeletonShimmer {
+      0% {
+        background-position: 0 0, -220px 0;
+      }
+      100% {
+        background-position: 0 0, calc(100% + 220px) 0;
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="min-h-screen relative bg-[#FEFAF7]"
+  style="background:
+    radial-gradient(900px 600px at 0% 0%, rgba(239, 230, 217, 0.9) 0%, rgba(239, 230, 217, 0) 62%),
+    radial-gradient(900px 700px at 100% 100%, rgba(239, 230, 217, 0.75) 0%, rgba(239, 230, 217, 0) 62%),
+    linear-gradient(135deg, #F7F0EA 0%, #FBF7F6 100%);"
+>
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute -top-28 -left-28 h-[520px] w-[520px] rounded-full bg-[#EFE6D9]/70 blur-3xl"></div>
+    <div class="absolute -bottom-40 -right-40 h-[620px] w-[620px] rounded-full bg-[#EFE6D9]/55 blur-3xl"></div>
+  </div>
+
+  {% if messages %}
+    <div id="toast-stack" class="fixed top-4 right-3 z-50 space-y-2 sm:right-4">
+      {% for message in messages %}
+        <div
+          class="toast-message w-[220px] max-w-[calc(100vw-1.5rem)] rounded-xl border px-3 py-2.5 text-[13px] shadow-[0_14px_30px_rgba(41,31,18,0.10)] backdrop-blur-md transition duration-500 ease-out sm:w-[260px]
+                    {% if message.tags == 'error' %}border-[#F1C6C2] bg-[rgba(255,247,246,0.92)] text-[#9E433C]
+                    {% elif message.tags == 'success' %}border-[#D8D2C4] bg-[rgba(255,251,244,0.94)] text-[#6A5330]
+                    {% else %}border-[#D9D0C0] bg-[rgba(255,250,242,0.94)] text-[#5E5345]{% endif %}"
+        >
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full
+                         {% if message.tags == 'error' %}bg-[#F8E2DF] text-[#B5534A]
+                         {% elif message.tags == 'success' %}bg-[#F3E5C8] text-[#A57A2E]
+                         {% else %}bg-[#EEE4D4] text-[#7B6A52]{% endif %}">
+              <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% elif message.tags == 'success' %}fa-check{% else %}fa-bell{% endif %} text-xs"></i>
+            </span>
+            <div class="pr-1 leading-5">{{ message }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block page_header %}
+  <header
+    class="sticky top-0 z-40 border-b border-[#EEE6DA]/80 shadow-[0_1px_0_rgba(0,0,0,0.03)]"
+    style="background-color: rgba(247, 240, 234, 0.97); backdrop-filter: blur(6px);"
+  >
+    <div class="mx-auto max-w-6xl px-4 py-4">
+      <div class="flex items-center justify-between gap-4 md:gap-6">
+        <a href="{% url 'public_home' %}" class="inline-flex h-11 shrink-0 items-center leading-none text-[#4F3F2E] md:h-12" aria-label="ELEGENTRA home">
+          <span
+            class="block text-[1.74rem] tracking-[0.02em] md:text-[2.22rem]"
+            style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(97,72,39,0.14);"
+          >
+            Elegentra
+          </span>
+        </a>
+
+        <div class="hidden flex-1 justify-center md:flex md:px-3">
+          {% block search_bar %}{% endblock %}
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="#" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/55 text-gray-700 shadow-sm" aria-label="Notifications">
+            <i class="fa-regular fa-bell"></i>
+          </a>
+
+          {% if not public_has_saloon %}
+            <details id="partner-menu" class="relative hidden md:block">
+              <summary class="flex h-10 min-w-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-[#e7dccd] bg-white/70 px-3 text-[#6f5223] shadow-sm transition hover:bg-[#fff6e8]">
+                <i class="fa-solid fa-ellipsis text-sm"></i>
+              </summary>
+              <div class="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,rgba(255,249,238,0.98),rgba(249,241,229,0.96))] p-2 shadow-[0_20px_45px_rgba(74,56,30,0.14)]">
+                <div class="rounded-2xl border border-white/70 bg-white/40 p-2">
+                  <div class="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a7b47]">Partner</div>
+                  <a href="{% url 'partner_home' %}" class="flex items-start gap-3 rounded-2xl px-3 py-3 text-sm text-[#5d431d] transition hover:bg-[#f6ecdc]">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f5e7c9] text-[#8a6428] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                      <i class="fa-solid fa-store"></i>
+                    </span>
+                    <span class="block">
+                      <span class="block font-semibold">Register your salon</span>
+                      <span class="mt-0.5 block text-xs text-[#8b7353]">Create your partner profile and start onboarding</span>
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </details>
+
+            <button type="button" id="partner-drawer-open" class="flex h-10 min-w-[42px] items-center justify-center rounded-full border border-[#e7dccd] bg-white/70 px-3 text-[#6f5223] shadow-sm md:hidden" aria-label="More options">
+              <i class="fa-solid fa-ellipsis text-sm"></i>
+            </button>
+          {% endif %}
+
+          {% if not user.is_authenticated %}
+            <a href="{% url 'account_login' %}" class="group relative inline-flex items-center justify-center overflow-hidden rounded-full p-[1.5px] focus:outline-none focus:ring-2 focus:ring-[#E4B95D]/45">
+              <span class="pointer-events-none absolute inset-[-55%] animate-[spin_3.5s_linear_infinite] bg-[conic-gradient(from_0deg,_#8B682A_0deg,_#F4DC97_75deg,_#B58C4E_150deg,_#FFF3CA_230deg,_#8B682A_360deg)]"></span>
+              <span class="pointer-events-none absolute inset-[1.5px] rounded-full bg-[#FFF9EF]/95"></span>
+              <span class="pointer-events-none absolute -inset-[2px] rounded-full opacity-0 transition duration-300 group-hover:opacity-100 shadow-[0_0_10px_rgba(255,241,200,0.8),0_0_22px_rgba(245,215,132,0.75),0_0_38px_rgba(214,154,58,0.45)]"></span>
+              <span class="relative rounded-full px-4 py-1.5 text-sm font-semibold text-[#7B5A23] transition-colors duration-300 group-hover:text-[#6C4D1A]">
+                Login
+              </span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-4 md:hidden">
+        {% block search_bar_mobile %}{% endblock %}
+      </div>
+    </div>
+  </header>
+  {% endblock %}
+
+  {% if not public_has_saloon %}
+    <div id="partner-drawer" class="pointer-events-none fixed inset-0 z-50 bg-[rgba(43,30,10,0.18)] opacity-0 transition duration-300 md:hidden">
+      <div id="partner-drawer-panel" class="ml-auto flex h-full w-[86%] max-w-sm translate-x-full flex-col border-l border-[#eadfce] bg-[linear-gradient(180deg,#fffaf2_0%,#f8efe3_100%)] shadow-[0_24px_60px_rgba(58,40,16,0.22)] transition duration-300">
+        <div class="flex items-center justify-between border-b border-[#eadfce] px-5 py-5">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9a7b47]">Partner</div>
+            <div class="mt-1 text-sm text-[#6f5223]">Grow your salon on Saloon</div>
+          </div>
+          <button type="button" id="partner-drawer-close" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-[#6f5223] shadow-sm" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="overflow-y-auto px-4 py-5">
+          <a href="{% url 'partner_home' %}" class="flex items-start gap-4 rounded-[26px] border border-[#eadfce] bg-white/65 px-4 py-4 shadow-[0_10px_30px_rgba(74,56,30,0.08)]">
+            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f4e4c2] text-[#875f24]">
+              <i class="fa-solid fa-store text-base"></i>
+            </span>
+            <span class="block">
+              <span class="block text-base font-semibold text-[#5d431d]">Register your salon</span>
+              <span class="mt-1 block text-sm leading-6 text-[#816849]">Create your partner account, list your services, and open your dashboard.</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <main class="{% block main_class %}mx-auto max-w-6xl px-4 pb-24{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block page_nav %}
+  <nav class="fixed bottom-0 left-0 flex w-full items-center justify-around gap-10 rounded-t-3xl rounded-b-none border-t border-[#EEE4D8] bg-[#FCF9F5] px-8 py-4 shadow-lg md:bottom-4 md:left-1/2 md:w-auto md:min-w-[430px] md:-translate-x-1/2 md:justify-center md:gap-14 md:rounded-full md:border md:border-[#B58C4E]/50 md:bg-[#FCF9F5] md:px-12 md:shadow-[0_22px_55px_rgba(74,56,30,0.22),0_10px_28px_rgba(181,140,78,0.18)]">
+    <a href="{% url 'public_home' %}" data-geo-link class="{% if active_nav == 'home' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-house md:transition md:duration-300"></i>
+      Home
+    </a>
+    <a href="{% url 'public_search' %}" data-geo-link class="{% if active_nav == 'search' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-magnifying-glass md:transition md:duration-300"></i>
+      Search
+    </a>
+    <a href="{% url 'public_favorites' %}" data-geo-link class="{% if active_nav == 'favorites' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-heart md:transition md:duration-300"></i>
+      Favourites
+    </a>
+    <a href="{% url 'public_account' %}" data-geo-link class="{% if active_nav == 'account' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-user md:transition md:duration-300"></i>
+      Account
+    </a>
+  </nav>
+  {% endblock %}
+
+  <div id="locationPrompt" class="pointer-events-none fixed inset-0 z-[120] hidden bg-black/35 opacity-0 transition">
+    <div class="flex min-h-screen items-end justify-center px-4 pb-24 md:items-center md:pb-0">
+      <div class="relative z-[130] w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-lg font-semibold text-[#1F1F1F]">Use your location</p>
+            <p class="mt-1 text-sm text-[#6A6A6A]">Allow location to see nearby salons and better search results.</p>
+          </div>
+          <button type="button" id="locationPromptClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E7DAC8] text-[#6A6A6A]">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="mt-5 flex gap-3">
+          <button type="button" id="locationPromptAction" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]">
+            Use My Location
+          </button>
+          <button type="button" id="locationPromptSkip" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+            Not Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "Hide";
+      } else {
+        input.type = "password";
+        btn.textContent = "Show";
+      }
+    }
+
+    (function () {
+      const desktopMenu = document.getElementById("partner-menu");
+      const drawer = document.getElementById("partner-drawer");
+      const panel = document.getElementById("partner-drawer-panel");
+      const openBtn = document.getElementById("partner-drawer-open");
+      const closeBtn = document.getElementById("partner-drawer-close");
+
+      if (desktopMenu) {
+        document.addEventListener("click", (event) => {
+          if (!desktopMenu.contains(event.target)) {
+            desktopMenu.removeAttribute("open");
+          }
+        });
+
+        window.addEventListener("scroll", () => {
+          desktopMenu.removeAttribute("open");
+        }, { passive: true });
+      }
+
+      if (!drawer || !panel || !openBtn || !closeBtn) return;
+
+      const openDrawer = () => {
+        drawer.classList.remove("pointer-events-none", "opacity-0");
+        panel.classList.remove("translate-x-full");
+        document.body.classList.add("overflow-hidden");
+      };
+
+      const closeDrawer = () => {
+        drawer.classList.add("opacity-0");
+        panel.classList.add("translate-x-full");
+        window.setTimeout(() => {
+          drawer.classList.add("pointer-events-none");
+        }, 300);
+        document.body.classList.remove("overflow-hidden");
+      };
+
+      openBtn.addEventListener("click", openDrawer);
+      closeBtn.addEventListener("click", closeDrawer);
+      drawer.addEventListener("click", (event) => {
+        if (event.target === drawer) closeDrawer();
+      });
+    })();
+
+    (function () {
+      const storageKeyLat = "public_lat";
+      const storageKeyLng = "public_lng";
+      const promptDismissKey = "public_geo_prompt_dismissed";
+      const geoLinks = Array.from(document.querySelectorAll("[data-geo-link]"));
+      const geoForms = Array.from(document.querySelectorAll("[data-geo-form]"));
+      const currentParams = new URLSearchParams(window.location.search);
+      const locationPrompt = document.getElementById("locationPrompt");
+      const locationPromptAction = document.getElementById("locationPromptAction");
+      const locationPromptClose = document.getElementById("locationPromptClose");
+      const locationPromptSkip = document.getElementById("locationPromptSkip");
+
+      function getStoredCoords() {
+        const lat = window.localStorage.getItem(storageKeyLat);
+        const lng = window.localStorage.getItem(storageKeyLng);
+        return lat && lng ? { lat, lng } : null;
+      }
+
+      function applyCoords(lat, lng) {
+        geoForms.forEach((form) => {
+          let latInput = form.querySelector('input[name="lat"]');
+          let lngInput = form.querySelector('input[name="lng"]');
+
+          if (!latInput) {
+            latInput = document.createElement("input");
+            latInput.type = "hidden";
+            latInput.name = "lat";
+            form.appendChild(latInput);
+          }
+
+          if (!lngInput) {
+            lngInput = document.createElement("input");
+            lngInput.type = "hidden";
+            lngInput.name = "lng";
+            form.appendChild(lngInput);
+          }
+
+          latInput.value = lat;
+          lngInput.value = lng;
+        });
+
+        geoLinks.forEach((link) => {
+          try {
+            const url = new URL(link.href, window.location.origin);
+            url.searchParams.set("lat", lat);
+            url.searchParams.set("lng", lng);
+            link.href = url.toString();
+          } catch (error) {
+            // Ignore malformed hrefs.
+          }
+        });
+      }
+
+      function syncCurrentUrl(lat, lng) {
+        const url = new URL(window.location.href);
+        const currentLat = url.searchParams.get("lat");
+        const currentLng = url.searchParams.get("lng");
+
+        if (currentLat === lat && currentLng === lng) return;
+
+        url.searchParams.set("lat", lat);
+        url.searchParams.set("lng", lng);
+        window.location.replace(url.toString());
+      }
+
+      function openLocationPrompt() {
+        if (!locationPrompt) return;
+        locationPrompt.classList.remove("hidden", "pointer-events-none", "opacity-0");
+        requestAnimationFrame(function () {
+          locationPrompt.classList.add("opacity-100");
+        });
+      }
+
+      function closeLocationPrompt() {
+        if (!locationPrompt) return;
+        locationPrompt.classList.remove("opacity-100");
+        locationPrompt.classList.add("opacity-0");
+        window.setTimeout(function () {
+          locationPrompt.classList.add("hidden", "pointer-events-none");
+        }, 200);
+      }
+
+      function requestLocation() {
+        if (!navigator.geolocation) return;
+
+        closeLocationPrompt();
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const lat = position.coords.latitude.toFixed(6);
+          const lng = position.coords.longitude.toFixed(6);
+          window.localStorage.setItem(storageKeyLat, lat);
+          window.localStorage.setItem(storageKeyLng, lng);
+          window.sessionStorage.removeItem(promptDismissKey);
+          applyCoords(lat, lng);
+          closeLocationPrompt();
+          syncCurrentUrl(lat, lng);
+        }, function () {
+          openLocationPrompt();
+        }, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      }
+
+      if (currentParams.get("lat") && currentParams.get("lng")) {
+        const lat = currentParams.get("lat");
+        const lng = currentParams.get("lng");
+        window.localStorage.setItem(storageKeyLat, lat);
+        window.localStorage.setItem(storageKeyLng, lng);
+        applyCoords(lat, lng);
+        return;
+      }
+
+      const stored = getStoredCoords();
+      if (stored) {
+        applyCoords(stored.lat, stored.lng);
+        return;
+      }
+
+      if (!navigator.geolocation) return;
+
+      if (locationPromptAction) {
+        locationPromptAction.addEventListener("click", requestLocation);
+      }
+      if (locationPromptClose) {
+        locationPromptClose.addEventListener("click", function () {
+          window.sessionStorage.setItem(promptDismissKey, "1");
+          closeLocationPrompt();
+        });
+      }
+      if (locationPromptSkip) {
+        locationPromptSkip.addEventListener("click", function () {
+          window.sessionStorage.setItem(promptDismissKey, "1");
+          closeLocationPrompt();
+        });
+      }
+      if (locationPrompt) {
+        locationPrompt.addEventListener("click", function (event) {
+          if (event.target === locationPrompt) {
+            window.sessionStorage.setItem(promptDismissKey, "1");
+            closeLocationPrompt();
+          }
+        });
+      }
+
+      if (!window.sessionStorage.getItem(promptDismissKey)) {
+        openLocationPrompt();
+      }
+    })();
+
+    (function () {
+      const stack = document.getElementById("toast-stack");
+      if (!stack) return;
+
+      const toasts = Array.from(stack.querySelectorAll(".toast-message"));
+      toasts.forEach((toast, index) => {
+        toast.animate(
+          [
+            { opacity: 0, transform: "translateX(28px) scale(0.98)" },
+            { opacity: 1, transform: "translateY(0) scale(1)" }
+          ],
+          { duration: 320, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards", delay: index * 60 }
+        );
+
+        window.setTimeout(() => {
+          toast.animate(
+            [
+              { opacity: 1, transform: "translateX(0) scale(1)" },
+              { opacity: 0, transform: "translateX(30px) scale(0.985)" }
+            ],
+            { duration: 320, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" }
+          );
+
+          window.setTimeout(() => {
+            toast.remove();
+            if (!stack.children.length) {
+              stack.remove();
+            }
+          }, 320);
+        }, 2400);
+      });
+    })();
+
+    (function () {
+      function markLoaded(media) {
+        if (!media) return;
+        media.dataset.loaded = "true";
+        var wrapper = media.closest(".media-skeleton");
+        if (wrapper) wrapper.dataset.skeletonReady = "true";
+      }
+
+      document.querySelectorAll("[data-skeleton-image]").forEach(function (media) {
+        if ((media.tagName === "IMG" && media.complete) || media.dataset.loaded === "true") {
+          markLoaded(media);
+          return;
+        }
+
+        media.addEventListener("load", function () { markLoaded(media); }, { once: true });
+        media.addEventListener("error", function () { markLoaded(media); }, { once: true });
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+
+</body>
+</html>

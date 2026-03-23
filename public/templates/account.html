@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Saloon - Account{% endblock %}
+
+{% block content %}
+  <div class="mt-6">
+    {% if user.is_authenticated %}
+      <div class="lg:grid lg:grid-cols-[420px_1fr] lg:gap-10 lg:items-start">
+        <section class="relative p-6 lg:p-0 lg:pt-8">
+          <div class="flex flex-col items-center text-center">
+            <div class="relative">
+              <div aria-hidden="true" class="absolute -inset-6 rounded-full bg-[#EFE6D9]/60 blur-2xl"></div>
+              <div class="relative w-32 h-32 rounded-full overflow-hidden bg-[#EFE6D9] border border-white/70 ring-4 ring-white/35 shadow">
+                <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
+                  <div class="media-skeleton__placeholder"></div>
+                  <img
+                    src="{{ user.socialaccount_set.all.0.get_avatar_url|default:'/static/img/default-avatar.png' }}"
+                    alt="Account"
+                    class="w-full h-full object-cover"
+                    data-skeleton-image
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 text-2xl font-semibold text-gray-900 leading-tight">
+              {{ user.get_full_name|default:user.username }}
+            </div>
+            <div class="mt-1 text-sm text-gray-700 break-all">
+              {{ user.email }}
+            </div>
+          </div>
+        </section>
+
+        <section class="mt-8 lg:mt-0">
+          <div class="space-y-4">
+            {% if has_saloon %}
+              <a href="{% url 'saloon_dashboard' username=request.user.username %}" class="group flex items-center justify-between gap-4 bg-[#B58C4E]/10 border border-[#B58C4E]/30 rounded-2xl px-5 py-4 shadow-sm hover:bg-[#B58C4E]/15 transition">
+                <div class="flex items-center gap-4">
+                  <div class="w-11 h-11 rounded-full bg-[#B58C4E]/15 border border-[#B58C4E]/30 flex items-center justify-center text-[#7A5A2E]">
+                    <i class="fa-solid fa-store"></i>
+                  </div>
+                  <div>
+                    <div class="text-base font-semibold text-[#6B4E26]">View Your Saloon</div>
+                    <div class="text-xs text-[#7A5A2E]/80">Open vendor dashboard</div>
+                  </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[#7A5A2E]/70 group-hover:translate-x-0.5 transition"></i>
+              </a>
+            {% endif %}
+
+            <a href="#" class="group flex items-center justify-between gap-4 bg-white/55 border border-white/60 rounded-2xl px-5 py-4 shadow-sm hover:bg-white/70 transition">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-full bg-white/55 border border-white/60 flex items-center justify-center text-gray-700">
+                  <i class="fa-regular fa-user"></i>
+                </div>
+                <div>
+                  <div class="text-base font-semibold text-gray-900">Personal Information</div>
+                  <div class="text-xs text-gray-600">Name, email and details</div>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-gray-400 group-hover:translate-x-0.5 transition"></i>
+            </a>
+
+            <a href="#" class="group flex items-center justify-between gap-4 bg-white/55 border border-white/60 rounded-2xl px-5 py-4 shadow-sm hover:bg-white/70 transition">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-full bg-white/55 border border-white/60 flex items-center justify-center text-gray-700">
+                  <i class="fa-regular fa-bell"></i>
+                </div>
+                <div>
+                  <div class="text-base font-semibold text-gray-900">Notifications</div>
+                  <div class="text-xs text-gray-600">Updates and alerts</div>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-gray-400 group-hover:translate-x-0.5 transition"></i>
+            </a>
+
+            <a href="{% url 'public_settings' %}" class="group flex items-center justify-between gap-4 bg-white/55 border border-white/60 rounded-2xl px-5 py-4 shadow-sm hover:bg-white/70 transition">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-full bg-white/55 border border-white/60 flex items-center justify-center text-gray-700">
+                  <i class="fa-solid fa-gear"></i>
+                </div>
+                <div>
+                  <div class="text-base font-semibold text-gray-900">Settings</div>
+                  <div class="text-xs text-gray-600">Privacy and preferences</div>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-gray-400 group-hover:translate-x-0.5 transition"></i>
+            </a>
+          </div>
+
+          <div class="mt-6">
+            <a href="{% url 'account_logout' %}" class="group flex items-center justify-between gap-4 bg-red-500/10 border border-red-200 rounded-2xl px-5 py-4 hover:bg-red-500/15 transition">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-full bg-red-500/15 border border-red-200 flex items-center justify-center text-red-600">
+                  <i class="fa-solid fa-right-from-bracket"></i>
+                </div>
+                <div>
+                  <div class="text-base font-semibold text-red-700">Logout</div>
+                  <div class="text-xs text-red-700/70">Sign out of your account</div>
+                </div>
+              </div>
+              <i class="fa-solid fa-chevron-right text-red-300 group-hover:translate-x-0.5 transition"></i>
+            </a>
+          </div>
+        </section>
+      </div>
+    {% else %}
+      <div class="mt-10 max-w-md">
+        <div class="rounded-2xl border border-[#EFE6D9] bg-white/70 p-6">
+          <div class="text-xl font-semibold text-gray-900">Welcome</div>
+          <div class="mt-1 text-sm text-gray-700">Login to access your account.</div>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <a href="{% url 'account_login' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#B58C4E] text-white text-sm font-semibold">
+              Login
+            </a>
+            <a href="{% url 'account_signup' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#EFE6D9] text-gray-900 text-sm font-semibold">
+              Sign up
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-6 space-y-4">
+          <a href="{% url 'public_settings' %}" class="flex items-center justify-between gap-4 bg-white/60 border border-[#EFE6D9] rounded-2xl px-5 py-4">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-[#EFE6D9] flex items-center justify-center text-gray-700">
+                <i class="fa-solid fa-gear"></i>
+              </div>
+              <div class="text-lg font-medium text-gray-900">Settings</div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400"></i>
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

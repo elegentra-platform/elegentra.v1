@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Salon onboarding – Public setup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+<div class="max-w-4xl mx-auto px-4 py-10">
+
+  <p class="text-sm text-gray-500">Step 3 of 4</p>
+  <h1 class="text-2xl font-semibold mt-1">Public salon setup</h1>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-10 mt-8">
+    {% csrf_token %}
+
+    <!-- BANNER -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm">
+      <h2 class="text-lg font-medium mb-4">Salon banner</h2>
+
+      <input type="file"
+             id="bannerInput"
+             name="banner_image"
+             class="hidden"
+             onchange="previewBanner(this)">
+
+      <label for="bannerInput"
+             class="block cursor-pointer border-2 border-dashed rounded-xl overflow-hidden">
+        {% if banner_image %}
+          <img id="bannerPreview" src="{{ banner_image }}" class="h-48 w-full object-cover">
+        {% else %}
+          <img id="bannerPreview" class="hidden h-48 w-full object-cover">
+          <div id="bannerPlaceholder"
+               class="h-48 flex items-center justify-center text-gray-400">
+            Click to upload banner
+          </div>
+        {% endif %}
+      </label>
+
+      {% if rejection_map.banner_image %}
+        <p class="text-sm text-red-600 mt-2">{{ rejection_map.banner_image }}</p>
+      {% endif %}
+    </div>
+
+    <!-- SERVICES -->
+    <div class="bg-white p-8 rounded-2xl shadow-sm">
+      <h2 class="text-lg font-medium mb-1">Services</h2>
+      <p class="text-sm text-gray-500 mb-6">Add up to 3 services</p>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        {% for service in service_slots %}
+        <div class="border rounded-xl p-4 bg-gray-50 space-y-4">
+
+          <input type="file"
+                 id="serviceImg{{ forloop.counter }}"
+                 name="service_image_{{ forloop.counter }}"
+                 class="hidden"
+                 onchange="previewService(this, {{ forloop.counter }})">
+
+          <label for="serviceImg{{ forloop.counter }}"
+                 class="block cursor-pointer border-2 border-dashed rounded-lg h-32 overflow-hidden">
+            {% if service.image_url %}
+              <img id="servicePreview{{ forloop.counter }}"
+                   src="{{ service.image_url }}"
+                   class="h-full w-full object-cover">
+            {% else %}
+              <img id="servicePreview{{ forloop.counter }}"
+                   class="hidden h-full w-full object-cover">
+              <div id="servicePlaceholder{{ forloop.counter }}"
+                   class="h-full flex items-center justify-center text-gray-400">
+                Add service image
+              </div>
+            {% endif %}
+          </label>
+
+          <input type="text"
+                 name="service_name_{{ forloop.counter }}"
+                 value="{{ service.name }}"
+                 placeholder="Service name"
+                 class="w-full border rounded px-3 py-2 text-sm">
+
+          <input type="number"
+                 name="service_price_{{ forloop.counter }}"
+                 value="{{ service.price }}"
+                 placeholder="₹"
+                 class="w-full border rounded px-3 py-2 text-sm">
+
+          <select name="service_category_{{ forloop.counter }}"
+                  class="w-full border rounded px-3 py-2 text-sm">
+            <option value="">Select category</option>
+            {% for category in categories %}
+              <option value="{{ category.id }}"
+                {% if service.category_id == category.id %}selected{% endif %}>
+                {{ category.name }}
+              </option>
+            {% endfor %}
+          </select>
+
+          <div class="text-xs text-gray-400 text-center">or</div>
+
+          <input type="text"
+                 name="service_new_category_{{ forloop.counter }}"
+                 placeholder="Add new category"
+                 class="w-full border rounded px-3 py-2 text-sm">
+
+          {% if service.rejection %}
+            <p class="text-xs text-red-600">{{ service.rejection }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if rejection_map.services %}
+        <p class="text-sm text-red-600 mt-3">{{ rejection_map.services }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex justify-end">
+      <button class="bg-black text-white px-12 py-3 rounded-xl">
+        Continue
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function previewService(input, index) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const img = document.getElementById(`servicePreview${index}`);
+  const placeholder = document.getElementById(`servicePlaceholder${index}`);
+
+  img.src = URL.createObjectURL(file);
+  img.classList.remove("hidden");
+  if (placeholder) placeholder.classList.add("hidden");
+}
+
+function previewBanner(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const img = document.getElementById("bannerPreview");
+  const placeholder = document.getElementById("bannerPlaceholder");
+
+  img.src = URL.createObjectURL(file);
+  img.classList.remove("hidden");
+  if (placeholder) placeholder.classList.add("hidden");
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Staff Panel{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-[#f8f4ee] text-slate-900">
+  <div class="min-h-screen md:grid md:grid-cols-[240px_1fr]">
+    <aside class="border-r border-[#eadfcf] bg-[#f6efe5] p-4">
+      <h1 class="text-lg font-semibold">Staff Panel</h1>
+      <p class="mt-1 text-xs text-slate-600">Ops and approvals</p>
+      <nav class="mt-6 space-y-2 text-sm">
+        <a href="{% url 'staffpanel:dashboard' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'dashboard' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
+          <i class="fa-solid fa-gauge mr-2"></i> Dashboard
+        </a>
+        <a href="{% url 'staffpanel:saloon_queue' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'saloons' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
+          <i class="fa-solid fa-shop mr-2"></i> Vendor Approvals
+        </a>
+        <a href="{% url 'staffpanel:category_queue' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'categories' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
+          <i class="fa-solid fa-list-check mr-2"></i> Service Categories
+        </a>
+      </nav>
+    </aside>
+
+    <main class="p-4 md:p-6">
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+            <div class="rounded-lg px-4 py-2 text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

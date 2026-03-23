@@ -1,0 +1,364 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="w-full max-w-3xl px-3 sm:px-4">
+  <h2 class="text-xl sm:text-2xl font-semibold mb-4">Edit Basic Details</h2>
+
+  <div class="bg-white rounded-2xl border border-gray-100 p-4">
+    <form method="post" action="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Banner Image</label>
+          <div class="mt-2 flex items-start gap-4">
+            <img
+              id="bannerPreview"
+              src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800{% endif %}"
+              class="w-40 h-24 rounded-xl object-cover border border-gray-200"
+              alt="Banner preview"
+            >
+            <div class="flex-1">
+              <input
+                type="file"
+                name="banner_image"
+                id="bannerInput"
+                accept="image/*"
+                class="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+              >
+              <p class="text-xs text-gray-500 mt-1">Preview updates immediately; changes save only after you click Save Changes.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Saloon Name</label>
+          <input
+            type="text"
+            name="saloon_name"
+            value="{{ saloon.name }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            placeholder="Enter saloon name"
+          >
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">City</label>
+          <input
+            type="text"
+            name="city"
+            value="{{ saloon.profile.city|default:'' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            placeholder="City"
+          >
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Contact Number</label>
+          <input
+            type="text"
+            name="contact_number"
+            value="{{ saloon.profile.contact_number|default:'' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            placeholder="Phone number"
+          >
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">WhatsApp Number</label>
+          <input
+            type="text"
+            name="whatsapp_number"
+            value="{{ saloon.whatsapp_number|default:'' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3 bg-gray-50 cursor-not-allowed"
+            placeholder="WhatsApp number"
+            readonly
+          >
+          <p class="text-xs text-gray-500 mt-1">
+            WhatsApp number changes are disabled here.
+          </p>
+          <a
+            href="{% url 'saloon_dashboard_change_whatsapp' username=saloon.owner.username %}"
+            class="inline-block mt-2 text-sm font-semibold text-blue-600"
+          >
+            Change WhatsApp Number
+          </a>
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Locality / Address</label>
+          <input
+            type="text"
+            name="locality"
+            value="{{ saloon.profile.locality|default:'' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            placeholder="Area / locality"
+          >
+        </div>
+
+        <div class="sm:col-span-2">
+          <input type="hidden" name="latitude" id="editLatitude" value="{{ saloon.profile.latitude|default:'' }}">
+          <input type="hidden" name="longitude" id="editLongitude" value="{{ saloon.profile.longitude|default:'' }}">
+
+          <label class="text-sm font-medium text-gray-700">Exact Salon Location</label>
+          <div class="mt-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Use your live location while standing at the salon</p>
+                <p id="editLocationStatus" class="mt-2 text-sm text-gray-600">
+                  {% if saloon.profile.latitude and saloon.profile.longitude %}
+                    Saved at {{ saloon.profile.latitude }}, {{ saloon.profile.longitude }}
+                  {% else %}
+                    No exact location saved yet.
+                  {% endif %}
+                </p>
+                <a
+                  id="editMapPreview"
+                  href="{{ saloon.profile.google_map_link|default:'' }}"
+                  target="_blank"
+                  rel="noopener"
+                  class="{% if saloon.profile.google_map_link %}mt-2 inline-flex{% else %}mt-2 hidden{% endif %} text-sm font-semibold text-blue-600"
+                >
+                  Open saved map location
+                </a>
+              </div>
+              <button
+                type="button"
+                id="useCurrentLocationEdit"
+                class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
+              >
+                Use current location
+              </button>
+            </div>
+
+            <div class="mt-4">
+              <label for="editMapLink" class="text-sm font-medium text-gray-700">Google Maps link</label>
+              <input
+                type="url"
+                name="google_map_link"
+                id="editMapLink"
+                value="{{ saloon.profile.google_map_link|default:'' }}"
+                class="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm"
+                placeholder="Paste your Google Maps place link"
+              >
+              <p class="mt-2 text-xs text-gray-500">
+                Paste your exact Google Maps place link if you want customers to see the salon name/place instead of raw coordinates.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sm:col-span-2" id="about-section">
+          <label class="text-sm font-medium text-gray-700">About</label>
+          <textarea
+            name="about"
+            rows="4"
+            class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2"
+            placeholder="Tell customers about your saloon"
+          >{{ saloon.profile.about|default:'' }}</textarea>
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Opening Time</label>
+          <input
+            type="time"
+            name="opening_time"
+            value="{{ saloon.profile.opening_time|time:'H:i' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+          >
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-gray-700">Closing Time</label>
+          <input
+            type="time"
+            name="closing_time"
+            value="{{ saloon.profile.closing_time|time:'H:i' }}"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+          >
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Operating Days</label>
+          <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="monday" class="rounded border-gray-300" {% if "monday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Monday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="tuesday" class="rounded border-gray-300" {% if "tuesday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Tuesday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="wednesday" class="rounded border-gray-300" {% if "wednesday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Wednesday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="thursday" class="rounded border-gray-300" {% if "thursday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Thursday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="friday" class="rounded border-gray-300" {% if "friday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Friday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="saturday" class="rounded border-gray-300" {% if "saturday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Saturday</span>
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <input type="checkbox" name="operating_days" value="sunday" class="rounded border-gray-300" {% if "sunday" in saloon.profile.operating_days %}checked{% endif %}>
+              <span>Sunday</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center gap-2">
+        <button
+          type="submit"
+          class="bg-blue-500 text-white px-5 h-10 rounded-xl text-sm font-semibold"
+        >
+          Save Changes
+        </button>
+        <a
+          href="{% url 'saloon_dashboard_mysaloon' username=saloon.owner.username %}"
+          class="px-5 h-10 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 flex items-center"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="editLocationConfirm" class="pointer-events-none fixed inset-0 z-[90] hidden bg-black/35 opacity-0 transition">
+  <div class="flex min-h-screen items-center justify-center px-4">
+    <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-lg font-semibold text-[#1F1F1F]">Use salon location</p>
+          <p class="mt-1 text-sm text-[#6A6A6A]">Please use current location while standing at your salon for the most accurate map and distance.</p>
+        </div>
+        <button type="button" id="editLocationConfirmClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E7DAC8] text-[#6A6A6A]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="mt-5 flex gap-3">
+        <button type="button" id="editLocationConfirmAction" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-black px-5 text-sm font-semibold text-white">
+          Okay, Use Current Location
+        </button>
+        <button type="button" id="editLocationConfirmCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var input = document.getElementById("bannerInput");
+    var preview = document.getElementById("bannerPreview");
+    if (!input || !preview) return;
+
+    input.addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        preview.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+
+  (function () {
+    var button = document.getElementById("useCurrentLocationEdit");
+    var latitudeInput = document.getElementById("editLatitude");
+    var longitudeInput = document.getElementById("editLongitude");
+    var mapLinkInput = document.getElementById("editMapLink");
+    var status = document.getElementById("editLocationStatus");
+    var preview = document.getElementById("editMapPreview");
+    var modal = document.getElementById("editLocationConfirm");
+    var modalAction = document.getElementById("editLocationConfirmAction");
+    var modalClose = document.getElementById("editLocationConfirmClose");
+    var modalCancel = document.getElementById("editLocationConfirmCancel");
+
+    if (!button || !latitudeInput || !longitudeInput || !mapLinkInput || !status || !preview) return;
+
+    function openModal() {
+      if (!modal) return;
+      modal.classList.remove("hidden", "pointer-events-none", "opacity-0");
+      requestAnimationFrame(function () {
+        modal.classList.add("opacity-100");
+      });
+    }
+
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.remove("opacity-100");
+      modal.classList.add("opacity-0");
+      window.setTimeout(function () {
+        modal.classList.add("hidden", "pointer-events-none");
+      }, 200);
+    }
+
+    function requestCurrentLocation() {
+      if (!navigator.geolocation) {
+        status.textContent = "Location access is not supported on this device.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Getting location...";
+      status.textContent = "Fetching your current salon location...";
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          var latitude = position.coords.latitude.toFixed(6);
+          var longitude = position.coords.longitude.toFixed(6);
+          var mapUrl = "https://www.google.com/maps?q=" + latitude + "," + longitude;
+
+          latitudeInput.value = latitude;
+          longitudeInput.value = longitude;
+          if (!mapLinkInput.value.trim()) {
+            mapLinkInput.value = mapUrl;
+          }
+
+          status.textContent = "Saved at " + latitude + ", " + longitude + ". Click Save Changes to keep it.";
+          preview.href = mapLinkInput.value.trim() || mapUrl;
+          preview.classList.remove("hidden");
+          preview.classList.add("inline-flex");
+
+          button.disabled = false;
+          button.textContent = "Update current location";
+        },
+        function () {
+          status.textContent = "We could not access your location. Please allow location permission and try again.";
+          button.disabled = false;
+          button.textContent = "Use current location";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    button.addEventListener("click", openModal);
+
+    if (modalAction) modalAction.addEventListener("click", function () {
+      closeModal();
+      requestCurrentLocation();
+    });
+    if (modalClose) modalClose.addEventListener("click", closeModal);
+    if (modalCancel) modalCancel.addEventListener("click", closeModal);
+    if (modal) {
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) closeModal();
+      });
+    }
+  })();
+</script>
+{% endblock %}

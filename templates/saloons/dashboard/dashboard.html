@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ELEGENTRA Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard/message.css' %}">
+  <style>
+    @font-face {
+      font-family: "Bauserif";
+      src: url("{% static 'fonts/bauserif.ttf' %}") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+  </style>
+
+  <!-- Icons & Charts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-900 min-h-screen overflow-x-hidden lg:overflow-hidden">
+
+<div class="flex min-h-screen max-w-full lg:h-screen lg:overflow-hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="hidden lg:flex w-64 bg-white border-r border-gray-200 px-6 py-8 flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen">
+    <div class="mb-10 leading-none text-[#5B4B37]">
+      <div
+        class="text-[2.08rem] tracking-[0.03em]"
+        style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(110,85,48,0.12);"
+      >
+        Elegentra
+      </div>
+    </div>
+
+    <nav class="space-y-2">
+
+      <a href="{% url 'saloon_dashboard' user.username %}"
+         class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium
+         {% if active_tab == 'dashboard' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+
+      <a href="{% url 'saloon_dashboard_mysaloon' user.username %}"
+         class="flex items-center gap-3 px-4 py-3 rounded-xl
+         {% if active_tab == 'mysaloon' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
+        <i class="fa-solid fa-store"></i> My Saloon
+      </a>
+
+      <a href="{% url 'saloon_dashboard_services' user.username %}"
+         class="flex items-center gap-3 px-4 py-3 rounded-xl
+         {% if active_tab == 'services' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
+        <i class="fa-solid fa-scissors"></i> Services
+      </a>
+
+      <a href="{% url 'saloon_dashboard_subscription' user.username %}"
+         class="flex items-center gap-3 px-4 py-3 rounded-xl
+         {% if active_tab == 'subscription' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
+        <i class="fa-regular fa-credit-card"></i> Subscription
+      </a>
+
+      <a href="{% url 'saloon_dashboard_settings' user.username %}"
+         class="flex items-center gap-3 px-4 py-3 rounded-xl
+         {% if active_tab == 'settings' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
+        <i class="fa-solid fa-gear"></i> Settings
+      </a>
+
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex flex-col lg:pl-64 lg:h-screen lg:overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+      <h1 class="text-xl font-semibold">Dashboard</h1>
+
+      <div class="flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search here..."
+          class="hidden md:block px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
+        />
+
+        <i class="fa-regular fa-bell text-gray-600"></i>
+
+        <div class="w-8 h-8 rounded-full overflow-hidden">
+          <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
+            <div class="media-skeleton__placeholder"></div>
+            <img
+              src="{{ user.socialaccount_set.all.0.get_avatar_url|default:'/static/img/default-avatar.png' }}"
+              class="w-full h-full object-cover"
+              alt="Profile"
+              data-skeleton-image
+            />
+          </div>
+        </div>
+
+        <span class="text-sm font-medium">
+          {{ user.get_full_name|default:user.username }}
+        </span>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="flex-1 overflow-y-auto px-3 sm:px-6 pb-28 {% if content_bg_white %}bg-white min-h-screen{% endif %} {% if show_back_button %}pt-14 sm:pt-0{% else %}pt-6{% endif %} lg:overscroll-contain">
+      {% if show_back_button %}
+        <div class="hidden sm:flex sticky top-0 z-30 -mx-6 px-6 py-3 bg-gray-100 border-b border-gray-200 mb-3" style="position: -webkit-sticky; position: sticky; top: 0;">
+          <div class="flex items-center gap-2 text-sm text-gray-500">
+            <a href="{{ back_url }}" class="text-gray-600 hover:text-gray-900">
+              {{ back_parent_label|default:"Back" }}
+            </a>
+            <span>/</span>
+            <span class="font-medium text-gray-900">
+              {{ back_label|default:"Details" }}
+            </span>
+          </div>
+        </div>
+        <div class="sm:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-3">
+          <a href="{{ back_url }}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <i class="fa-solid fa-arrow-left"></i>
+            {{ back_parent_label|default:"Back" }}
+          </a>
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex justify-around py-3 lg:hidden">
+
+  <a href="{% url 'saloon_dashboard' user.username %}"
+     class="{% if active_tab == 'dashboard' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-chart-line"></i>
+  </a>
+
+  <a href="{% url 'saloon_dashboard_services' user.username %}"
+     class="{% if active_tab == 'services' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-scissors"></i>
+  </a>
+
+  <a href="{% url 'saloon_dashboard_mysaloon' user.username %}"
+     class="{% if active_tab == 'mysaloon' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-store"></i>
+  </a>
+
+  <a href="{% url 'saloon_dashboard_subscription' user.username %}"
+     class="{% if active_tab == 'subscription' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-regular fa-credit-card"></i>
+  </a>
+
+  <a href="{% url 'saloon_dashboard_settings' user.username %}"
+     class="{% if active_tab == 'settings' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-gear"></i>
+  </a>
+
+</nav>
+
+<!-- 🔔 TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- TOAST SCRIPT -->
+<script>
+  const toastContainer = document.getElementById("toastContainer");
+
+  function showToast(type, title, desc) {
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+
+    toast.innerHTML = `
+      <div class="toast-icon">${type === "success" ? "✓" : "!"}</div>
+      <div class="toast-text">
+        <div class="toast-title">${title}</div>
+        <div class="toast-desc">${desc}</div>
+      </div>
+    `;
+
+    toastContainer.prepend(toast);
+
+    setTimeout(() => {
+      toast.classList.add("hide");
+      setTimeout(() => toast.remove(), 400);
+    }, 5000);
+  }
+
+  {% if messages %}
+    document.addEventListener("DOMContentLoaded", () => {
+      {% for message in messages %}
+        showToast(
+          "{{ message.tags|default:'success' }}",
+          "{{ message|escapejs }}",
+          ""
+        );
+      {% endfor %}
+    });
+  {% endif %}
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

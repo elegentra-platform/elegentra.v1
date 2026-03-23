@@ -1,0 +1,120 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-2 sm:px-4">
+  <h2 class="text-xl sm:text-2xl font-semibold mb-4">Create Gallery Post</h2>
+
+  <div class="bg-white rounded-2xl border border-gray-100 p-4">
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+
+      <div>
+        <label class="text-sm font-medium text-gray-700">Media (Images or MP4)</label>
+        <input
+          type="file"
+          name="media"
+          id="galleryMediaInput"
+          accept="image/*,video/mp4"
+          multiple
+          class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+        >
+        <p class="text-xs text-gray-500 mt-1">
+          Up to 10 images. With video: max 2 videos + 3 images (total 5).
+        </p>
+      </div>
+
+      <div class="border border-dashed border-gray-300 rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-sm font-semibold text-gray-700">Preview</p>
+          <span id="mediaCount" class="text-xs text-gray-500">0 selected</span>
+        </div>
+        <div id="previewStrip" class="flex gap-3 overflow-x-auto"></div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            name="title"
+            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            placeholder="e.g. Bridal Glow"
+          >
+        </div>
+        <div class="sm:col-span-2">
+          <label class="text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            name="description"
+            rows="4"
+            class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2"
+            placeholder="Short description for this post"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="submit"
+          class="bg-blue-500 text-white px-5 h-10 rounded-xl text-sm font-semibold"
+        >
+          Publish
+        </button>
+        <a
+          href="{% url 'saloon_dashboard_mysaloon' username=saloon.owner.username %}?tab=gallery"
+          class="px-5 h-10 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 flex items-center"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var input = document.getElementById("galleryMediaInput");
+    var strip = document.getElementById("previewStrip");
+    var count = document.getElementById("mediaCount");
+
+    if (!input || !strip || !count) return;
+
+    input.addEventListener("change", function (e) {
+      strip.innerHTML = "";
+      var files = Array.from(e.target.files || []);
+      count.textContent = files.length + " selected";
+
+      files.forEach(function (file, index) {
+        var card = document.createElement("div");
+        card.className = "w-40 shrink-0";
+
+        var wrapper = document.createElement("div");
+        wrapper.className = "w-40 h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center";
+
+        if (file.type.startsWith("video/")) {
+          var video = document.createElement("video");
+          video.src = URL.createObjectURL(file);
+          video.muted = true;
+          video.playsInline = true;
+          video.className = "w-full h-full object-cover";
+          wrapper.appendChild(video);
+        } else {
+          var img = document.createElement("img");
+          img.src = URL.createObjectURL(file);
+          img.className = "w-full h-full object-cover";
+          wrapper.appendChild(img);
+        }
+
+        var label = document.createElement("div");
+        label.className = "mt-2 text-xs text-gray-500 text-center";
+        label.textContent = (index + 1) + "/" + files.length;
+
+        card.appendChild(wrapper);
+        card.appendChild(label);
+        strip.appendChild(card);
+      });
+    });
+  })();
+</script>
+{% endblock %}

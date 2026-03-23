@@ -1,0 +1,157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verify WhatsApp</title>
+
+  <!-- Tailwind output -->
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+
+  <!-- intl-tel-input CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/css/intlTelInput.css"
+  />
+</head>
+
+<body class="min-h-screen bg-gray-100 px-4 py-10 sm:flex sm:items-center sm:justify-center">
+
+  <div class="mx-auto w-full max-w-md rounded-[1.75rem] bg-white p-6 text-center shadow-xl sm:p-8">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+          {% if message.tags == 'error' %}
+            bg-red-100 text-red-700
+          {% else %}
+            bg-blue-100 text-blue-700
+          {% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <h2 class="mb-4 text-2xl font-bold sm:text-[1.9rem]">Verify WhatsApp</h2>
+
+    {% if step == "phone" %}
+      <form method="post" id="phone-form">
+        {% csrf_token %}
+
+        {% if is_existing_saloon %}
+          <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-700 sm:text-[0.95rem]">
+            We will send the OTP to your current WhatsApp:
+            <strong>{{ masked_phone }}</strong>
+          </div>
+        {% else %}
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="WhatsApp number"
+            class="mb-4 h-12 w-full rounded-xl border px-4 text-base"
+            required
+          />
+        {% endif %}
+
+        <button
+          name="send_otp"
+          class="h-12 w-full rounded-xl bg-black text-base font-semibold text-white">
+          Send OTP
+        </button>
+      </form>
+    {% endif %}
+
+    {% if step == "otp" %}
+      <p class="mb-3 text-sm leading-6 text-gray-600 sm:text-[0.95rem]">
+        We sent an OTP to <strong>{{ masked_phone }}</strong>
+      </p>
+
+      <form method="post" id="otp-form">
+        {% csrf_token %}
+
+        <input
+          type="text"
+          name="otp"
+          placeholder="Enter OTP"
+          class="mb-4 h-12 w-full rounded-xl border px-4 text-base"
+          required
+        />
+
+        <button
+          name="verify_otp"
+          class="mb-3 h-12 w-full rounded-xl bg-black text-base font-semibold text-white">
+          Verify
+        </button>
+      </form>
+
+      <!-- Resend OTP -->
+      <form method="post" id="resend-form">
+        {% csrf_token %}
+        <button
+          type="submit"
+          name="send_otp"
+          id="resend-btn"
+          class="text-sm text-gray-500 hover:text-black disabled:text-gray-300 sm:text-[0.95rem]"
+          disabled>
+          Resend OTP
+        </button>
+      </form>
+
+      <p id="cooldown-text" class="text-xs text-gray-400 mt-2">
+        Resend available in <span id="timer">5</span>s
+      </p>
+    {% endif %}
+
+  </div>
+
+  <!-- intl-tel-input JS -->
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/intlTelInput.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js"></script>
+
+  {% if step == "phone" and not is_existing_saloon %}
+  <script>
+    const phoneInput = document.querySelector("#phone");
+
+    const iti = window.intlTelInput(phoneInput, {
+      initialCountry: "auto",
+      geoIpLookup: function (callback) {
+        fetch("https://ipapi.co/json/")
+          .then(res => res.json())
+          .then(data => callback(data.country_code.toLowerCase()))
+          .catch(() => callback("in"));
+      },
+      utilsScript:
+        "https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js",
+    });
+
+    document
+      .querySelector("#phone-form")
+      .addEventListener("submit", function () {
+        phoneInput.value = iti.getNumber(); // E.164
+      });
+  </script>
+  {% endif %}
+
+  {% if step == "otp" %}
+  <script>
+    let cooldown = 5;
+    const timerEl = document.getElementById("timer");
+    const resendBtn = document.getElementById("resend-btn");
+    const cooldownText = document.getElementById("cooldown-text");
+
+    const interval = setInterval(() => {
+      cooldown--;
+      timerEl.textContent = cooldown;
+
+      if (cooldown <= 0) {
+        clearInterval(interval);
+        resendBtn.disabled = false;
+        cooldownText.textContent = "Didn’t receive it? You can resend now.";
+      }
+    }, 1000);
+  </script>
+  {% endif %}
+
+</body>
+</html>

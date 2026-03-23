@@ -1,0 +1,1368 @@
+{% extends "base.html" %}
+
+{% block title %}{{ display_name }}{% endblock %}
+{% block page_header %}
+  <header
+    class="sticky top-0 z-40 hidden border-b border-[#EEE6DA]/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] md:block"
+    style="background-color: rgba(247, 240, 234, 0.97); backdrop-filter: blur(6px);"
+  >
+    <div class="mx-auto max-w-6xl px-4 py-4">
+      <div class="flex items-center justify-between gap-4 md:gap-6">
+        <a href="{% url 'public_home' %}" class="inline-flex h-11 shrink-0 items-center leading-none text-[#4F3F2E] md:h-12" aria-label="ELEGENTRA home">
+          <span
+            class="block text-[1.74rem] tracking-[0.02em] md:text-[2.22rem]"
+            style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(97,72,39,0.14);"
+          >
+            Elegentra
+          </span>
+        </a>
+
+        <div class="hidden flex-1 justify-center md:flex md:px-3">
+          {% block search_bar %}{% endblock %}
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="#" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/55 text-gray-700 shadow-sm" aria-label="Notifications">
+            <i class="fa-regular fa-bell"></i>
+          </a>
+
+          {% if not public_has_saloon %}
+            <details id="partner-menu" class="relative hidden md:block">
+              <summary class="flex h-10 min-w-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-[#e7dccd] bg-white/70 px-3 text-[#6f5223] shadow-sm transition hover:bg-[#fff6e8]">
+                <i class="fa-solid fa-ellipsis text-sm"></i>
+              </summary>
+              <div class="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,rgba(255,249,238,0.98),rgba(249,241,229,0.96))] p-2 shadow-[0_20px_45px_rgba(74,56,30,0.14)]">
+                <div class="rounded-2xl border border-white/70 bg-white/40 p-2">
+                  <div class="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a7b47]">Partner</div>
+                  <a href="{% url 'partner_home' %}" class="flex items-start gap-3 rounded-2xl px-3 py-3 text-sm text-[#5d431d] transition hover:bg-[#f6ecdc]">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f5e7c9] text-[#8a6428] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                      <i class="fa-solid fa-store"></i>
+                    </span>
+                    <span class="block">
+                      <span class="block font-semibold">Register your salon</span>
+                      <span class="mt-0.5 block text-xs text-[#8b7353]">Create your partner profile and start onboarding</span>
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </details>
+          {% endif %}
+
+          {% if not user.is_authenticated %}
+            <a href="{% url 'account_login' %}" class="group relative inline-flex items-center justify-center overflow-hidden rounded-full p-[1.5px] focus:outline-none focus:ring-2 focus:ring-[#E4B95D]/45">
+              <span class="pointer-events-none absolute inset-[-55%] animate-[spin_3.5s_linear_infinite] bg-[conic-gradient(from_0deg,_#8B682A_0deg,_#F4DC97_75deg,_#B58C4E_150deg,_#FFF3CA_230deg,_#8B682A_360deg)]"></span>
+              <span class="pointer-events-none absolute inset-[1.5px] rounded-full bg-[#FFF9EF]/95"></span>
+              <span class="pointer-events-none absolute -inset-[2px] rounded-full opacity-0 transition duration-300 group-hover:opacity-100 shadow-[0_0_10px_rgba(255,241,200,0.8),0_0_22px_rgba(245,215,132,0.75),0_0_38px_rgba(214,154,58,0.45)]"></span>
+              <span class="relative rounded-full px-4 py-1.5 text-sm font-semibold text-[#7B5A23] transition-colors duration-300 group-hover:text-[#6C4D1A]">
+                Login
+              </span>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+{% endblock %}
+
+{% block content %}
+<section class="-mx-4 bg-white">
+  <div class="mx-auto w-full max-w-5xl bg-white">
+  <div class="media-skeleton h-44 w-full bg-[#F3ECE4] sm:h-60 md:h-[18rem]" data-skeleton-type="banner">
+    <div class="media-skeleton__placeholder"></div>
+    {% if saloon.banner_image %}
+      <img
+        src="{{ saloon.banner_image.url }}"
+        alt="{{ saloon.name }}"
+        class="h-full w-full object-cover"
+        data-skeleton-image
+      >
+    {% else %}
+      <div class="h-full w-full bg-gradient-to-br from-[#eddabd] via-[#f8f2ea] to-[#e9dcc4]"></div>
+    {% endif %}
+  </div>
+
+  <div class="border-b border-[#EFE4D6] bg-white px-5 py-5 sm:px-8 sm:py-6 md:px-10 md:py-8">
+    <div class="md:hidden">
+      <div class="flex flex-wrap items-end gap-x-2 gap-y-2">
+        <h1 class="min-w-0 text-[1.75rem] font-normal leading-none tracking-tight text-[#151515]">
+          {{ display_name }}
+        </h1>
+        <div class="flex items-center gap-1.5 pb-0.5 text-[#C5A24B]">
+          <i class="fa-solid fa-star text-[0.56rem]"></i>
+          <span class="text-[0.8rem] font-normal leading-none text-[#4A4A4A]">
+            {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <div class="mt-3 space-y-2">
+        <p class="flex items-center gap-2 text-[1rem] text-[#3E3E3E]">
+          <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
+          <span>{{ profile.city|default:"Location coming soon" }}</span>
+        </p>
+        {% if hours_summary.label %}
+          <p class="flex items-center gap-2 text-[0.95rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
+            <i class="fa-regular fa-clock text-[#7A6238]"></i>
+            <span>{{ hours_summary.label }}</span>
+          </p>
+        {% endif %}
+      </div>
+
+      {% if public_whatsapp_number or map_url %}
+        <div class="mt-4 flex items-center justify-between gap-3">
+          {% if public_whatsapp_number %}
+            <a
+              href="tel:{{ saloon.whatsapp_number }}"
+              class="inline-flex h-10 shrink-0 items-center justify-center rounded-[0.9rem] border border-[#D8C29A] bg-white px-4 text-sm font-medium text-[#7A6238] shadow-[0_6px_16px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
+            >
+              <i class="fa-solid fa-phone mr-2 text-[0.78rem]"></i>
+              Call
+            </a>
+          {% else %}
+            <span></span>
+          {% endif %}
+
+          {% if map_url %}
+            <a
+              href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
+              {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
+              {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+              class="inline-flex h-10 shrink-0 items-center justify-center rounded-[0.9rem] border border-[#B89247] bg-[#D2AE63] px-4 text-sm font-medium text-white shadow-[0_6px_16px_rgba(181,140,78,0.15)] transition hover:bg-[#C59F53]"
+            >
+              View Map
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="hidden md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-8">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-end gap-x-3 gap-y-2">
+          <h1 class="text-[2rem] font-medium leading-none tracking-tight text-[#151515] lg:text-[2.2rem]">
+            {{ display_name }}
+          </h1>
+          <div class="mb-1 flex items-center gap-1.5 text-[#C5A24B]">
+            <i class="fa-solid fa-star text-[0.65rem]"></i>
+            <span class="text-[0.95rem] font-normal leading-none text-[#5A5A5A]">
+              {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[#4B4B4B]">
+          <p class="flex items-center gap-2 text-[1.02rem]">
+            <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
+            <span>{{ profile.city|default:"Location coming soon" }}</span>
+          </p>
+          {% if hours_summary.label %}
+            <p class="flex items-center gap-2 text-[1rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
+              <i class="fa-regular fa-clock text-[#7A6238]"></i>
+              <span>{{ hours_summary.label }}</span>
+            </p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if public_whatsapp_number or map_url %}
+        <div class="flex items-center gap-3">
+          {% if public_whatsapp_number %}
+            <a
+              href="tel:{{ saloon.whatsapp_number }}"
+              class="inline-flex h-11 items-center justify-center rounded-[1rem] border border-[#D8C29A] bg-white px-5 text-[0.95rem] font-medium text-[#7A6238] shadow-[0_8px_18px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
+            >
+              <i class="fa-solid fa-phone mr-2 text-[0.8rem]"></i>
+              Call Now
+            </a>
+          {% endif %}
+          {% if map_url %}
+            <a
+              href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
+              {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
+              {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+              class="inline-flex h-11 items-center justify-center rounded-[1rem] border border-[#B89247] bg-[#D2AE63] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(181,140,78,0.16)] transition hover:bg-[#C59F53]"
+            >
+              View Map
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="border-b border-[#EFE4D6] bg-white">
+    <div class="grid grid-cols-3">
+      <button
+        type="button"
+        class="public-tab border-b-2 border-[#C5A24B] px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F] sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        data-target="services"
+      >
+        Services
+      </button>
+      <button
+        type="button"
+        class="public-tab border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        data-target="gallery"
+      >
+        Gallery
+      </button>
+      <button
+        type="button"
+        class="public-tab border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        data-target="about"
+      >
+        About & Reviews
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white px-5 py-6 sm:px-8 md:px-10 md:py-8">
+    <div id="public-tab-services" class="public-tab-panel block">
+      {% if services %}
+        <div class="space-y-5 pb-32 md:mx-auto md:max-w-5xl md:space-y-4 md:pb-36">
+          {% for service in services %}
+            <div class="space-y-3">
+              <article class="flex items-center gap-4 md:rounded-[1.35rem] md:border md:border-[#F0E7DA] md:px-5 md:py-4">
+                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-[0.95rem] bg-[#F1E7DA] md:h-24 md:w-24 md:rounded-[1.1rem]">
+                  {% if service.image %}
+                    <div class="media-skeleton h-full w-full" data-skeleton-type="card">
+                      <div class="media-skeleton__placeholder"></div>
+                      <img
+                        src="{{ service.image.url }}"
+                        alt="{{ service.name }}"
+                        class="h-full w-full object-cover"
+                        data-skeleton-image
+                      >
+                    </div>
+                  {% else %}
+                    <div class="h-full w-full bg-gradient-to-br from-[#eddabd] via-[#f8f2ea] to-[#e9dcc4]"></div>
+                  {% endif %}
+                </div>
+
+                <div class="flex min-w-0 flex-1 items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <h2 class="text-[1.1rem] font-normal leading-tight text-[#181818] md:text-[1.45rem]">{{ service.name }}</h2>
+                    <p class="mt-1 text-[1rem] text-[#242424] md:text-[1.02rem]">
+                      {% if service.offer_price %}
+                        Rs. {{ service.offer_price }}
+                      {% else %}
+                        Rs. {{ service.price }}
+                      {% endif %}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="service-toggle hidden h-10 shrink-0 items-center justify-center rounded-[0.85rem] border border-[#B89247] bg-[#D2AE63] px-4 text-xs font-medium text-white transition hover:bg-[#C59F53] md:inline-flex md:h-10 md:min-w-[9.5rem] md:px-5 md:text-[0.88rem]"
+                    data-service-id="{{ service.id }}"
+                    data-service-name="{{ service.name|escape }}"
+                    data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
+                    data-interest-url="{% url 'public_service_interest' slug=saloon.slug %}"
+                  >
+                    Check Availability
+                  </button>
+                </div>
+              </article>
+
+              <div class="md:hidden">
+                <button
+                  type="button"
+                  class="service-toggle inline-flex h-10 w-full items-center justify-center rounded-[0.95rem] border border-[#B89247] bg-[#D2AE63] px-4 text-sm font-medium text-white transition hover:bg-[#C59F53]"
+                  data-service-id="{{ service.id }}"
+                  data-service-name="{{ service.name|escape }}"
+                  data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
+                  data-interest-url="{% url 'public_service_interest' slug=saloon.slug %}"
+                >
+                  Check Availability
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="py-10 text-center text-[#7A7A7A]">
+          Services will appear here soon.
+        </div>
+      {% endif %}
+    </div>
+
+    <div id="public-tab-gallery" class="public-tab-panel hidden">
+      {% if gallery_posts %}
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {% for post in gallery_posts %}
+            {% with media=post.media.first %}
+              <a
+                href="{% url 'public_gallery_detail' slug=saloon.slug post_id=post.id %}"
+                class="gallery-post-trigger block overflow-hidden rounded-[1.2rem] bg-[#F1E7DA] text-left"
+              >
+                {% if media %}
+                  {% if media.media_type == "video" %}
+                    <div class="relative">
+                      <video class="h-36 w-full object-cover sm:h-48" muted playsinline preload="metadata">
+                        <source src="{{ media.file.url }}" type="video/mp4">
+                      </video>
+                      <span class="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white">
+                        <i class="fa-solid fa-play text-xs"></i>
+                      </span>
+                    </div>
+                  {% else %}
+                    <div class="media-skeleton h-36 w-full sm:h-48" data-skeleton-type="card">
+                      <div class="media-skeleton__placeholder"></div>
+                      <img src="{{ media.file.url }}" alt="{{ post.title|default:display_name }}" class="h-36 w-full object-cover sm:h-48" data-skeleton-image>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <div class="h-36 w-full bg-[#EFE4D5] sm:h-48"></div>
+                {% endif %}
+              </a>
+            {% endwith %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="py-10 text-center text-[#7A7A7A]">
+          Gallery coming soon.
+        </div>
+      {% endif %}
+    </div>
+
+    <div id="public-tab-about" class="public-tab-panel hidden">
+      <div class="space-y-5 pb-20">
+        <div>
+          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl">About</h3>
+          <p class="mt-4 text-sm leading-8 text-[#5A5A5A] sm:text-base">
+            {{ profile.about|default:"This salon has not added an about section yet." }}
+          </p>
+        </div>
+        <div>
+          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl">Reviews</h3>
+            <div class="mt-4 md:hidden">
+              <button
+                type="button"
+                id="mobileReviewToggle"
+              class="flex w-full items-center justify-between rounded-[1.15rem] border border-[#EFE4D6] bg-[#FFF9F2] px-4 py-3 text-left"
+            >
+                <div>
+                  <p class="text-sm font-semibold text-[#1F1F1F]">Write a review</p>
+                  <p class="mt-1 text-xs text-[#7A7A7A]">
+                    {% if review_summary.total %}Share your experience with this salon{% else %}Be the first to share your experience{% endif %}
+                  </p>
+                </div>
+              <i id="mobileReviewChevron" class="fa-solid fa-chevron-down text-sm text-[#8A6A38] transition-transform"></i>
+            </button>
+
+              <div id="mobileReviewPanel" class="hidden">
+                <div class="mt-3 rounded-[1.4rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4">
+                  <form method="post" action="{% url 'public_saloon_add_review' slug=saloon.slug %}" class="space-y-3" id="reviewFormMobile" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}" data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about">
+                    {% csrf_token %}
+                  <div>
+                    <p class="mb-2 text-sm font-medium text-[#5A5A5A]">Your rating</p>
+                    <input type="hidden" name="rating" id="reviewRatingInputMobile" required>
+                    <div class="flex items-center gap-2" id="reviewStarPickerMobile">
+                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                    </div>
+                  </div>
+                  <textarea
+                    name="review_text"
+                    rows="4"
+                    id="reviewTextInputMobile"
+                    class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]"
+                    placeholder="Write your experience with this salon"
+                    required
+                  ></textarea>
+                  <button
+                    type="submit"
+                    class="inline-flex h-11 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]"
+                    >
+                      Submit Review
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 space-y-3 md:hidden">
+              {% for review in review_cards %}
+                <article class="rounded-[1.2rem] border border-[#EFE4D6] bg-white px-4 py-4">
+                  <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-start gap-3">
+                    <div class="h-10 w-10 overflow-hidden rounded-full border border-[#E7DAC8] bg-[#F3ECE4]">
+                      {% if review.avatar_url %}
+                        <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
+                          <div class="media-skeleton__placeholder"></div>
+                          <img src="{{ review.avatar_url }}" alt="{{ review.display_name }}" class="h-full w-full object-cover" data-skeleton-image>
+                        </div>
+                      {% else %}
+                        <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-[#7A6238]">
+                          {{ review.initial }}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <p class="text-sm font-semibold text-[#1F1F1F]">{{ review.display_name }}</p>
+                      <p class="mt-1 text-xs text-[#777777]">{{ review.date_label }}</p>
+                    </div>
+                  </div>
+                  <div class="inline-flex items-center gap-1 rounded-full bg-[#FFF4DE] px-2.5 py-1 text-xs font-semibold text-[#8A6A38]">
+                    <i class="fa-solid fa-star text-[10px]"></i>
+                    {{ review.rating }}
+                  </div>
+                </div>
+                {% if review.edited %}
+                  <p class="mt-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#A47A38]">Edited</p>
+                {% endif %}
+                <p class="mt-3 whitespace-pre-line text-sm leading-6 text-[#575757]">{{ review.review_text }}</p>
+                {% if user.is_authenticated and review.can_edit %}
+                  <div class="mt-3 flex items-center gap-4">
+                    <button type="button" class="review-edit-toggle text-xs font-semibold text-[#8A6A38]" data-review-edit-toggle="m{{ review.id }}">Edit</button>
+                    <form method="post" action="{% url 'public_saloon_delete_review' slug=saloon.slug review_id=review.id %}">
+                      {% csrf_token %}
+                      <button type="submit" class="text-xs font-semibold text-red-600">Delete</button>
+                    </form>
+                  </div>
+                  <form method="post" action="{% url 'public_saloon_edit_review' slug=saloon.slug review_id=review.id %}" class="mt-3 hidden space-y-3" id="review-edit-m{{ review.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="rating" id="reviewEditRatingInput-m{{ review.id }}" value="{{ review.rating }}" required>
+                    <div class="flex items-center gap-2">
+                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="1"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="2"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="3"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="4"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="5"><i class="fa-solid fa-star text-lg"></i></button>
+                    </div>
+                    <textarea name="review_text" rows="3" class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]" required>{{ review.review_text }}</textarea>
+                    <div class="flex items-center gap-3">
+                      <button type="submit" class="inline-flex h-10 items-center justify-center rounded-[0.9rem] bg-[#B89247] px-4 text-sm font-semibold text-white">Save</button>
+                      <button type="button" class="review-edit-toggle text-sm font-semibold text-[#6A6A6A]" data-review-edit-toggle="m{{ review.id }}">Cancel</button>
+                    </div>
+                  </form>
+                {% endif %}
+              </article>
+            {% empty %}
+              <p class="text-sm leading-7 text-[#5A5A5A]">No reviews yet. Be the first customer to share feedback.</p>
+            {% endfor %}
+          </div>
+
+          <div class="mt-4 hidden rounded-[1.4rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4 sm:p-5 md:block">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#A47A38]">Customer Rating</p>
+                <div class="mt-2 flex items-center gap-2 text-[#C5A24B]">
+                  <i class="fa-solid fa-star text-xs"></i>
+                  <span class="text-lg font-semibold text-[#1F1F1F]">
+                    {% if review_summary.total %}{{ review_summary.average }}{% else %}New{% endif %}
+                  </span>
+                  <span class="text-sm text-[#6C6C6C]">({{ review_summary.total }} reviews)</span>
+                </div>
+              </div>
+            </div>
+
+            <form method="post" action="{% url 'public_saloon_add_review' slug=saloon.slug %}" class="mt-5 space-y-3" id="reviewForm" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}" data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about">
+              {% csrf_token %}
+              <div>
+                <p class="mb-2 text-sm font-medium text-[#5A5A5A]">Your rating</p>
+                <input type="hidden" name="rating" id="reviewRatingInput" required>
+                <div class="flex items-center gap-2" id="reviewStarPicker">
+                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
+                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                </div>
+              </div>
+              <textarea
+                name="review_text"
+                rows="4"
+                id="reviewTextInput"
+                class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]"
+                placeholder="Write your experience with this salon"
+                required
+              ></textarea>
+              <button
+                type="submit"
+                class="inline-flex h-11 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]"
+              >
+                Submit Review
+                </button>
+              </form>
+            </div>
+
+            <div class="mt-5 hidden space-y-3 md:block">
+              {% for review in review_cards %}
+                <article class="rounded-[1.2rem] border border-[#EFE4D6] bg-white px-4 py-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <div class="h-10 w-10 overflow-hidden rounded-full border border-[#E7DAC8] bg-[#F3ECE4]">
+                        {% if review.avatar_url %}
+                          <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
+                            <div class="media-skeleton__placeholder"></div>
+                            <img
+                              src="{{ review.avatar_url }}"
+                              alt="{{ review.display_name }}"
+                              class="h-full w-full object-cover"
+                              data-skeleton-image
+                            >
+                          </div>
+                        {% else %}
+                          <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-[#7A6238]">
+                            {{ review.initial }}
+                          </div>
+                        {% endif %}
+                      </div>
+                      <div>
+                        <p class="text-sm font-semibold text-[#1F1F1F]">{{ review.display_name }}</p>
+                        <p class="mt-1 text-xs text-[#777777]">{{ review.date_label }}</p>
+                      </div>
+                    </div>
+                    <div class="inline-flex items-center gap-1 rounded-full bg-[#FFF4DE] px-2.5 py-1 text-xs font-semibold text-[#8A6A38]">
+                      <i class="fa-solid fa-star text-[10px]"></i>
+                      {{ review.rating }}
+                    </div>
+                  </div>
+                  {% if review.edited %}
+                    <p class="mt-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#A47A38]">Edited</p>
+                  {% endif %}
+                  <p class="mt-3 whitespace-pre-line text-sm leading-6 text-[#575757]">{{ review.review_text }}</p>
+                  {% if user.is_authenticated and review.can_edit %}
+                    <div class="mt-3 flex items-center gap-4">
+                      <button type="button" class="review-edit-toggle text-xs font-semibold text-[#8A6A38]" data-review-edit-toggle="d{{ review.id }}">Edit</button>
+                      <form method="post" action="{% url 'public_saloon_delete_review' slug=saloon.slug review_id=review.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="text-xs font-semibold text-red-600">Delete</button>
+                      </form>
+                    </div>
+                    <form method="post" action="{% url 'public_saloon_edit_review' slug=saloon.slug review_id=review.id %}" class="mt-3 hidden space-y-3" id="review-edit-d{{ review.id }}">
+                      {% csrf_token %}
+                      <input type="hidden" name="rating" id="reviewEditRatingInput-d{{ review.id }}" value="{{ review.rating }}" required>
+                      <div class="flex items-center gap-2">
+                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="1"><i class="fa-solid fa-star text-lg"></i></button>
+                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="2"><i class="fa-solid fa-star text-lg"></i></button>
+                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="3"><i class="fa-solid fa-star text-lg"></i></button>
+                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="4"><i class="fa-solid fa-star text-lg"></i></button>
+                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="5"><i class="fa-solid fa-star text-lg"></i></button>
+                      </div>
+                      <textarea name="review_text" rows="3" class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]" required>{{ review.review_text }}</textarea>
+                      <div class="flex items-center gap-3">
+                        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-[0.9rem] bg-[#B89247] px-4 text-sm font-semibold text-white">Save</button>
+                        <button type="button" class="review-edit-toggle text-sm font-semibold text-[#6A6A6A]" data-review-edit-toggle="d{{ review.id }}">Cancel</button>
+                      </div>
+                    </form>
+                  {% endif %}
+                </article>
+              {% empty %}
+                <p class="text-sm leading-7 text-[#5A5A5A] sm:text-base">
+                  No reviews yet. Be the first customer to share feedback.
+                </p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="inquiryCart"
+      class="pointer-events-none fixed inset-x-0 bottom-20 z-40 mx-auto w-full max-w-4xl px-4 opacity-0 transition duration-300 md:bottom-6"
+    >
+      <div class="mx-auto max-w-2xl rounded-[1.45rem] border border-[#E3CEAA] bg-[#FFF9EF] p-3 shadow-[0_16px_36px_rgba(93,72,42,0.14)]">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              id="inquirySummaryToggle"
+              class="flex flex-1 items-center justify-between rounded-[1rem] border border-[#E9D8B8] bg-white px-4 py-3 text-left"
+            >
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A47A38]">Selected</p>
+                <p class="mt-1 text-sm font-semibold text-[#1E1E1E]"><span id="selectedCount">0</span> services added</p>
+              </div>
+              <i id="inquiryChevron" class="fa-solid fa-chevron-up text-[#A47A38] transition-transform"></i>
+            </button>
+
+            <a
+              href="#"
+              id="confirmInquiryButton"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex h-11 shrink-0 items-center justify-center rounded-[1rem] bg-[#B89247] px-4 text-sm font-semibold text-white transition hover:bg-[#A88038]"
+            >
+              Send
+            </a>
+          </div>
+
+          <div id="inquirySummaryPanel" class="hidden">
+            <div class="rounded-[1rem] border border-[#E8DAC1] bg-white px-4 py-3">
+              <div id="selectedServicesList" class="space-y-2 text-sm text-[#5A5A5A]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="h-20 bg-white md:hidden"></div>
+  </div>
+</section>
+
+<div id="galleryModal" class="pointer-events-none fixed inset-0 z-50 hidden bg-white opacity-0 transition">
+  <div id="galleryModalScroller" class="h-screen overflow-y-auto">
+    <div class="mx-auto min-h-screen w-full max-w-6xl bg-white">
+      <div class="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:px-6">
+        <button type="button" id="galleryBackButton" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back
+        </button>
+        <span class="text-sm font-semibold text-gray-900">Gallery</span>
+        <div class="w-12"></div>
+      </div>
+
+      <div class="hidden lg:block">
+        <div class="p-6">
+          <div class="grid grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] gap-6">
+            <div>
+              <div class="overflow-hidden border border-gray-100 relative">
+                <div id="galleryDesktopOverlay" class="absolute top-3 right-3 z-10 hidden rounded-full bg-black/30 px-2 py-1 text-xs text-white"></div>
+                <div id="galleryDesktopMedia" class="bg-gray-50"></div>
+                <button type="button" id="galleryMediaPrev" class="absolute left-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow">
+                  <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <button type="button" id="galleryMediaNext" class="absolute right-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow">
+                  <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+              </div>
+              <div id="galleryDots" class="mt-2 flex items-center justify-center gap-1"></div>
+            </div>
+
+            <div class="border border-gray-100 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-8 w-8 overflow-hidden rounded-full border border-gray-200">
+                    {% if saloon.banner_image %}
+                      <img src="{{ saloon.banner_image.url }}" alt="{{ display_name }}" class="h-full w-full object-cover">
+                    {% else %}
+                      <div class="h-full w-full bg-[#EFE4D5]"></div>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <p class="text-sm font-semibold text-gray-900">{{ display_name }}</p>
+                    <p id="galleryDesktopDate" class="text-xs text-gray-500"></p>
+                  </div>
+                </div>
+                <button type="button" id="galleryModalCloseDesktop" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200">
+                  <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+
+              <div class="mt-4">
+                <p id="galleryDesktopTitle" class="text-sm font-semibold text-gray-900"></p>
+                <p id="galleryDesktopDescription" class="mt-2 whitespace-pre-line text-sm text-gray-700"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:hidden">
+        <div class="divide-y divide-gray-200 pb-20" id="galleryMobileFeed"></div>
+        <div class="border-t border-gray-200 px-4 py-3">
+          <button type="button" id="galleryModalCloseMobile" class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-gray-200 text-sm font-semibold text-gray-700">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="reviewLoginPrompt" class="pointer-events-none fixed inset-0 z-[70] hidden bg-black/35 opacity-0 transition">
+  <div class="flex min-h-screen items-center justify-center px-4">
+    <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-lg font-semibold text-[#1F1F1F]">Login To Add Review</p>
+          <p class="mt-1 text-sm text-[#6A6A6A]">Please log in first to rate this salon and share your review.</p>
+        </div>
+        <button type="button" id="reviewLoginPromptClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E7DAC8] text-[#6A6A6A]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="mt-5 flex gap-3">
+        <a id="reviewLoginPromptAction" href="{% url 'account_login' %}?next={{ request.path|urlencode }}#about" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]">
+          Log In
+        </a>
+        <button type="button" id="reviewLoginPromptCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ whatsapp_template|json_script:"whatsapp-template-data" }}
+{{ display_name|json_script:"whatsapp-salon-name" }}
+
+<script>
+  (function () {
+    function setupReviewForm(formId, ratingInputId, starSelector, textInputId) {
+      const ratingInput = document.getElementById(ratingInputId);
+      const starButtons = Array.from(document.querySelectorAll(starSelector));
+      const reviewForm = document.getElementById(formId);
+      const reviewTextInput = document.getElementById(textInputId);
+
+      if (!reviewForm) return;
+
+      const isAuthenticated = reviewForm.dataset.authenticated === "true";
+
+      if (ratingInput && starButtons.length) {
+        function paintStars(value) {
+          starButtons.forEach((button, index) => {
+            const active = index < value;
+            button.classList.toggle("text-[#C5A24B]", active);
+            button.classList.toggle("text-[#D8CFC1]", !active);
+          });
+        }
+
+        starButtons.forEach((button) => {
+          button.addEventListener("click", function () {
+            if (!isAuthenticated) {
+              openLoginPrompt();
+              return;
+            }
+            const value = parseInt(button.getAttribute("data-value"), 10) || 0;
+            ratingInput.value = value;
+            paintStars(value);
+          });
+        });
+      }
+
+      if (!isAuthenticated && reviewTextInput) {
+        reviewTextInput.addEventListener("focus", function (event) {
+          event.target.blur();
+          openLoginPrompt();
+        });
+
+        reviewTextInput.addEventListener("click", function () {
+          openLoginPrompt();
+        });
+      }
+
+      if (!isAuthenticated) {
+        reviewForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          openLoginPrompt();
+        });
+      }
+    }
+
+    const loginPrompt = document.getElementById("reviewLoginPrompt");
+    const loginPromptClose = document.getElementById("reviewLoginPromptClose");
+    const loginPromptCancel = document.getElementById("reviewLoginPromptCancel");
+    const mobileReviewToggle = document.getElementById("mobileReviewToggle");
+    const mobileReviewPanel = document.getElementById("mobileReviewPanel");
+    const mobileReviewChevron = document.getElementById("mobileReviewChevron");
+
+    function openLoginPrompt() {
+      if (!loginPrompt) return;
+      loginPrompt.classList.remove("hidden", "pointer-events-none", "opacity-0");
+      requestAnimationFrame(function () {
+        loginPrompt.classList.add("opacity-100");
+      });
+    }
+
+    function closeLoginPrompt() {
+      if (!loginPrompt) return;
+      loginPrompt.classList.remove("opacity-100");
+      loginPrompt.classList.add("opacity-0");
+      window.setTimeout(function () {
+        loginPrompt.classList.add("hidden", "pointer-events-none");
+      }, 200);
+    }
+
+    if (loginPromptClose) loginPromptClose.addEventListener("click", closeLoginPrompt);
+    if (loginPromptCancel) loginPromptCancel.addEventListener("click", closeLoginPrompt);
+    if (loginPrompt) {
+      loginPrompt.addEventListener("click", function (event) {
+        if (event.target === loginPrompt) closeLoginPrompt();
+      });
+    }
+
+    if (mobileReviewToggle && mobileReviewPanel && mobileReviewChevron) {
+      mobileReviewToggle.addEventListener("click", function () {
+        mobileReviewPanel.classList.toggle("hidden");
+        mobileReviewChevron.classList.toggle("rotate-180");
+      });
+    }
+
+    document.querySelectorAll("[data-review-edit-toggle]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var target = button.getAttribute("data-review-edit-toggle");
+        var form = document.getElementById("review-edit-" + target);
+        if (form) form.classList.toggle("hidden");
+      });
+    });
+
+    function paintEditStars(target, value) {
+      document.querySelectorAll('.review-edit-star[data-target="' + target + '"]').forEach(function (button, index) {
+        var active = index < value;
+        button.classList.toggle("text-[#C5A24B]", active);
+        button.classList.toggle("text-[#D8CFC1]", !active);
+      });
+    }
+
+    document.querySelectorAll(".review-edit-star").forEach(function (button) {
+      var target = button.getAttribute("data-target");
+      var value = parseInt(button.getAttribute("data-value"), 10) || 0;
+      button.addEventListener("click", function () {
+        var input = document.getElementById("reviewEditRatingInput-" + target);
+        if (!input) return;
+        input.value = value;
+        paintEditStars(target, value);
+      });
+    });
+
+    document.querySelectorAll('input[id^="reviewEditRatingInput-"]').forEach(function (input) {
+      var target = input.id.replace("reviewEditRatingInput-", "");
+      var value = parseInt(input.value, 10) || 0;
+      paintEditStars(target, value);
+    });
+
+    setupReviewForm("reviewForm", "reviewRatingInput", ".review-star-button", "reviewTextInput");
+    setupReviewForm("reviewFormMobile", "reviewRatingInputMobile", ".review-star-button-mobile", "reviewTextInputMobile");
+  })();
+
+  (function () {
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    document.querySelectorAll("[data-map-track-url]").forEach(function (link) {
+      link.addEventListener("click", function () {
+        const trackUrl = link.getAttribute("data-map-track-url");
+        if (!trackUrl) return;
+
+        const body = new URLSearchParams();
+        fetch(trackUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-CSRFToken": getCsrfToken()
+          },
+          body: body.toString(),
+          keepalive: true
+        }).catch(function () {
+          // Keep the map action smooth even if tracking fails.
+        });
+      });
+    });
+  })();
+
+  (function () {
+    const tabs = Array.from(document.querySelectorAll(".public-tab"));
+    const panels = {
+      services: document.getElementById("public-tab-services"),
+      gallery: document.getElementById("public-tab-gallery"),
+      about: document.getElementById("public-tab-about")
+    };
+
+    function activateTab(target) {
+      if (!panels[target]) target = "services";
+
+      tabs.forEach((item) => {
+        item.classList.remove("border-[#C5A24B]", "text-[#1F1F1F]");
+        item.classList.add("border-transparent", "text-[#1F1F1F]/78");
+      });
+
+      Object.values(panels).forEach((panel) => {
+        panel.classList.add("hidden");
+        panel.classList.remove("block");
+      });
+
+      const activeTab = tabs.find((item) => item.dataset.target === target);
+      if (activeTab) {
+        activeTab.classList.add("border-[#C5A24B]", "text-[#1F1F1F]");
+        activeTab.classList.remove("border-transparent", "text-[#1F1F1F]/78");
+      }
+
+      panels[target].classList.remove("hidden");
+      panels[target].classList.add("block");
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", function () {
+        const target = tab.dataset.target;
+        activateTab(target);
+        window.location.hash = target;
+      });
+    });
+
+    const initialHash = (window.location.hash || "").replace("#", "");
+    activateTab(initialHash || "services");
+  })();
+
+  (function () {
+    const serviceButtons = Array.from(document.querySelectorAll(".service-toggle"));
+    const inquiryCart = document.getElementById("inquiryCart");
+    const selectedCount = document.getElementById("selectedCount");
+    const selectedServicesList = document.getElementById("selectedServicesList");
+    const confirmInquiryButton = document.getElementById("confirmInquiryButton");
+    const inquirySummaryToggle = document.getElementById("inquirySummaryToggle");
+    const inquirySummaryPanel = document.getElementById("inquirySummaryPanel");
+    const inquiryChevron = document.getElementById("inquiryChevron");
+
+    if (serviceButtons.length && inquiryCart) {
+      const whatsappNumber = "{{ public_whatsapp_number }}";
+      const template = JSON.parse(document.getElementById("whatsapp-template-data").textContent);
+      const salonName = JSON.parse(document.getElementById("whatsapp-salon-name").textContent);
+      const selected = new Map();
+
+      function getCsrfToken() {
+        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+
+      function registerInterest(button, serviceId) {
+        const interestUrl = button.dataset.interestUrl;
+        if (!interestUrl) return;
+
+        const body = new URLSearchParams();
+        body.append("service_id", serviceId);
+
+        fetch(interestUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            "X-CSRFToken": getCsrfToken()
+          },
+          body: body.toString()
+        }).catch(function () {
+          // Silent fail so the inquiry flow still feels smooth.
+        });
+      }
+
+      function buildMessage() {
+        const services = Array.from(selected.values()).map((item) => "- " + item.name + " (Rs. " + item.price + ")").join("\n");
+        let message = template.replaceAll("{salon_name}", salonName);
+
+        if (message.includes("{services}")) {
+          message = message.replaceAll("{services}", services);
+        } else {
+          message += "\n\n" + services;
+        }
+
+        return message.trim();
+      }
+
+      function setButtonState(button, active) {
+        if (active) {
+          button.classList.remove("border-[#B89247]", "bg-[#D2AE63]", "text-white");
+          button.classList.add("border-[#D7C09A]", "bg-[#F5ECDB]", "text-[#8B6732]");
+          button.innerHTML = '<span class="inline-flex items-center gap-2"><i class="fa-solid fa-check"></i> Added</span>';
+        } else {
+          button.classList.remove("border-[#D7C09A]", "bg-[#F5ECDB]", "text-[#8B6732]");
+          button.classList.add("border-[#B89247]", "bg-[#D2AE63]", "text-white");
+          button.textContent = "Check Availability";
+        }
+      }
+
+      function renderCart() {
+        const count = selected.size;
+        selectedCount.textContent = count;
+
+        if (count === 0) {
+          inquiryCart.classList.add("pointer-events-none", "opacity-0");
+          inquiryCart.classList.remove("opacity-100");
+          inquirySummaryPanel.classList.add("hidden");
+          selectedServicesList.innerHTML = "";
+          return;
+        }
+
+        inquiryCart.classList.remove("pointer-events-none", "opacity-0");
+        inquiryCart.classList.add("opacity-100");
+
+        selectedServicesList.innerHTML = Array.from(selected.values()).map((item) => (
+          '<div class="flex items-center justify-between gap-3 rounded-[1rem] bg-[#FFF8EE] px-3 py-2">' +
+            '<div>' +
+              '<p class="font-medium text-[#1E1E1E]">' + item.name + '</p>' +
+              '<p class="text-xs text-[#6A6A6A]">Rs. ' + item.price + '</p>' +
+            '</div>' +
+            '<button type="button" class="remove-selected text-xs font-semibold text-[#A47A38]" data-remove-id="' + item.id + '">Remove</button>' +
+          '</div>'
+        )).join("");
+
+        confirmInquiryButton.href = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(buildMessage());
+      }
+
+      serviceButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          const id = button.dataset.serviceId;
+          const payload = {
+            id: id,
+            name: button.dataset.serviceName,
+            price: button.dataset.servicePrice
+          };
+
+          if (selected.has(id)) {
+            selected.delete(id);
+            document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, false));
+          } else {
+            selected.set(id, payload);
+            document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, true));
+            registerInterest(button, id);
+          }
+
+          renderCart();
+        });
+      });
+
+      document.addEventListener("click", function (event) {
+        const removeButton = event.target.closest("[data-remove-id]");
+        if (!removeButton) return;
+
+        const id = removeButton.getAttribute("data-remove-id");
+        selected.delete(id);
+        document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, false));
+        renderCart();
+      });
+
+      inquirySummaryToggle.addEventListener("click", function () {
+        inquirySummaryPanel.classList.toggle("hidden");
+        inquiryChevron.classList.toggle("rotate-180");
+      });
+    }
+  })();
+
+  (function () {
+    const galleryPosts = [
+      {% for post in gallery_posts %}
+        {
+          title: "{{ post.title|default:display_name|escapejs }}",
+          description: "{{ post.description|default:''|escapejs }}",
+          date: "{{ post.created_at|date:'M d, Y'|escapejs }}",
+          media: [
+            {% for media in post.media.all %}
+              {
+                type: "{{ media.media_type }}",
+                url: "{{ media.file.url|escapejs }}"
+              }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const triggers = Array.from(document.querySelectorAll("[data-post-trigger]"));
+    const modal = document.getElementById("galleryModal");
+    const modalScroller = document.getElementById("galleryModalScroller");
+    const desktopMedia = document.getElementById("galleryDesktopMedia");
+    const desktopOverlay = document.getElementById("galleryDesktopOverlay");
+    const desktopTitle = document.getElementById("galleryDesktopTitle");
+    const desktopDescription = document.getElementById("galleryDesktopDescription");
+    const desktopDate = document.getElementById("galleryDesktopDate");
+    const mobileFeed = document.getElementById("galleryMobileFeed");
+    const dots = document.getElementById("galleryDots");
+    const mediaPrev = document.getElementById("galleryMediaPrev");
+    const mediaNext = document.getElementById("galleryMediaNext");
+    const closeDesktop = document.getElementById("galleryModalCloseDesktop");
+    const closeMobile = document.getElementById("galleryModalCloseMobile");
+    const backButton = document.getElementById("galleryBackButton");
+
+    if (!galleryPosts.length || !modal || !modalScroller || !desktopMedia || !mobileFeed || !dots || !mediaPrev || !mediaNext || !closeDesktop || !closeMobile || !backButton) return;
+
+    let activePostIndex = 0;
+    let activeMediaIndex = 0;
+
+    function renderDesktopMedia() {
+      const post = galleryPosts[activePostIndex];
+      const item = post.media[activeMediaIndex];
+      if (!item) return;
+
+      desktopTitle.textContent = post.title;
+      desktopDescription.textContent = post.description || "-";
+      desktopDate.textContent = post.date;
+
+      if (post.media.length > 1) {
+        desktopOverlay.classList.remove("hidden");
+        desktopOverlay.textContent = (activeMediaIndex + 1) + "/" + post.media.length;
+      } else {
+        desktopOverlay.classList.add("hidden");
+      }
+
+        if (item.type === "video") {
+          desktopMedia.innerHTML =
+            '<div class="relative video-player">' +
+              '<video class="h-[420px] w-full object-contain bg-gray-50" preload="metadata" playsinline>' +
+                '<source src="' + item.url + '" type="video/mp4">' +
+              '</video>' +
+              '<div class="absolute inset-x-0 bottom-0 px-3 pb-1 video-controls hidden">' +
+                '<input type="range" min="0" max="100" value="0" class="video-range h-1 w-full accent-blue-500 opacity-90">' +
+              '</div>' +
+              '<button type="button" class="video-mute absolute top-3 right-3 hidden rounded-full bg-black/30 px-2 py-1 text-xs text-white">' +
+                '<i class="fa-solid fa-volume-high"></i>' +
+              '</button>' +
+            '</div>';
+        } else {
+          desktopMedia.innerHTML = '<img src="' + item.url + '" alt="' + post.title + '" class="h-[420px] w-full object-contain bg-gray-50">';
+        }
+
+      dots.innerHTML = post.media.map((_, index) => (
+        '<button type="button" class="' +
+          (index === activeMediaIndex ? 'h-1.5 w-6 rounded-full bg-gray-900' : 'h-1.5 w-1.5 rounded-full bg-gray-300') +
+          '" data-desktop-dot="' + index + '" aria-label="Go to media ' + (index + 1) + '"></button>'
+      )).join("");
+
+      mediaPrev.classList.toggle("hidden", post.media.length <= 1);
+      mediaPrev.classList.toggle("inline-flex", post.media.length > 1);
+      mediaNext.classList.toggle("hidden", post.media.length <= 1);
+      mediaNext.classList.toggle("inline-flex", post.media.length > 1);
+    }
+
+    function renderMobileFeed(selectedIndex) {
+      mobileFeed.innerHTML = galleryPosts.map((post, postIndex) => {
+        const mediaMarkup = post.media.map((media, mediaIndex) => {
+          const hiddenClass = mediaIndex === 0 ? "" : " hidden";
+          if (media.type === "video") {
+            return (
+              '<div class="public-mobile-slide' + hiddenClass + '" data-mobile-post="' + postIndex + '">' +
+                '<div class="relative video-player">' +
+                  '<video class="w-full h-72 object-contain bg-gray-50" preload="metadata">' +
+                    '<source src="' + media.url + '" type="video/mp4">' +
+                  '</video>' +
+                  '<div class="absolute inset-x-0 bottom-0 px-2 pb-1 video-controls hidden">' +
+                    '<input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">' +
+                  '</div>' +
+                  '<button type="button" class="video-mute absolute top-2 right-2 hidden bg-black/30 text-white text-[10px] px-2 py-1 rounded-full">' +
+                    '<i class="fa-solid fa-volume-high"></i>' +
+                  '</button>' +
+                '</div>' +
+              '</div>'
+            );
+          }
+          return '<div class="public-mobile-slide' + hiddenClass + '" data-mobile-post="' + postIndex + '"><img src="' + media.url + '" alt="' + post.title + '" class="w-full h-72 object-contain bg-gray-50"></div>';
+        }).join("");
+
+        const dotsMarkup = post.media.length > 1
+          ? '<div class="flex items-center justify-center gap-1 mt-2" data-mobile-dots="' + postIndex + '">' + post.media.map((_, mediaIndex) => (
+              '<button type="button" class="' + (mediaIndex === 0 ? 'w-1.5 h-1.5 rounded-full bg-gray-900' : 'w-1.5 h-1.5 rounded-full bg-gray-300') + '" data-mobile-dot="' + postIndex + '" data-index="' + mediaIndex + '"></button>'
+            )).join("") + '</div>'
+          : "";
+
+        return (
+          '<div class="py-4" id="public-post-' + postIndex + '">' +
+            '<div class="flex items-center gap-2 px-4">' +
+              '<div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">' +
+                '{% if saloon.banner_image %}<img src="{{ saloon.banner_image.url }}" alt="{{ display_name|escapejs }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-[#EFE4D5]"></div>{% endif %}' +
+              '</div>' +
+              '<div>' +
+                '<p class="text-xs font-semibold text-gray-900">{{ display_name|escapejs }}</p>' +
+                '<p class="text-[11px] text-gray-500">' + post.date + '</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="mt-3 overflow-hidden border-y border-gray-100 relative">' +
+              (post.media.length > 1 ? '<div class="absolute top-3 right-3 z-10 bg-black/30 text-white text-[11px] px-2 py-1 rounded-full" data-mobile-overlay="' + postIndex + '">1/' + post.media.length + '</div>' : '') +
+              '<div class="public-mobile-carousel" data-mobile-carousel="' + postIndex + '">' + mediaMarkup + '</div>' +
+            '</div>' +
+            dotsMarkup +
+            '<p class="px-4 pt-3 text-sm font-semibold text-gray-900">' + post.title + '</p>' +
+            '<p class="px-4 pt-2 text-sm text-gray-700 whitespace-pre-line">' + (post.description || '-') + '</p>' +
+          '</div>'
+        );
+      }).join("");
+
+      initializeMobileGallery();
+    }
+
+    function initializeVideoPlayers(root) {
+      root.querySelectorAll(".video-player").forEach(function (wrap) {
+        var video = wrap.querySelector("video");
+        var muteBtn = wrap.querySelector(".video-mute");
+        var range = wrap.querySelector(".video-range");
+        var controls = wrap.querySelector(".video-controls");
+        if (!video || !muteBtn || !range) return;
+
+        video.controls = false;
+
+        function showControls() {
+          if (controls) controls.classList.remove("hidden");
+          muteBtn.classList.remove("hidden");
+        }
+
+        function hideControls() {
+          if (controls) controls.classList.add("hidden");
+          muteBtn.classList.add("hidden");
+        }
+
+        function updateTime() {
+          if (video.duration) {
+            range.value = Math.floor((video.currentTime / video.duration) * 100);
+          }
+        }
+
+        muteBtn.addEventListener("click", function () {
+          video.muted = !video.muted;
+          muteBtn.innerHTML = video.muted
+            ? '<i class="fa-solid fa-volume-xmark"></i>'
+            : '<i class="fa-solid fa-volume-high"></i>';
+        });
+
+        range.addEventListener("input", function () {
+          if (!video.duration) return;
+          var pct = parseInt(range.value, 10) / 100;
+          video.currentTime = pct * video.duration;
+        });
+
+        video.addEventListener("click", function () {
+          if (video.paused) {
+            video.play();
+          } else {
+            video.pause();
+          }
+        });
+
+        wrap.addEventListener("mouseenter", function () {
+          showControls();
+        });
+        wrap.addEventListener("mouseleave", function () {
+          if (!video.paused) {
+            hideControls();
+          }
+        });
+
+        video.addEventListener("pause", function () {
+          showControls();
+        });
+        video.addEventListener("play", function () {
+          hideControls();
+        });
+
+        video.addEventListener("timeupdate", updateTime);
+        video.addEventListener("loadedmetadata", function () {
+          updateTime();
+          hideControls();
+        });
+      });
+    }
+
+    function initializeMobileGallery() {
+      const state = {};
+
+      function update(postIndex) {
+        const slides = mobileFeed.querySelectorAll('.public-mobile-slide[data-mobile-post="' + postIndex + '"]');
+        slides.forEach((slide, index) => {
+          slide.classList.toggle("hidden", index !== state[postIndex]);
+        });
+
+        const overlay = mobileFeed.querySelector('[data-mobile-overlay="' + postIndex + '"]');
+        if (overlay) overlay.textContent = (state[postIndex] + 1) + "/" + slides.length;
+
+        mobileFeed.querySelectorAll('[data-mobile-dot="' + postIndex + '"]').forEach((dot, index) => {
+          dot.classList.toggle("bg-gray-900", index === state[postIndex]);
+          dot.classList.toggle("bg-gray-300", index !== state[postIndex]);
+        });
+      }
+
+      mobileFeed.querySelectorAll(".public-mobile-carousel").forEach((carousel) => {
+        const postIndex = carousel.getAttribute("data-mobile-carousel");
+        state[postIndex] = 0;
+        let startX = 0;
+        let isTouch = false;
+
+        carousel.addEventListener("touchstart", function (e) {
+          if (!e.touches || !e.touches.length) return;
+          isTouch = true;
+          startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        carousel.addEventListener("touchend", function (e) {
+          if (!isTouch) return;
+          isTouch = false;
+          if (!e.changedTouches || !e.changedTouches.length) return;
+          const delta = e.changedTouches[0].clientX - startX;
+          const slides = mobileFeed.querySelectorAll('.public-mobile-slide[data-mobile-post="' + postIndex + '"]');
+          if (Math.abs(delta) < 40 || !slides.length) return;
+          if (delta < 0) {
+            state[postIndex] = (state[postIndex] + 1) % slides.length;
+          } else {
+            state[postIndex] = (state[postIndex] - 1 + slides.length) % slides.length;
+          }
+          update(postIndex);
+        }, { passive: true });
+      });
+
+      mobileFeed.querySelectorAll("[data-mobile-dot]").forEach((dot) => {
+        dot.addEventListener("click", function () {
+          const postIndex = dot.getAttribute("data-mobile-dot");
+          state[postIndex] = parseInt(dot.getAttribute("data-index"), 10) || 0;
+          update(postIndex);
+        });
+      });
+
+      initializeVideoPlayers(mobileFeed);
+    }
+
+    function scrollMobileToPost(postIndex) {
+      const target = document.getElementById("public-post-" + postIndex);
+      if (!target) return;
+      const headerOffset = 56;
+      modalScroller.scrollTop = Math.max(0, target.offsetTop - headerOffset);
+    }
+
+    function openModal(postIndex) {
+      activePostIndex = postIndex;
+      activeMediaIndex = 0;
+      renderDesktopMedia();
+      renderMobileFeed(postIndex);
+      modal.classList.remove("hidden", "pointer-events-none");
+      requestAnimationFrame(() => modal.classList.add("opacity-100"));
+      document.body.classList.add("overflow-hidden");
+      modalScroller.scrollTop = 0;
+      requestAnimationFrame(() => {
+        if (window.innerWidth < 1024) {
+          scrollMobileToPost(postIndex);
+        }
+      });
+    }
+
+    function closeModal() {
+      modal.classList.remove("opacity-100");
+      setTimeout(() => {
+        modal.classList.add("hidden", "pointer-events-none");
+      }, 200);
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    triggers.forEach((button, index) => {
+      button.addEventListener("click", function () {
+        openModal(index);
+      });
+    });
+
+    mediaPrev.addEventListener("click", function () {
+      const post = galleryPosts[activePostIndex];
+      activeMediaIndex = (activeMediaIndex - 1 + post.media.length) % post.media.length;
+      renderDesktopMedia();
+    });
+
+    mediaNext.addEventListener("click", function () {
+      const post = galleryPosts[activePostIndex];
+      activeMediaIndex = (activeMediaIndex + 1) % post.media.length;
+      renderDesktopMedia();
+    });
+
+    dots.addEventListener("click", function (event) {
+      const dot = event.target.closest("[data-desktop-dot]");
+      if (!dot) return;
+      activeMediaIndex = parseInt(dot.getAttribute("data-desktop-dot"), 10) || 0;
+      renderDesktopMedia();
+    });
+
+    closeDesktop.addEventListener("click", closeModal);
+    closeMobile.addEventListener("click", closeModal);
+    backButton.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) closeModal();
+    });
+  })();
+</script>
+{% endblock %}

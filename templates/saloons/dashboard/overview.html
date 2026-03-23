@@ -1,0 +1,199 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="grid grid-cols-2 gap-4 mb-8 min-w-0 lg:grid-cols-4">
+  <div class="bg-white rounded-2xl p-4 sm:p-5 min-w-0">
+    <i class="fa-regular fa-eye mb-3 p-2 rounded-lg bg-blue-50 text-blue-500"></i>
+    <p class="text-xl sm:text-2xl font-semibold">{{ profile_view_total }}</p>
+    <p class="text-sm text-gray-500">Profile Views</p>
+  </div>
+
+  <div class="bg-white rounded-2xl p-4 sm:p-5 min-w-0">
+    <i class="fa-solid fa-location-dot mb-3 p-2 rounded-lg bg-amber-50 text-amber-500"></i>
+    <p class="text-xl sm:text-2xl font-semibold">{{ map_click_total }}</p>
+    <p class="text-sm text-gray-500">Map Views</p>
+  </div>
+
+  <div class="bg-white rounded-2xl p-4 sm:p-5 min-w-0">
+    <i class="fa-solid fa-scissors mb-3 p-2 rounded-lg bg-red-50 text-red-500"></i>
+    <p class="text-xl sm:text-2xl font-semibold truncate">{{ top_service_label }}</p>
+    <p class="text-sm text-gray-500">{{ top_service_support }}</p>
+  </div>
+
+  <div class="bg-white rounded-2xl p-4 sm:p-5 min-w-0">
+    <i class="fa-regular fa-circle-check mb-3 p-2 rounded-lg bg-green-50 text-green-600"></i>
+    <p class="text-xl sm:text-2xl font-semibold">{{ saloon.get_approval_status_display }}</p>
+    <p class="text-sm text-gray-500">Salon Status</p>
+  </div>
+</div>
+
+<div class="mb-8 rounded-[26px] border border-[#e7dbc7] bg-gradient-to-r from-[#fff8ee] via-white to-[#f6ebd6] p-5 sm:p-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <p class="text-xs uppercase tracking-[0.18em] text-[#98723b]">Subscription</p>
+      <h2 class="mt-2 text-xl font-semibold text-[#2d251d]">
+        {% if subscription.status == "active" %}
+          Autopay is active at INR {{ subscription_plan.amount }}/month
+        {% elif subscription.status == "trialing" %}
+          Your first month is free for {{ subscription.trial_days_left }} more day{{ subscription.trial_days_left|pluralize }}
+        {% else %}
+          Connect autopay before your listing renewal date
+        {% endif %}
+      </h2>
+      <p class="mt-2 text-sm text-[#6d5b43]">
+        Launch offer anchored at INR {{ subscription_plan.strike_amount }}, billed at INR {{ subscription_plan.amount }}/month after the free trial.
+      </p>
+    </div>
+    <a href="{% url 'saloon_dashboard_subscription' user.username %}" class="inline-flex items-center justify-center rounded-2xl bg-[#c79a43] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(199,154,67,0.24)] transition hover:bg-[#bb903d]">
+      Manage billing
+    </a>
+  </div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6 mb-10 min-w-0">
+  <div class="bg-white rounded-2xl p-4 sm:p-6 min-w-0">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 class="font-medium">Customer interests</h2>
+      <span class="rounded-full bg-[#F7F2E8] px-3 py-1 text-xs font-medium text-[#9A7131]">{{ interest_total }} total</span>
+    </div>
+
+    <div class="relative w-full min-w-0" style="height: 300px;">
+      <canvas id="interestChart" style="width:100%; max-width:100%; height:100%;"></canvas>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl p-4 sm:p-6 min-w-0">
+    <h2 class="font-medium mb-4">Monthly visibility</h2>
+
+    <div class="relative w-full min-w-0" style="height: 300px;">
+      <canvas id="visibilityChart" style="width:100%; max-width:100%; height:100%;"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="min-w-0">
+  <h2 class="text-lg font-medium mb-4">Your public profile</h2>
+
+  <div class="bg-white rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row gap-6 items-start md:items-center min-w-0">
+    <img
+      src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=300{% endif %}"
+      class="w-full md:w-40 h-24 object-cover rounded-xl"
+      alt="Salon banner"
+    />
+
+    <div class="min-w-0">
+      <h3 class="font-semibold truncate">{{ saloon.name }}</h3>
+      <p class="text-sm text-gray-500 mb-3">{{ saloon.profile.category }} saloon</p>
+      <div class="mb-3 flex flex-wrap gap-2 text-xs text-gray-500">
+        <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ gallery_post_total }} gallery posts</span>
+        <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ review_total }} reviews</span>
+      </div>
+      <a href="{% url 'public_saloon' slug=saloon.slug %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium">
+        <i class="fa-regular fa-eye"></i> View public salon
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ interest_chart.labels|json_script:"dashboard-interest-labels" }}
+{{ interest_chart.values|json_script:"dashboard-interest-values" }}
+{{ activity_chart.labels|json_script:"dashboard-activity-labels" }}
+{{ activity_chart.views|json_script:"dashboard-activity-views" }}
+{{ activity_chart.maps|json_script:"dashboard-activity-maps" }}
+<script>
+window.addEventListener("load", () => {
+  const interestLabels = JSON.parse(document.getElementById("dashboard-interest-labels").textContent);
+  const interestValues = JSON.parse(document.getElementById("dashboard-interest-values").textContent);
+  const activityLabels = JSON.parse(document.getElementById("dashboard-activity-labels").textContent);
+  const activityViews = JSON.parse(document.getElementById("dashboard-activity-views").textContent);
+  const activityMaps = JSON.parse(document.getElementById("dashboard-activity-maps").textContent);
+
+  document.querySelectorAll("canvas").forEach(c => {
+    const parent = c.parentElement;
+    c.width = parent.clientWidth;
+    c.style.width = parent.clientWidth + "px";
+  });
+
+  new Chart(document.getElementById("interestChart"), {
+    type: "doughnut",
+    data: {
+      labels: interestLabels,
+      datasets: [{
+        data: interestValues,
+        backgroundColor: ["#4F6BED", "#22C55E", "#FACC15", "#A5B4FC", "#F97316", "#14B8A6"],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      cutout: "70%",
+      layout: {
+        padding: { bottom: 16 }
+      },
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            boxWidth: 16,
+            padding: 12
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const total = interestValues.reduce((sum, value) => sum + value, 0);
+              const value = context.raw || 0;
+              const share = total ? Math.round((value / total) * 100) : 0;
+              const interestWord = value === 1 ? "interest" : "interests";
+              return context.label + ": " + value + " " + interestWord + " (" + share + "%)";
+            }
+          }
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("visibilityChart"), {
+    data: {
+      labels: activityLabels,
+      datasets: [
+        {
+          type: "bar",
+          label: "Views",
+          data: activityViews,
+          backgroundColor: "#CBD5E1",
+          borderRadius: 6
+        },
+        {
+          type: "line",
+          label: "Map",
+          data: activityMaps,
+          borderColor: "#22C55E",
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            boxWidth: 16,
+            padding: 12
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { display: false }, beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

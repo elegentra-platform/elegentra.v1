@@ -1,0 +1,97 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-6">
+
+  <h1 class="text-xl font-semibold mb-4">
+    {% if service %}Edit Service{% else %}Add Service{% endif %}
+  </h1>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+
+    <!-- Service Name -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Service name</label>
+      <input
+        type="text"
+        name="name"
+        value="{{ service.name|default:'' }}"
+        class="w-full border rounded-lg px-3 py-2"
+        required
+      >
+    </div>
+
+    <!-- Price -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Price</label>
+      <input
+        type="number"
+        name="price"
+        value="{{ service.price|default:'' }}"
+        class="w-full border rounded-lg px-3 py-2"
+        required
+      >
+    </div>
+
+    <!-- Category Select -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Category</label>
+      <select
+        name="category"
+        class="w-full border rounded-lg px-3 py-2"
+      >
+        <option value="">Select category</option>
+        {% for cat in categories %}
+          <option
+            value="{{ cat.id }}"
+            {% if service and service.category_id == cat.id %}selected{% endif %}
+          >
+            {{ cat.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- OR New Category -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Or add new category</label>
+      <input
+        type="text"
+        name="new_category"
+        placeholder="New category"
+        class="w-full border rounded-lg px-3 py-2"
+      >
+    </div>
+
+    <!-- Image -->
+    <div>
+      <label class="block text-sm font-medium mb-1">Image</label>
+      <input type="file" name="image">
+    </div>
+
+    <!-- Visibility -->
+    <div class="flex items-center gap-2">
+      <input
+        type="checkbox"
+        name="is_visible"
+        id="is_visible"
+        {% if service and service.is_visible %}checked{% endif %}
+      >
+      <label for="is_visible" class="text-sm">
+        Visible to customers
+      </label>
+    </div>
+
+    <!-- Submit -->
+    <button
+      type="submit"
+      class="bg-blue-500 text-white px-5 h-10 rounded-lg font-semibold"
+    >
+      Save
+    </button>
+
+  </form>
+
+</div>
+{% endblock %}

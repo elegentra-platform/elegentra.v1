@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery - {{ display_name }}{% endblock %}
+{% block page_header %}{% endblock %}
+{% block page_nav %}{% endblock %}
+{% block main_class %}min-h-screen overflow-x-hidden{% endblock %}
+
+{% block content %}
+<div class="-mx-4 min-h-screen bg-white sm:-mx-6">
+  <div class="fixed inset-x-0 top-0 z-40 border-b border-gray-200 bg-white px-3 py-3 text-gray-900 shadow-sm sm:sticky sm:px-6">
+    <div class="mx-auto flex w-full max-w-6xl items-center justify-between">
+      <a href="{{ back_url }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100 sm:h-auto sm:w-auto sm:gap-2 sm:rounded-none sm:hover:bg-transparent">
+        <i class="fa-solid fa-arrow-left text-sm"></i>
+        <span class="hidden text-sm font-semibold sm:inline">Back</span>
+      </a>
+      <p class="text-base font-semibold sm:text-sm">Gallery</p>
+      <div class="w-12"></div>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-6xl px-0 pt-16 sm:px-4 sm:pt-0">
+    <div class="hidden lg:block">
+      <div class="relative py-6 border-b border-gray-200">
+        {% if prev_post %}
+          <a
+            href="{% url 'public_gallery_detail' slug=saloon.slug post_id=prev_post.id %}"
+            class="absolute -left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
+          >
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+          </a>
+        {% endif %}
+        {% if next_post %}
+          <a
+            href="{% url 'public_gallery_detail' slug=saloon.slug post_id=next_post.id %}"
+            class="absolute -right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
+          >
+            <i class="fa-solid fa-chevron-right text-sm"></i>
+          </a>
+        {% endif %}
+
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <div class="overflow-hidden border border-gray-100 relative">
+              {% if post.media.count > 1 %}
+                <div class="absolute top-3 right-3 z-10 bg-black/30 text-white text-xs px-2 py-1 rounded-full" data-overlay="{{ post.id }}">
+                  1/{{ post.media.count }}
+                </div>
+              {% endif %}
+              <div class="media-carousel" data-gallery="{{ post.id }}">
+                {% for media in post.media.all %}
+                  <div class="media-slide {% if not forloop.first %}hidden{% endif %}" data-gallery="{{ post.id }}">
+                    {% if media.media_type == "video" %}
+                      <div class="relative video-player">
+                        <video class="w-full h-[420px] object-contain bg-gray-50" preload="metadata" playsinline>
+                          <source src="{{ media.file.url }}" type="video/mp4">
+                        </video>
+                        <div class="absolute inset-x-0 bottom-0 px-3 pb-1 video-controls hidden">
+                          <input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">
+                        </div>
+                        <button type="button" class="video-mute absolute top-3 right-3 bg-black/30 text-white text-xs px-2 py-1 rounded-full">
+                          <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                      </div>
+                    {% else %}
+                      <img src="{{ media.file.url }}" class="w-full h-[420px] object-contain bg-gray-50" alt="Gallery media">
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% if post.media.count > 1 %}
+              <div class="flex items-center justify-center gap-1 mt-2" data-dots="{{ post.id }}">
+                {% for media in post.media.all %}
+                  <button
+                    type="button"
+                    class="w-1.5 h-1.5 rounded-full {% if forloop.first %}bg-gray-900{% else %}bg-gray-300{% endif %}"
+                    data-dot="{{ post.id }}"
+                    data-index="{{ forloop.counter0 }}"
+                    aria-label="Go to item {{ forloop.counter }}"
+                  ></button>
+                {% endfor %}
+              </div>
+            {% endif %}
+            {% if post.media.count > 1 %}
+              <div class="flex items-center justify-between mt-3">
+                <button type="button" class="text-sm font-semibold text-gray-700" data-action="prev" data-gallery="{{ post.id }}">Prev</button>
+                <button type="button" class="text-sm font-semibold text-gray-700" data-action="next" data-gallery="{{ post.id }}">Next</button>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="border border-gray-100 p-4">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+                {% if saloon.banner_image %}
+                  <img src="{{ saloon.banner_image.url }}" class="w-full h-full object-cover" alt="{{ display_name }}">
+                {% else %}
+                  <div class="w-full h-full bg-[#EFE4D5]"></div>
+                {% endif %}
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-900">{{ display_name }}</p>
+                <p class="text-xs text-gray-500">{{ post.created_at|date:"M d, Y" }}</p>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <p class="text-sm font-semibold text-gray-900">{{ post.title|default:"Untitled" }}</p>
+              <p class="mt-2 text-sm text-gray-700 whitespace-pre-line">{{ post.description|default:"-" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:hidden divide-y divide-gray-200 px-2">
+      {% for item in ordered_posts %}
+        <div class="scroll-mt-20 py-4" id="post-{{ item.id }}">
+          <div class="px-3">
+            <div class="flex min-w-0 items-center gap-2">
+              <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200">
+              {% if saloon.banner_image %}
+                <img src="{{ saloon.banner_image.url }}" class="w-full h-full object-cover" alt="{{ display_name }}">
+              {% else %}
+                <div class="w-full h-full bg-[#EFE4D5]"></div>
+              {% endif %}
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-xs font-semibold text-gray-900">{{ display_name }}</p>
+              <p class="text-[11px] text-gray-500">{{ item.created_at|date:"M d, Y" }}</p>
+            </div>
+          </div>
+          </div>
+
+          <div class="mt-3 overflow-hidden border-y border-gray-100 relative">
+            {% if item.media.count > 1 %}
+              <div class="absolute top-3 right-3 z-10 bg-black/30 text-white text-[11px] px-2 py-1 rounded-full" data-overlay="m{{ item.id }}">
+                1/{{ item.media.count }}
+              </div>
+            {% endif %}
+            <div class="media-carousel" data-gallery="m{{ item.id }}">
+              {% for media in item.media.all %}
+                <div class="media-slide {% if not forloop.first %}hidden{% endif %}" data-gallery="m{{ item.id }}">
+                  {% if media.media_type == "video" %}
+                    <div class="relative video-player">
+                      <video class="w-full h-[26rem] object-contain bg-gray-50" preload="metadata" playsinline>
+                        <source src="{{ media.file.url }}" type="video/mp4">
+                      </video>
+                      <div class="absolute inset-x-0 bottom-0 px-2 pb-1 video-controls hidden">
+                        <input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">
+                      </div>
+                      <button type="button" class="video-mute absolute top-2 right-2 bg-black/30 text-white text-[10px] px-2 py-1 rounded-full">
+                        <i class="fa-solid fa-volume-high"></i>
+                      </button>
+                    </div>
+                  {% else %}
+                    <img src="{{ media.file.url }}" class="w-full h-[26rem] object-contain bg-gray-50" alt="Gallery media">
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          {% if item.media.count > 1 %}
+            <div class="flex items-center justify-center gap-1 mt-2" data-dots="m{{ item.id }}">
+              {% for media in item.media.all %}
+                <button
+                  type="button"
+                  class="w-1.5 h-1.5 rounded-full {% if forloop.first %}bg-gray-900{% else %}bg-gray-300{% endif %}"
+                  data-dot="m{{ item.id }}"
+                  data-index="{{ forloop.counter0 }}"
+                  aria-label="Go to item {{ forloop.counter }}"
+                ></button>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="overflow-hidden px-4 pt-3">
+            <p class="break-words text-sm font-semibold text-gray-900">{{ item.title|default:"Untitled" }}</p>
+            <p class="mt-2 break-words text-sm text-gray-700 whitespace-pre-line">{{ item.description|default:"-" }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var carousels = {};
+
+    function initCarousel(id) {
+      if (carousels[id]) return;
+      var slides = document.querySelectorAll('.media-slide[data-gallery="' + id + '"]');
+      carousels[id] = { index: 0, total: slides.length };
+      updateCarousel(id);
+    }
+
+    function updateCarousel(id) {
+      var slides = document.querySelectorAll('.media-slide[data-gallery="' + id + '"]');
+      if (!slides.length) return;
+      var state = carousels[id];
+      slides.forEach(function (el, idx) {
+        el.classList.toggle("hidden", idx !== state.index);
+      });
+      var overlay = document.querySelector('[data-overlay="' + id + '"]');
+      if (overlay) overlay.textContent = (state.index + 1) + "/" + state.total;
+      var dots = document.querySelectorAll('[data-dots="' + id + '"] [data-dot]');
+      if (dots.length) {
+        dots.forEach(function (dot, idx) {
+          dot.classList.toggle("bg-gray-900", idx === state.index);
+          dot.classList.toggle("bg-gray-300", idx !== state.index);
+        });
+      }
+    }
+
+    function setIndex(id, idx) {
+      if (!carousels[id]) initCarousel(id);
+      var state = carousels[id];
+      if (!state || !state.total) return;
+      state.index = (idx + state.total) % state.total;
+      updateCarousel(id);
+    }
+
+    document.querySelectorAll(".media-carousel").forEach(function (carousel) {
+      var id = carousel.getAttribute("data-gallery");
+      initCarousel(id);
+    });
+
+    document.querySelectorAll("[data-action]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-gallery");
+        var action = btn.getAttribute("data-action");
+        if (!carousels[id]) initCarousel(id);
+        var state = carousels[id];
+        if (action === "next") {
+          state.index = (state.index + 1) % state.total;
+        } else {
+          state.index = (state.index - 1 + state.total) % state.total;
+        }
+        updateCarousel(id);
+      });
+    });
+
+    document.querySelectorAll("[data-dot]").forEach(function (dot) {
+      dot.addEventListener("click", function () {
+        var id = dot.getAttribute("data-dot");
+        var idx = parseInt(dot.getAttribute("data-index"), 10) || 0;
+        setIndex(id, idx);
+      });
+    });
+
+    document.querySelectorAll(".media-carousel").forEach(function (carousel) {
+      var id = carousel.getAttribute("data-gallery");
+      var startX = 0;
+      var isTouch = false;
+
+      carousel.addEventListener("touchstart", function (e) {
+        if (!e.touches || !e.touches.length) return;
+        isTouch = true;
+        startX = e.touches[0].clientX;
+      }, { passive: true });
+
+      carousel.addEventListener("touchend", function (e) {
+        if (!isTouch) return;
+        isTouch = false;
+        if (!e.changedTouches || !e.changedTouches.length) return;
+        var endX = e.changedTouches[0].clientX;
+        var delta = endX - startX;
+        if (Math.abs(delta) < 40) return;
+        if (delta < 0) {
+          setIndex(id, (carousels[id] ? carousels[id].index + 1 : 1));
+        } else {
+          setIndex(id, (carousels[id] ? carousels[id].index - 1 : 0));
+        }
+      }, { passive: true });
+    });
+
+    document.querySelectorAll(".video-player").forEach(function (wrap) {
+      var video = wrap.querySelector("video");
+      var muteBtn = wrap.querySelector(".video-mute");
+      var range = wrap.querySelector(".video-range");
+
+      if (!video) return;
+
+      function updateTime() {
+        if (video.duration) {
+          range.value = Math.floor((video.currentTime / video.duration) * 100);
+        }
+      }
+
+      muteBtn.addEventListener("click", function () {
+        video.muted = !video.muted;
+        muteBtn.innerHTML = video.muted
+          ? '<i class="fa-solid fa-volume-xmark"></i>'
+          : '<i class="fa-solid fa-volume-high"></i>';
+      });
+
+      range.addEventListener("input", function () {
+        if (!video.duration) return;
+        var pct = parseInt(range.value, 10) / 100;
+        video.currentTime = pct * video.duration;
+      });
+
+      video.addEventListener("click", function () {
+        if (video.paused) {
+          video.play();
+        } else {
+          video.pause();
+        }
+      });
+
+      wrap.addEventListener("mouseenter", function () {
+        var controls = wrap.querySelector(".video-controls");
+        if (controls) controls.classList.remove("hidden");
+      });
+      wrap.addEventListener("mouseleave", function () {
+        if (!video.paused) {
+          var controls = wrap.querySelector(".video-controls");
+          if (controls) controls.classList.add("hidden");
+        }
+      });
+
+      video.addEventListener("pause", function () {
+        var controls = wrap.querySelector(".video-controls");
+        if (controls) controls.classList.remove("hidden");
+      });
+      video.addEventListener("play", function () {
+        var controls = wrap.querySelector(".video-controls");
+        if (controls) controls.classList.add("hidden");
+      });
+
+      video.addEventListener("timeupdate", updateTime);
+      video.addEventListener("loadedmetadata", updateTime);
+    });
+  })();
+</script>
+{% if selected_post_id %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var target = document.getElementById("post-{{ selected_post_id }}");
+    if (target) {
+      var isMobile = window.matchMedia("(max-width: 1023px)").matches;
+      if (isMobile) {
+        target.scrollIntoView({ behavior: "instant", block: "start" });
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

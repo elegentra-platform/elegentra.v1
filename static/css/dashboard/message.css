@@ -1,0 +1,130 @@
+/* ===============================
+   DASHBOARD TOAST MESSAGES
+   =============================== */
+
+/* Toast container (top-right, floating) */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+}
+
+/* Toast card */
+.toast {
+  width: 320px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  animation: toast-slide-in 0.4s ease-out forwards;
+}
+
+/* Left accent bar */
+.toast::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 4px;
+}
+
+/* Variants */
+.toast.success::before {
+  background: #22c55e;
+}
+
+.toast.error::before {
+  background: #ef4444;
+}
+
+/* Icon */
+.toast-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.toast.error .toast-icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* Text */
+.toast-text {
+  flex: 1;
+}
+
+.toast-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.toast-desc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Animations */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+/* Hide animation */
+.toast.hide {
+  animation: toast-slide-out 0.4s ease-in forwards;
+}
+
+/* Mobile tweak */
+@media (max-width: 480px) {
+  .toast {
+    width: calc(100vw - 32px);
+  }
+
+  .toast-container {
+    right: 16px;
+    left: 16px;
+    align-items: center;
+  }
+}

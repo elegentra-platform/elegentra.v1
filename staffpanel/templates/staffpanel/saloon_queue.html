@@ -1,0 +1,58 @@
+{% extends "staffpanel/base.html" %}
+
+{% block title %}Vendor Approvals{% endblock %}
+
+{% block content %}
+<h2 class="text-xl font-semibold">Vendor Approval Queue</h2>
+
+<div class="mt-4 overflow-x-auto rounded-xl border border-[#eadfcf] bg-white shadow-sm">
+  <table class="min-w-full text-sm">
+    <thead class="bg-[#f9f4ec] text-left text-slate-600">
+      <tr>
+        <th class="px-4 py-3">Vendor</th>
+        <th class="px-4 py-3">Owner</th>
+        <th class="px-4 py-3">Location</th>
+        <th class="px-4 py-3">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for saloon in saloons %}
+        <tr class="border-t border-slate-100 align-top">
+          <td class="px-4 py-3">{{ saloon.name|default:"(No name)" }}</td>
+          <td class="px-4 py-3">
+            <div>{{ saloon.owner.email }}</div>
+            <div class="text-xs text-slate-500">{{ saloon.whatsapp_number }}</div>
+          </td>
+          <td class="px-4 py-3">
+            {% if saloon.profile %}
+              {{ saloon.profile.locality }}, {{ saloon.profile.city }}
+            {% else %}
+              <span class="text-slate-500">Profile incomplete</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-2">
+              <a href="{% url 'staffpanel:saloon_review' saloon.id %}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5">
+                Review
+              </a>
+              <form method="post" action="{% url 'staffpanel:saloon_approve' saloon.id %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-md bg-emerald-600 px-3 py-1.5 text-white">Approve</button>
+              </form>
+              <form method="post" action="{% url 'staffpanel:saloon_reject' saloon.id %}" class="flex flex-wrap items-center gap-2">
+                {% csrf_token %}
+                <input type="text" name="reason" required placeholder="Reason" class="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
+                <button type="submit" class="rounded-md bg-rose-600 px-3 py-1.5 text-white">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class="px-4 py-8 text-center text-slate-500">No pending vendor approvals.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

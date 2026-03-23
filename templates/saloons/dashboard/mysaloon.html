@@ -1,0 +1,280 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="w-full max-w-full overflow-x-hidden px-3 sm:px-4">
+
+  <!-- PAGE TITLE -->
+  <h2 class="text-xl sm:text-2xl font-semibold mb-4">
+    My Saloon
+  </h2>
+
+  <!-- MAIN CARD -->
+  <div class="bg-white rounded-2xl border border-gray-100 mb-6 overflow-hidden">
+
+    <!-- TOP SECTION -->
+    <div class="p-4 flex flex-col md:flex-row gap-6">
+
+      <!-- LEFT : BANNER -->
+      <div class="w-full md:w-[340px] shrink-0">
+        <img
+          src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800{% endif %}"
+          class="w-full h-44 object-cover rounded-xl"
+          alt="Salon Banner"
+        >
+      </div>
+
+      <!-- RIGHT : INFO -->
+      <div class="flex-1 min-w-0 flex flex-col justify-between">
+
+        <!-- TOP ROW -->
+        <div class="flex items-start justify-between gap-3">
+
+          <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl font-bold truncate">
+              {{ saloon.name }}
+            </h1>
+
+            <p class="text-sm text-gray-500 mt-1 truncate">
+              ⭐ 4.8 • {{ saloon.profile.city|default:"City" }}
+            </p>
+            <div class="flex items-center gap-3">
+            <i class="fa-brands fa-whatsapp text-green-500"></i>
+            <span class="truncate">
+              {{ saloon.whatsapp_number }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-phone text-blue-500"></i>
+            <span class="truncate">
+              {{ saloon.profile.contact_number|default:"Not added" }}
+            </span>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <i class="fa-solid fa-location-dot text-gray-400 mt-0.5"></i>
+            <span class="text-gray-600 break-words">
+              {{ saloon.profile.locality|default:"Address not added yet" }}
+            </span>
+          </div>
+
+          <a
+            href="{% url 'public_saloon' slug=saloon.slug %}"
+            target="_blank"
+            rel="noopener"
+            class="inline-block mt-2 text-blue-600 font-semibold text-sm"
+          >
+            View Public Profile →
+          </a>
+          </div>
+
+          <!-- EDIT BUTTON -->
+          <a
+            href="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}"
+            class="shrink-0 bg-blue-500 text-white px-4 h-9 rounded-lg text-sm font-semibold flex items-center gap-2"
+          >
+            <i class="fa-solid fa-pencil text-xs"></i>
+            Edit
+          </a>
+
+        </div>
+
+
+      </div>
+    </div>
+
+  <!-- INNER TABS -->
+  <div id="mysaloon-tabs" class="flex border-t border-gray-100 overflow-x-auto whitespace-nowrap">
+
+      <a
+        href="?tab=services#mysaloon-tabs"
+        class="px-4 py-3 text-sm font-medium
+        {% if active_inner_tab == 'services' %}
+          text-blue-600 border-b-2 border-blue-600
+        {% else %}
+          text-gray-500
+        {% endif %}">
+        Services
+      </a>
+
+      <a
+        href="?tab=gallery#mysaloon-tabs"
+        class="px-4 py-3 text-sm font-medium
+        {% if active_inner_tab == 'gallery' %}
+          text-blue-600 border-b-2 border-blue-600
+        {% else %}
+          text-gray-500
+        {% endif %}">
+        Gallery
+      </a>
+
+      <a
+        href="?tab=about#mysaloon-tabs"
+        class="px-4 py-3 text-sm font-medium
+        {% if active_inner_tab == 'about' %}
+          text-blue-600 border-b-2 border-blue-600
+        {% else %}
+          text-gray-500
+        {% endif %}">
+        About & Reviews
+      </a>
+
+    </div>
+  </div>
+
+  <!-- TAB CONTENT (UNCHANGED) -->
+
+  {% if active_inner_tab == "services" %}
+  <div id="mysaloon-services" class="bg-white rounded-2xl border border-gray-100 p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">Services</h3>
+
+      {% if saloon.services.exists %}
+        <a
+          href="{% url 'saloon_dashboard_services' username=saloon.owner.username %}"
+          class="text-sm font-semibold text-blue-600"
+        >
+          Edit Services
+        </a>
+      {% else %}
+        <a
+          href="{% url 'saloon_dashboard_services' username=saloon.owner.username %}"
+          class="text-sm font-semibold text-blue-600"
+        >
+          Add Services
+        </a>
+      {% endif %}
+    </div>
+
+    {% if saloon.services.exists %}
+      <div class="space-y-4">
+        {% for service in saloon.services.all %}
+          <div class="flex items-center gap-4 min-w-0">
+            <img
+              src="{{ service.image.url }}"
+              class="w-24 h-16 object-cover rounded-lg shrink-0"
+            >
+            <div class="min-w-0">
+              <p class="font-semibold truncate">{{ service.name }}</p>
+              <p class="text-sm text-gray-500">
+                ₹ {{ service.offer_price|default:service.price }}
+              </p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-500">No services added yet.</p>
+    {% endif %}
+  </div>
+{% endif %}
+
+
+  {% if active_inner_tab == "gallery" %}
+  <div id="mysaloon-gallery" class="bg-white rounded-2xl border border-gray-100 p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">Gallery</h3>
+      <a
+        href="{% url 'saloon_gallery_create' username=saloon.owner.username %}"
+        class="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+      >
+        Upload
+      </a>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {% for post in saloon.gallery_posts.all %}
+        {% with first_media=post.media.first %}
+          <a
+            href="{% url 'saloon_gallery_detail' username=saloon.owner.username post_id=post.id %}"
+            class="relative rounded-xl overflow-hidden border border-gray-100"
+          >
+            {% if first_media %}
+              {% if first_media.media_type == 'video' %}
+                <video
+                  class="w-full h-32 object-cover"
+                  muted
+                  playsinline
+                  preload="metadata"
+                >
+                  <source src="{{ first_media.file.url }}" type="video/mp4">
+                </video>
+              {% else %}
+                <img
+                  src="{{ first_media.file.url }}"
+                  class="w-full h-32 object-cover"
+                  alt="Gallery media"
+                >
+              {% endif %}
+            {% else %}
+              <div class="w-full h-32 bg-gray-100"></div>
+            {% endif %}
+            <div class="absolute bottom-2 right-2 bg-black/30 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+              <i class="fa-solid fa-eye text-[10px]"></i>
+              {{ post.views }}
+            </div>
+          </a>
+        {% endwith %}
+      {% empty %}
+        <p class="text-sm text-gray-500">No posts yet. Upload your first one.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if active_inner_tab == "about" %}
+  <div id="mysaloon-about" class="bg-white rounded-2xl border border-gray-100 p-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold">About</h3>
+      <a
+        href="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}#about-section"
+        class="text-sm font-semibold text-blue-600"
+      >Edit</a>
+    </div>
+
+    <p class="text-sm text-gray-600 leading-relaxed">
+      {{ saloon.profile.about|default:"No description added yet." }}
+    </p>
+
+    <div class="mt-8 border-t border-gray-100 pt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Reviews</h3>
+        <span class="text-sm text-gray-500">{{ saloon.reviews.count }} total</span>
+      </div>
+
+      <div class="space-y-3">
+        {% for review in saloon.reviews.all|slice:":8" %}
+          <div class="rounded-xl border border-gray-100 px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-gray-900">{{ review.reviewer_name }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ review.created_at|date:"M d, Y" }}</p>
+              </div>
+              <div class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                <i class="fa-solid fa-star text-[10px]"></i>
+                {{ review.rating }}
+              </div>
+            </div>
+            <p class="mt-3 text-sm leading-6 text-gray-600">{{ review.review_text }}</p>
+          </div>
+        {% empty %}
+          <p class="text-sm text-gray-500">No reviews yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  (function () {
+    if (!window.location.hash) return;
+    var hash = window.location.hash.replace("#", "");
+    var target = document.getElementById(hash);
+    if (target) {
+      target.scrollIntoView({ behavior: "instant", block: "start" });
+    }
+  })();
+</script>
+{% endblock %}

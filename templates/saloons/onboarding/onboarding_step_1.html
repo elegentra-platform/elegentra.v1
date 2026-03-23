@@ -1,0 +1,379 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Salon onboarding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<div class="max-w-4xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-10">
+    <p class="text-sm text-gray-500">Step 1 of 4</p>
+    <h1 class="text-3xl font-semibold mt-1">
+      Tell us about your salon
+    </h1>
+    <p class="text-gray-600 mt-2 max-w-xl">
+      This information will be used to create your public salon profile.
+    </p>
+  </div>
+
+  <form method="post" class="space-y-10">
+    {% csrf_token %}
+
+    <!-- BASIC INFO -->
+    <div class="bg-white rounded-2xl p-8 shadow-sm">
+      <h2 class="text-lg font-medium mb-6">Basic information</h2>
+
+      <div>
+        <label class="block text-sm font-medium mb-2">Salon name</label>
+        <input
+          type="text"
+          name="saloon_name"
+          value="{{ data.saloon_name|default:'' }}"
+          class="w-full rounded-xl bg-gray-50 border px-4 py-3
+          {% if rejection_map.saloon_name %}border-red-500{% else %}border-gray-200{% endif %}"
+        >
+        {% if rejection_map.saloon_name %}
+          <p class="text-sm text-red-600 mt-1">
+            {{ rejection_map.saloon_name }}
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Salon type -->
+      <div class="mt-8">
+        <p class="text-sm font-medium mb-3">Salon type</p>
+
+        <div class="grid grid-cols-3 gap-4">
+          {% for key,label in saloon_types %}
+          <label class="cursor-pointer">
+            <input type="radio" name="saloon_type" value="{{ key }}"
+              class="peer hidden"
+              {% if data.saloon_type == key %}checked{% endif %}
+            >
+            <div class="rounded-xl border p-4 text-center
+              peer-checked:border-black
+              {% if rejection_map.saloon_type %}border-red-500{% else %}border-gray-200{% endif %}">
+              {{ label }}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+
+        {% if rejection_map.saloon_type %}
+          <p class="text-sm text-red-600 mt-2">
+            {{ rejection_map.saloon_type }}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- OWNER -->
+    <div class="bg-white rounded-2xl p-8 shadow-sm">
+      <h2 class="text-lg font-medium mb-6">Owner details</h2>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm mb-2">Owner full name</label>
+          <input type="text" name="owner_full_name"
+            value="{{ data.owner_full_name|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3
+            {% if rejection_map.owner_full_name %}border-red-500{% else %}border-gray-200{% endif %}">
+          {% if rejection_map.owner_full_name %}
+            <p class="text-sm text-red-600 mt-1">
+              {{ rejection_map.owner_full_name }}
+            </p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm mb-2">Contact number</label>
+          <input type="text" name="contact_number"
+            value="{{ data.contact_number|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3
+            {% if rejection_map.contact_number %}border-red-500{% else %}border-gray-200{% endif %}">
+          {% if rejection_map.contact_number %}
+            <p class="text-sm text-red-600 mt-1">
+              {{ rejection_map.contact_number }}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- LOCATION -->
+    <div class="bg-white rounded-2xl p-8 shadow-sm">
+      <h2 class="text-lg font-medium mb-6">Location</h2>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm mb-2">Area / Locality</label>
+          <input type="text" name="area_locality"
+            value="{{ data.area_locality|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3
+            {% if rejection_map.area_locality %}border-red-500{% else %}border-gray-200{% endif %}">
+        </div>
+
+        <div>
+          <label class="block text-sm mb-2">City</label>
+          <input type="text" name="city"
+            value="{{ data.city|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3
+            {% if rejection_map.city %}border-red-500{% else %}border-gray-200{% endif %}">
+        </div>
+
+        <div class="md:col-span-3">
+          <input type="hidden" name="latitude" id="onboardingLatitude" value="{{ data.latitude|default:'' }}">
+          <input type="hidden" name="longitude" id="onboardingLongitude" value="{{ data.longitude|default:'' }}">
+
+          <label class="block text-sm mb-2">Exact salon location</label>
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Set your salon on the map</p>
+                <p class="mt-1 text-sm text-gray-500">
+                  Use your current location while standing at the salon. We will save the exact map point and generate the Google Maps link automatically.
+                </p>
+                <p id="onboardingLocationStatus" class="mt-3 text-sm text-gray-700">
+                  {% if data.latitude and data.longitude %}
+                    Location saved at {{ data.latitude }}, {{ data.longitude }}
+                  {% else %}
+                    No exact location saved yet.
+                  {% endif %}
+                </p>
+                <a
+                  id="onboardingMapPreview"
+                  href="{{ data.google_map_link|default:'' }}"
+                  target="_blank"
+                  rel="noopener"
+                  class="{% if data.google_map_link %}mt-2 inline-flex{% else %}mt-2 hidden{% endif %} text-sm font-medium text-blue-600"
+                >
+                  Open saved map location
+                </a>
+              </div>
+              <button
+                type="button"
+                id="useCurrentLocationOnboarding"
+                class="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white"
+              >
+                Use current location
+              </button>
+            </div>
+            <div class="mt-4">
+              <label for="onboardingMapLink" class="block text-sm font-medium text-gray-700">Google Maps link</label>
+              <input
+                type="url"
+                name="google_map_link"
+                id="onboardingMapLink"
+                value="{{ data.google_map_link|default:'' }}"
+                class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm"
+                placeholder="Paste your Google Maps place link"
+              >
+              <p class="mt-2 text-xs text-gray-500">
+                Optional, but recommended if you want the public View Map button to open the proper place name in Google Maps.
+              </p>
+            </div>
+            {% if rejection_map.non_field_errors %}
+              <p class="mt-3 text-sm text-red-600">{{ rejection_map.non_field_errors }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-8 shadow-sm">
+      <h2 class="text-lg font-medium mb-6">Working Hours</h2>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm mb-2">Opening time</label>
+          <input
+            type="time"
+            name="opening_time"
+            value="{{ data.opening_time|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3"
+          >
+        </div>
+
+        <div>
+          <label class="block text-sm mb-2">Closing time</label>
+          <input
+            type="time"
+            name="closing_time"
+            value="{{ data.closing_time|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3"
+          >
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <p class="text-sm font-medium mb-3">Operating days</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="monday" class="rounded border-gray-300 text-black focus:ring-black" {% if "monday" in data.operating_days %}checked{% endif %}>
+            <span>Monday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="tuesday" class="rounded border-gray-300 text-black focus:ring-black" {% if "tuesday" in data.operating_days %}checked{% endif %}>
+            <span>Tuesday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="wednesday" class="rounded border-gray-300 text-black focus:ring-black" {% if "wednesday" in data.operating_days %}checked{% endif %}>
+            <span>Wednesday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="thursday" class="rounded border-gray-300 text-black focus:ring-black" {% if "thursday" in data.operating_days %}checked{% endif %}>
+            <span>Thursday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="friday" class="rounded border-gray-300 text-black focus:ring-black" {% if "friday" in data.operating_days %}checked{% endif %}>
+            <span>Friday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="saturday" class="rounded border-gray-300 text-black focus:ring-black" {% if "saturday" in data.operating_days %}checked{% endif %}>
+            <span>Saturday</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <input type="checkbox" name="operating_days" value="sunday" class="rounded border-gray-300 text-black focus:ring-black" {% if "sunday" in data.operating_days %}checked{% endif %}>
+            <span>Sunday</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button class="bg-black text-white px-12 py-3 rounded-xl">
+        {% if is_resubmission %}
+            Resubmit
+        {% else %}
+            Next
+        {% endif %}
+        </button>
+
+    </div>
+
+  </form>
+</div>
+
+<div id="onboardingLocationConfirm" class="pointer-events-none fixed inset-0 z-[90] hidden bg-black/35 opacity-0 transition">
+  <div class="flex min-h-screen items-center justify-center px-4">
+    <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-lg font-semibold text-[#1F1F1F]">Use salon location</p>
+          <p class="mt-1 text-sm text-[#6A6A6A]">Please use current location while standing at your salon for the most accurate map and distance.</p>
+        </div>
+        <button type="button" id="onboardingLocationConfirmClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E7DAC8] text-[#6A6A6A]">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="mt-5 flex gap-3">
+        <button type="button" id="onboardingLocationConfirmAction" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-black px-5 text-sm font-semibold text-white">
+          Okay, Use Current Location
+        </button>
+        <button type="button" id="onboardingLocationConfirmCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var button = document.getElementById("useCurrentLocationOnboarding");
+    var latitudeInput = document.getElementById("onboardingLatitude");
+    var longitudeInput = document.getElementById("onboardingLongitude");
+    var mapLinkInput = document.getElementById("onboardingMapLink");
+    var status = document.getElementById("onboardingLocationStatus");
+    var preview = document.getElementById("onboardingMapPreview");
+    var modal = document.getElementById("onboardingLocationConfirm");
+    var modalAction = document.getElementById("onboardingLocationConfirmAction");
+    var modalClose = document.getElementById("onboardingLocationConfirmClose");
+    var modalCancel = document.getElementById("onboardingLocationConfirmCancel");
+
+    if (!button || !latitudeInput || !longitudeInput || !mapLinkInput || !status || !preview) return;
+
+    function openModal() {
+      if (!modal) return;
+      modal.classList.remove("hidden", "pointer-events-none", "opacity-0");
+      requestAnimationFrame(function () {
+        modal.classList.add("opacity-100");
+      });
+    }
+
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.remove("opacity-100");
+      modal.classList.add("opacity-0");
+      window.setTimeout(function () {
+        modal.classList.add("hidden", "pointer-events-none");
+      }, 200);
+    }
+
+    function requestCurrentLocation() {
+      if (!navigator.geolocation) {
+        status.textContent = "Location access is not supported on this device.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Getting location...";
+      status.textContent = "Fetching your current salon location...";
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          var latitude = position.coords.latitude.toFixed(6);
+          var longitude = position.coords.longitude.toFixed(6);
+          var mapUrl = "https://www.google.com/maps?q=" + latitude + "," + longitude;
+
+          latitudeInput.value = latitude;
+          longitudeInput.value = longitude;
+          if (!mapLinkInput.value.trim()) {
+            mapLinkInput.value = mapUrl;
+          }
+
+          status.textContent = "Location saved at " + latitude + ", " + longitude;
+          preview.href = mapLinkInput.value.trim() || mapUrl;
+          preview.classList.remove("hidden");
+          preview.classList.add("inline-flex");
+
+          button.disabled = false;
+          button.textContent = "Update current location";
+        },
+        function () {
+          status.textContent = "We could not access your location. Please allow location permission and try again.";
+          button.disabled = false;
+          button.textContent = "Use current location";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    button.addEventListener("click", openModal);
+
+    if (modalAction) modalAction.addEventListener("click", function () {
+      closeModal();
+      requestCurrentLocation();
+    });
+    if (modalClose) modalClose.addEventListener("click", closeModal);
+    if (modalCancel) modalCancel.addEventListener("click", closeModal);
+    if (modal) {
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) closeModal();
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

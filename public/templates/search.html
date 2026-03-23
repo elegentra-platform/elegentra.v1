@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Saloon - Search{% endblock %}
+
+{% block search_bar %}
+  <div class="w-full max-w-lg">
+    <form method="get" action="{% url 'public_search' %}" class="h-11 bg-white rounded-2xl shadow-sm border border-[#EFE6D9] px-4 flex items-center gap-3" data-geo-form>
+      <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+      <input type="hidden" name="lat" value="{{ user_lat|default:'' }}">
+      <input type="hidden" name="lng" value="{{ user_lng|default:'' }}">
+      <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Search salons near you"
+        class="w-full bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-400"
+      />
+      {% if selected_category %}
+        <input type="hidden" name="category" value="{{ selected_category }}">
+      {% endif %}
+    </form>
+  </div>
+{% endblock %}
+
+{% block search_bar_mobile %}
+  <form method="get" action="{% url 'public_search' %}" class="bg-white rounded-2xl shadow-sm border border-[#EFE6D9] px-4 py-3 flex items-center gap-3" data-geo-form>
+    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+    <input type="hidden" name="lat" value="{{ user_lat|default:'' }}">
+    <input type="hidden" name="lng" value="{{ user_lng|default:'' }}">
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      placeholder="Search salons near you"
+      class="w-full bg-transparent outline-none text-sm text-gray-700"
+    />
+    {% if selected_category %}
+      <input type="hidden" name="category" value="{{ selected_category }}">
+    {% endif %}
+  </form>
+{% endblock %}
+
+{% block content %}
+  <div class="mt-4 md:min-h-[70vh]">
+    {% if has_filters %}
+      <div class="mt-2 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
+          {% for category in categories %}
+            <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
+              <div class="w-14 h-14 rounded-full {% if selected_category == category.slug %}bg-[#efe2c6] border-[#d6b16f]{% else %}bg-white/55 border-white/60{% endif %} border shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+                {% if category.icon_url %}
+                  <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
+                    <div class="media-skeleton__placeholder"></div>
+                    <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                  </div>
+                {% else %}
+                  <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-2 hidden md:flex w-full items-center justify-center gap-6">
+        {% for category in categories %}
+          <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
+            <div class="w-16 h-16 rounded-full {% if selected_category == category.slug %}bg-[#efe2c6] border-[#d6b16f]{% else %}bg-white/55 border-white/60{% endif %} border shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+              {% if category.icon_url %}
+                <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
+                  <div class="media-skeleton__placeholder"></div>
+                  <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                </div>
+              {% else %}
+                <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-800 text-center leading-tight">{{ category.name }}</div>
+          </a>
+        {% endfor %}
+      </div>
+
+      <div class="mt-8 text-left">
+        {% if search_results %}
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-900">Search Results</h2>
+            <p class="text-xs text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {% for salon in search_results %}
+              <a href="{% url 'public_saloon' slug=salon.slug %}" class="group rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm transition hover:bg-white/75">
+                <div class="media-skeleton w-full h-28 lg:h-36 rounded-xl" data-skeleton-type="card">
+                  <div class="media-skeleton__placeholder"></div>
+                  <img src="{{ salon.image }}" class="w-full h-28 lg:h-36 rounded-xl object-cover" alt="{{ salon.name }}" data-skeleton-image />
+                </div>
+                <div class="mt-2 min-w-0">
+                  <p class="truncate text-sm lg:text-[15px] font-semibold text-gray-900">{{ salon.name }}</p>
+                  <p class="text-[11px] text-gray-600">{{ salon.distance }}</p>
+                  <div class="mt-1 text-[11px] text-gray-700"><i class="fa-solid fa-star text-[#B58C4E]"></i> {{ salon.rating }}</div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+          {% if page_obj.paginator.num_pages > 1 %}
+            <div class="mt-5 flex items-center justify-center gap-2">
+              {% if page_obj.has_previous %}
+                <a href="?q={{ query|urlencode }}&category={{ selected_category }}&page={{ page_obj.previous_page_number }}" class="rounded-lg border border-[#d9c8ae] bg-white px-3 py-1.5 text-sm text-gray-700">Prev</a>
+              {% endif %}
+              {% if page_obj.has_next %}
+                <a href="?q={{ query|urlencode }}&category={{ selected_category }}&page={{ page_obj.next_page_number }}" class="rounded-lg border border-[#d9c8ae] bg-white px-3 py-1.5 text-sm text-gray-700">Next</a>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="rounded-2xl border border-white/70 bg-white/55 p-8 text-center shadow-sm">
+            <p class="text-gray-800 font-medium">No salons found for this search.</p>
+            <p class="mt-1 text-sm text-gray-600">Try another keyword or clear category filter.</p>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="mt-12 text-center">
+        <div class="mx-auto w-28 h-28 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center">
+          <i class="fa-solid fa-magnifying-glass text-5xl text-[#B58C4E]"></i>
+        </div>
+        <div class="mt-6 text-xl font-medium text-gray-900">Search salons near you</div>
+      </div>
+
+      <div class="mt-10 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
+          {% for category in categories %}
+            <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
+              <div class="w-14 h-14 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+                {% if category.icon_url %}
+                  <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
+                    <div class="media-skeleton__placeholder"></div>
+                    <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                  </div>
+                {% else %}
+                  <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="hidden md:flex mt-20 w-full items-center justify-center gap-6">
+        {% for category in categories %}
+          <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
+            <div class="w-16 h-16 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+              {% if category.icon_url %}
+                <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
+                  <div class="media-skeleton__placeholder"></div>
+                  <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                </div>
+              {% else %}
+                <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-800 text-center leading-tight">{{ category.name }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const hasCoords = "{{ user_lat|default:'' }}" && "{{ user_lng|default:'' }}";
+    const params = new URLSearchParams(window.location.search);
+
+    if (!hasCoords && navigator.geolocation && !params.get("lat") && !params.get("lng")) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const lat = position.coords.latitude.toFixed(6);
+        const lng = position.coords.longitude.toFixed(6);
+        if (params.get("q") || params.get("category")) {
+          params.set("lat", lat);
+          params.set("lng", lng);
+          window.location.replace(window.location.pathname + "?" + params.toString());
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}
