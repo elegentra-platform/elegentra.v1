@@ -1,15 +1,15 @@
 import math
 
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Q, Avg, Count
 from django.shortcuts import render
-from django.templatetags.static import static
 
 from saloons.models import Saloon
 from services.models import MainCategory, ServiceCategory
 
 
-DEFAULT_SALOON_IMAGE = static("services/images/hero.webp")
+DEFAULT_SALOON_IMAGE = f"{settings.STATIC_URL}services/images/hero.webp"
 
 
 def _user_has_saloon(user):
