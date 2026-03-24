@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Host your saloon</title>
+  <title>Grow your salon on Elegentra</title>
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
 
@@ -13,7 +13,7 @@
   <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
 
     <h1 class="text-3xl font-bold text-gray-800 mb-4">
-      Grow your saloon with Saloon
+      Grow your salon with Elegentra
     </h1>
 
     <p class="text-gray-600 mb-6">
@@ -32,7 +32,7 @@
         <!-- Logged in but no saloon yet -->
         <a href="{% url 'verify_whatsapp' %}"
            class="block w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition">
-          Register your saloon
+          Register your salon
         </a>
       {% endif %}
 
@@ -41,7 +41,7 @@
       <!-- Not logged in -->
       <a href="{% url 'account_login' %}?next={% url 'partner_home' %}"
          class="block w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition">
-        Register your saloon
+        Register your salon
       </a>
 
       <p class="text-sm text-gray-500 mt-4">

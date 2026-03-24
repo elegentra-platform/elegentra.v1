@@ -77,14 +77,14 @@
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-                <img
-                  src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200{% endif %}"
-                  class="w-full h-full object-cover"
-                  alt="Saloon"
-                >
+                  <img
+                    src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200{% endif %}"
+                    class="w-full h-full object-cover"
+                    alt="Salon"
+                  >
               </div>
               <div>
-                <p class="text-sm font-semibold text-gray-900">{{ saloon.name|default:"My Saloon" }}</p>
+                <p class="text-sm font-semibold text-gray-900">{{ saloon.name|default:"My Salon" }}</p>
                 <p class="text-xs text-gray-500">{{ post.created_at|date:"M d, Y" }}</p>
               </div>
             </div>
@@ -125,14 +125,14 @@
         <div class="flex items-start justify-between">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-              <img
-                src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200{% endif %}"
-                class="w-full h-full object-cover"
-                alt="Saloon"
-              >
+                <img
+                  src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=200{% endif %}"
+                  class="w-full h-full object-cover"
+                  alt="Salon"
+                >
             </div>
             <div>
-              <p class="text-xs font-semibold text-gray-900">{{ saloon.name|default:"My Saloon" }}</p>
+              <p class="text-xs font-semibold text-gray-900">{{ saloon.name|default:"My Salon" }}</p>
               <p class="text-[11px] text-gray-500">{{ item.created_at|date:"M d, Y" }}</p>
             </div>
           </div>

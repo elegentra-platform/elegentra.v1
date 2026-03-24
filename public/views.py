@@ -113,7 +113,7 @@ def _serialize_saloons(saloons, user_lat=None, user_lng=None):
 
         result.append(
             {
-                "name": saloon.name or getattr(profile, "saloon_name", "") or "Saloon",
+                "name": saloon.name or getattr(profile, "saloon_name", "") or "Salon",
                 "distance": distance_label,
                 "rating": rating_label,
                 "image": image,

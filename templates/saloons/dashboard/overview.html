@@ -83,13 +83,13 @@
 
     <div class="min-w-0">
       <h3 class="font-semibold truncate">{{ saloon.name }}</h3>
-      <p class="text-sm text-gray-500 mb-3">{{ saloon.profile.category }} saloon</p>
+      <p class="text-sm text-gray-500 mb-3">{{ saloon.profile.category }} salon</p>
       <div class="mb-3 flex flex-wrap gap-2 text-xs text-gray-500">
         <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ gallery_post_total }} gallery posts</span>
         <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ review_total }} reviews</span>
       </div>
       <a href="{% url 'public_saloon' slug=saloon.slug %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium">
-        <i class="fa-regular fa-eye"></i> View public salon
+        <i class="fa-regular fa-eye"></i> View public profile
       </a>
     </div>
   </div>
