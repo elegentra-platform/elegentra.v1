@@ -1,6 +1,8 @@
+from functools import wraps
+
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -15,7 +17,16 @@ def _staff_check(user):
     return user.is_authenticated and user.is_staff
 
 
-staff_required = [login_required, user_passes_test(_staff_check)]
+def staff_required(view_func):
+    @login_required
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.user.is_staff:
+            messages.error(request, "You do not have staff access.")
+            return redirect("public_home")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
 
 
 def _online_staff_count():
@@ -34,8 +45,7 @@ def _online_staff_count():
     return User.objects.filter(id__in=user_ids, is_staff=True, is_active=True).count()
 
 
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def dashboard(request):
     context = {
         "active_tab": "dashboard",
@@ -56,8 +66,7 @@ def dashboard(request):
     return render(request, "staffpanel/dashboard.html", context)
 
 
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def saloon_queue(request):
     saloons = (
         Saloon.objects.filter(approval_status=Saloon.APPROVAL_PENDING)
@@ -74,8 +83,7 @@ def saloon_queue(request):
     )
 
 
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def saloon_review(request, saloon_id):
     saloon = get_object_or_404(
         Saloon.objects.select_related("owner", "profile", "verification"),
@@ -101,8 +109,7 @@ def saloon_review(request, saloon_id):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def saloon_approve(request, saloon_id):
     saloon = get_object_or_404(Saloon, id=saloon_id)
     saloon.approval_status = Saloon.APPROVAL_APPROVED
@@ -116,8 +123,7 @@ def saloon_approve(request, saloon_id):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def saloon_reject(request, saloon_id):
     saloon = get_object_or_404(Saloon, id=saloon_id)
     reason = request.POST.get("reason", "").strip()
@@ -140,8 +146,7 @@ def saloon_reject(request, saloon_id):
     return redirect("staffpanel:saloon_queue")
 
 
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def category_queue(request):
     pending_categories = (
         ServiceCategory.objects.filter(is_approved=False, is_active=True)
@@ -168,8 +173,7 @@ def category_queue(request):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def category_map_main(request, category_id):
     category = get_object_or_404(ServiceCategory, id=category_id)
     main_category_id = request.POST.get("main_category_id")
@@ -193,8 +197,7 @@ def category_map_main(request, category_id):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def category_bulk_map_main(request):
     categories = ServiceCategory.objects.filter(is_active=True)
     main_categories = {
@@ -217,8 +220,7 @@ def category_bulk_map_main(request):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def category_approve(request, category_id):
     category = get_object_or_404(ServiceCategory, id=category_id, is_active=True)
     if not category.main_category:
@@ -232,8 +234,7 @@ def category_approve(request, category_id):
 
 
 @require_POST
-@login_required
-@user_passes_test(_staff_check)
+@staff_required
 def category_reject(request, category_id):
     category = get_object_or_404(ServiceCategory, id=category_id)
     category.is_active = False
