@@ -1,12 +1,208 @@
 {% extends "base.html" %}
 
-{% block title %}Elegentra - Favourites{% endblock %}
+{% block title %}{{ seo.title|default:"Elegentra - Favourites" }}{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    @media (min-width: 768px) {
+      .favorite-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 250px));
+        justify-content: start;
+        gap: 1rem;
+      }
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
-  <div class="mt-6 min-h-[70vh] flex items-center justify-center">
-    <div class="text-center">
-      <i class="fa-regular fa-heart text-7xl text-[#B58C4E]"></i>
-      <div class="mt-6 text-xl font-medium text-gray-900">No favourites yet</div>
+  <section class="pt-6 md:pt-10">
+    <div class="mx-auto max-w-6xl">
+      {% if not user.is_authenticated %}
+        <div class="mt-8 flex min-h-[45vh] items-center justify-center rounded-[1.8rem] border border-[#E8DECF] bg-white/80 px-6 py-12 text-center shadow-[0_16px_40px_rgba(74,56,30,0.06)]">
+          <div class="max-w-md">
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#FFF5E6] text-[#B58C4E]">
+              <i class="fa-regular fa-heart text-3xl"></i>
+            </div>
+            <h2 class="mt-6 text-2xl font-medium text-[#1F1F1F]">Save salons you love</h2>
+            <p class="mt-3 text-sm leading-7 text-[#6D5B44]">
+              Log in to keep your favourite salons here and come back to them anytime.
+            </p>
+            <a
+              href="{% url 'account_login' %}?next={{ request.path|urlencode }}"
+              class="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-[#D2AE63] px-6 text-sm font-semibold text-white transition hover:bg-[#C59F53]"
+            >
+              Login to save
+            </a>
+          </div>
+        </div>
+      {% elif favorite_cards %}
+        <div class="grid grid-cols-2 gap-3 favorite-grid">
+          {% for item in favorite_cards %}
+            <article class="overflow-hidden rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm md:rounded-[1.5rem] md:border-[#ECE2D4] md:bg-white md:p-0 md:shadow-[0_16px_32px_rgba(74,56,30,0.06)]">
+              <a href="{% url 'public_saloon' slug=item.slug %}" class="block">
+                <div class="media-skeleton h-28 w-full rounded-xl bg-[#F2E9DE] md:h-44 md:rounded-none" data-skeleton-type="card">
+                  <div class="media-skeleton__placeholder"></div>
+                  <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
+                </div>
+              </a>
+              <div class="mt-2 min-w-0 px-0 pb-0 md:mt-0 md:p-5">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <a href="{% url 'public_saloon' slug=item.slug %}" class="block">
+                      <h2 class="truncate text-sm font-semibold text-gray-900 md:text-[1.08rem] md:font-medium md:text-[#181818]">{{ item.name }}</h2>
+                    </a>
+                    <p class="text-[11px] text-gray-600 md:mt-2 md:text-sm md:text-[#6B5A45]">{{ item.location }}</p>
+                    <div class="mt-1 text-[11px] text-gray-700 md:hidden">
+                      <i class="fa-solid fa-star text-[#B58C4E]"></i>
+                      {% if item.rating %}{{ item.rating }}{% else %}New{% endif %}
+                    </div>
+                    <p class="mt-3 hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#FFF5E2] px-3 py-1 text-xs font-semibold text-[#8A6A38]">
+                      <i class="fa-solid fa-star text-[10px]"></i>
+                      {% if item.rating %}{{ item.rating }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="favorite-card-remove inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E8D7D7] bg-[#FFF7F7] text-[#C87070] transition hover:bg-[#FDEEEE] md:h-11 md:w-11"
+                    data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=item.slug %}"
+                    aria-label="Remove from favourites"
+                  >
+                    <i class="fa-solid fa-heart text-xs md:text-base"></i>
+                  </button>
+                </div>
+                <div class="mt-4 hidden md:block">
+                  <a
+                    href="{% url 'public_saloon' slug=item.slug %}"
+                    class="inline-flex h-10 items-center justify-center rounded-full border border-[#D8C29A] px-4 text-sm font-medium text-[#7A6238] transition hover:bg-[#FBF5EC]"
+                  >
+                    View salon
+                  </a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mt-6 min-h-[70vh] flex items-center justify-center">
+          <div class="text-center">
+            <i class="fa-regular fa-heart text-[5.6rem] text-[#B58C4E]"></i>
+            <div class="mt-6 text-xl font-medium text-gray-900">No favourites yet</div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <div id="favoriteRemoveModal" class="pointer-events-none fixed inset-0 z-[120] hidden bg-[rgba(24,18,10,0.36)] opacity-0 transition duration-200">
+    <div class="flex min-h-screen items-center justify-center px-4">
+      <div class="w-full max-w-sm rounded-[1.7rem] border border-[#E8DECF] bg-[linear-gradient(180deg,rgba(255,251,245,0.98),rgba(248,240,230,0.96))] p-5 shadow-[0_24px_60px_rgba(74,56,30,0.18)]">
+        <div class="flex items-start gap-3">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFF1F1] text-[#C87070]">
+            <i class="fa-solid fa-heart-crack text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-[1.05rem] font-semibold text-[#1F1F1F]">Remove from favourites?</h3>
+            <p class="mt-2 text-sm leading-6 text-[#6D5B44]">Do you want to remove it from favorites?</p>
+          </div>
+        </div>
+        <div class="mt-5 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            id="favoriteRemoveCancel"
+            class="inline-flex h-10 items-center justify-center rounded-full border border-[#E2D6C6] bg-white px-4 text-sm font-medium text-[#6B5A45] transition hover:bg-[#FBF5EC]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            id="favoriteRemoveConfirm"
+            class="inline-flex h-10 items-center justify-center rounded-full bg-[#D2AE63] px-5 text-sm font-semibold text-white transition hover:bg-[#C59F53]"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
     </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script>
+    (function () {
+      const modal = document.getElementById("favoriteRemoveModal");
+      const confirmButton = document.getElementById("favoriteRemoveConfirm");
+      const cancelButton = document.getElementById("favoriteRemoveCancel");
+      let pendingButton = null;
+
+      function getCsrfToken() {
+        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : "";
+      }
+
+      function openModal(button) {
+        pendingButton = button;
+        modal.classList.remove("hidden", "pointer-events-none", "opacity-0");
+        requestAnimationFrame(function () {
+          modal.classList.add("opacity-100");
+        });
+      }
+
+      function closeModal() {
+        pendingButton = null;
+        modal.classList.remove("opacity-100");
+        modal.classList.add("opacity-0");
+        window.setTimeout(function () {
+          modal.classList.add("hidden", "pointer-events-none");
+        }, 200);
+      }
+
+      function removeFavorite(button) {
+        if (!button) return;
+
+        fetch(button.dataset.toggleUrl, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCsrfToken(),
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data.ok || data.is_favorited) return;
+            const card = button.closest("article");
+            if (card) card.remove();
+            if (!document.querySelector(".favorite-card-remove")) {
+              window.location.reload();
+            }
+          })
+          .catch(function () {});
+      }
+
+      document.querySelectorAll(".favorite-card-remove").forEach(function (button) {
+        button.addEventListener("click", function () {
+          openModal(button);
+        });
+      });
+
+      if (cancelButton) {
+        cancelButton.addEventListener("click", closeModal);
+      }
+
+      if (confirmButton) {
+        confirmButton.addEventListener("click", function () {
+          const activeButton = pendingButton;
+          closeModal();
+          removeFavorite(activeButton);
+        });
+      }
+
+      if (modal) {
+        modal.addEventListener("click", function (event) {
+          if (event.target === modal) closeModal();
+        });
+      }
+    })();
+  </script>
 {% endblock %}

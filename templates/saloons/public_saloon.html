@@ -1,6 +1,131 @@
 {% extends "base.html" %}
 
-{% block title %}{{ display_name }}{% endblock %}
+{% block title %}{{ seo.title|default:display_name }}{% endblock %}
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    @media (min-width: 768px) {
+      .public-saloon-stage {
+        padding-top: 1.25rem;
+        padding-bottom: 2rem;
+      }
+
+      .public-saloon-shell {
+        overflow: visible;
+        border: 1px solid rgba(223, 209, 190, 0.85);
+        border-radius: 2.25rem;
+        background:
+          radial-gradient(120% 120% at 0% 0%, rgba(244, 230, 204, 0.2), rgba(244, 230, 204, 0) 48%),
+          linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(253, 249, 243, 0.98));
+        box-shadow: 0 26px 80px rgba(74, 56, 30, 0.09);
+      }
+
+      .public-saloon-surface {
+        position: relative;
+        z-index: 2;
+        margin: -3.5rem 1.25rem 0;
+        border: 1px solid rgba(237, 227, 211, 0.95);
+        border-radius: 1.75rem;
+        background:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(255, 250, 244, 0.94));
+        box-shadow: 0 18px 42px rgba(74, 56, 30, 0.08);
+        backdrop-filter: blur(16px);
+      }
+
+      .public-saloon-tabs {
+        margin: 1.1rem 1.25rem 0;
+        border: 1px solid rgba(237, 227, 211, 0.9);
+        border-radius: 1.25rem;
+        background: rgba(255, 251, 246, 0.9);
+        box-shadow: 0 10px 28px rgba(74, 56, 30, 0.04);
+      }
+
+      .public-saloon-content {
+        background: transparent;
+      }
+
+      .public-saloon-service-card {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 16px 36px rgba(74, 56, 30, 0.06);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      }
+
+      .public-saloon-service-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(214, 192, 157, 0.95);
+        box-shadow: 0 22px 42px rgba(74, 56, 30, 0.09);
+      }
+
+      .public-saloon-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-height: 2.6rem;
+        border: 1px solid rgba(231, 219, 201, 0.95);
+        border-radius: 999px;
+        background: rgba(255, 252, 247, 0.86);
+        padding: 0.72rem 1rem;
+        color: #5f5345;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+
+      .public-saloon-tab-button {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      }
+
+      .public-saloon-tab-button.is-active {
+        border-color: rgba(224, 204, 168, 0.98);
+        background: linear-gradient(180deg, rgba(255, 249, 238, 1), rgba(248, 236, 213, 0.92));
+        color: #5f431b;
+        box-shadow: 0 8px 20px rgba(181, 140, 78, 0.1);
+      }
+
+      .public-saloon-gallery-card {
+        border: 1px solid rgba(240, 231, 218, 0.95);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 18px 36px rgba(74, 56, 30, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .public-saloon-gallery-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 24px 44px rgba(74, 56, 30, 0.1);
+      }
+
+      .public-saloon-section-card {
+        border: 1px solid rgba(240, 231, 218, 0.98);
+        border-radius: 1.5rem;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: 0 16px 34px rgba(74, 56, 30, 0.05);
+      }
+
+      .public-saloon-review-card {
+        border: 1px solid rgba(240, 231, 218, 0.98);
+        border-radius: 1.35rem;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 10px 24px rgba(74, 56, 30, 0.04);
+      }
+    }
+
+    @keyframes favoritePop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+
+    .favorite-toggle.is-active {
+      color: #c87070;
+      border-color: #efcaca;
+      background: #fff4f4;
+    }
+
+    .favorite-toggle.favorite-pop {
+      animation: favoritePop 220ms ease-out;
+    }
+  </style>
+{% endblock %}
 {% block page_header %}
   <header
     class="sticky top-0 z-40 hidden border-b border-[#EEE6DA]/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] md:block"
@@ -65,9 +190,9 @@
 {% endblock %}
 
 {% block content %}
-<section class="-mx-4 bg-white">
-  <div class="mx-auto w-full max-w-5xl bg-white">
-  <div class="media-skeleton h-44 w-full bg-[#F3ECE4] sm:h-60 md:h-[18rem]" data-skeleton-type="banner">
+<section class="-mx-4 bg-white md:bg-transparent md:px-4 md:py-6 public-saloon-stage">
+  <div class="public-saloon-shell mx-auto w-full max-w-6xl bg-white">
+  <div class="media-skeleton h-44 w-full bg-[#F3ECE4] sm:h-60 md:h-[19rem] md:rounded-t-[2.25rem]" data-skeleton-type="banner">
     <div class="media-skeleton__placeholder"></div>
     {% if saloon.banner_image %}
       <img
@@ -81,24 +206,36 @@
     {% endif %}
   </div>
 
-  <div class="border-b border-[#EFE4D6] bg-white px-5 py-5 sm:px-8 sm:py-6 md:px-10 md:py-8">
+  <div class="public-saloon-surface border-b border-[#EFE4D6] bg-white px-5 py-5 sm:px-8 sm:py-6 md:px-8 md:py-7">
     <div class="md:hidden">
-      <div class="flex flex-wrap items-end gap-x-2 gap-y-2">
-        <h1 class="min-w-0 text-[1.75rem] font-normal leading-none tracking-tight text-[#151515]">
-          {{ display_name }}
-        </h1>
-        <div class="flex items-center gap-1.5 pb-0.5 text-[#C5A24B]">
-          <i class="fa-solid fa-star text-[0.56rem]"></i>
-          <span class="text-[0.8rem] font-normal leading-none text-[#4A4A4A]">
-            {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
-          </span>
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex min-w-0 flex-wrap items-end gap-x-2 gap-y-2">
+          <h1 class="min-w-0 text-[1.75rem] font-normal leading-none tracking-tight text-[#151515]">
+            {{ display_name }}
+          </h1>
+          <div class="flex items-center gap-1.5 pb-0.5 text-[#C5A24B]">
+            <i class="fa-solid fa-star text-[0.56rem]"></i>
+            <span class="text-[0.8rem] font-normal leading-none text-[#4A4A4A]">
+              {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
+            </span>
+          </div>
         </div>
+        <button
+          type="button"
+          class="favorite-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E7DAC8] bg-white text-[#8B7761] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition {% if is_favorited %}is-active{% endif %}"
+          data-favorite-toggle
+          data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=saloon.slug %}"
+          data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}"
+          aria-label="{% if is_favorited %}Remove from favourites{% else %}Save to favourites{% endif %}"
+        >
+          <i class="{% if is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart"></i>
+        </button>
       </div>
 
       <div class="mt-3 space-y-2">
         <p class="flex items-center gap-2 text-[1rem] text-[#3E3E3E]">
           <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
-          <span>{{ profile.city|default:"Location coming soon" }}</span>
+          <span>{% if profile.locality %}{{ profile.locality }}{% if profile.city %}, {% endif %}{% endif %}{{ profile.city|default:"Location coming soon" }}</span>
         </p>
         {% if hours_summary.label %}
           <p class="flex items-center gap-2 text-[0.95rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
@@ -136,27 +273,28 @@
       {% endif %}
     </div>
 
-    <div class="hidden md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-8">
+    <div class="hidden md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-8">
       <div class="min-w-0">
-        <div class="flex flex-wrap items-end gap-x-3 gap-y-2">
-          <h1 class="text-[2rem] font-medium leading-none tracking-tight text-[#151515] lg:text-[2.2rem]">
+        <p class="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-[#9B7A46]">Salon profile</p>
+        <div class="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+          <h1 class="text-[1.95rem] font-medium leading-none tracking-[-0.02em] text-[#151515] lg:text-[2.3rem]">
             {{ display_name }}
           </h1>
-          <div class="mb-1 flex items-center gap-1.5 text-[#C5A24B]">
+          <div class="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#FFF6E4] px-3 py-1.5 text-[#C5A24B]">
             <i class="fa-solid fa-star text-[0.65rem]"></i>
-            <span class="text-[0.95rem] font-normal leading-none text-[#5A5A5A]">
+            <span class="text-[0.84rem] font-medium leading-none text-[#5A4B3B]">
               {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
             </span>
           </div>
         </div>
 
-        <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-[#4B4B4B]">
-          <p class="flex items-center gap-2 text-[1.02rem]">
+        <div class="mt-5 flex flex-wrap items-center gap-3 text-[#4B4B4B]">
+          <p class="public-saloon-meta-pill text-[0.92rem]">
             <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
-            <span>{{ profile.city|default:"Location coming soon" }}</span>
+            <span>{% if profile.locality %}{{ profile.locality }}{% if profile.city %}, {% endif %}{% endif %}{{ profile.city|default:"Location coming soon" }}</span>
           </p>
           {% if hours_summary.label %}
-            <p class="flex items-center gap-2 text-[1rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
+            <p class="public-saloon-meta-pill text-[0.92rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
               <i class="fa-regular fa-clock text-[#7A6238]"></i>
               <span>{{ hours_summary.label }}</span>
             </p>
@@ -165,11 +303,21 @@
       </div>
 
       {% if public_whatsapp_number or map_url %}
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 md:pt-8">
+          <button
+            type="button"
+            class="favorite-toggle inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E7DAC8] bg-white text-[#8B7761] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition hover:bg-[#FBF5EC] {% if is_favorited %}is-active{% endif %}"
+            data-favorite-toggle
+            data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=saloon.slug %}"
+            data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}"
+            aria-label="{% if is_favorited %}Remove from favourites{% else %}Save to favourites{% endif %}"
+          >
+            <i class="{% if is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart"></i>
+          </button>
           {% if public_whatsapp_number %}
             <a
               href="tel:{{ saloon.whatsapp_number }}"
-              class="inline-flex h-11 items-center justify-center rounded-[1rem] border border-[#D8C29A] bg-white px-5 text-[0.95rem] font-medium text-[#7A6238] shadow-[0_8px_18px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
+              class="inline-flex h-11 items-center justify-center rounded-full border border-[#D8C29A] bg-white px-5 text-[0.9rem] font-medium text-[#7A6238] shadow-[0_8px_18px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
             >
               <i class="fa-solid fa-phone mr-2 text-[0.8rem]"></i>
               Call Now
@@ -180,7 +328,7 @@
               href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
               {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
               {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
-              class="inline-flex h-11 items-center justify-center rounded-[1rem] border border-[#B89247] bg-[#D2AE63] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(181,140,78,0.16)] transition hover:bg-[#C59F53]"
+              class="inline-flex h-11 items-center justify-center rounded-full border border-[#B89247] bg-[#D2AE63] px-5 text-[0.9rem] font-medium text-white shadow-[0_8px_18px_rgba(181,140,78,0.16)] transition hover:bg-[#C59F53]"
             >
               View Map
             </a>
@@ -190,25 +338,25 @@
     </div>
   </div>
 
-  <div class="border-b border-[#EFE4D6] bg-white">
-    <div class="grid grid-cols-3">
+  <div class="public-saloon-tabs border-b border-[#EFE4D6] bg-white">
+    <div class="grid grid-cols-3 gap-2 p-2 md:p-2.5">
       <button
         type="button"
-        class="public-tab border-b-2 border-[#C5A24B] px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F] sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        class="public-tab public-saloon-tab-button is-active border-b-2 border-[#C5A24B] px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F] sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
         data-target="services"
       >
         Services
       </button>
       <button
         type="button"
-        class="public-tab border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        class="public-tab public-saloon-tab-button border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
         data-target="gallery"
       >
         Gallery
       </button>
       <button
         type="button"
-        class="public-tab border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:py-4 md:text-[1.1rem]"
+        class="public-tab public-saloon-tab-button border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
         data-target="about"
       >
         About & Reviews
@@ -216,13 +364,13 @@
     </div>
   </div>
 
-  <div class="bg-white px-5 py-6 sm:px-8 md:px-10 md:py-8">
+  <div class="public-saloon-content bg-white px-5 py-6 sm:px-8 md:px-8 md:py-6">
     <div id="public-tab-services" class="public-tab-panel block">
       {% if services %}
-        <div class="space-y-5 pb-32 md:mx-auto md:max-w-5xl md:space-y-4 md:pb-36">
+        <div class="space-y-5 pb-32 md:space-y-4 md:pb-36">
           {% for service in services %}
             <div class="space-y-3">
-              <article class="flex items-center gap-4 md:rounded-[1.35rem] md:border md:border-[#F0E7DA] md:px-5 md:py-4">
+              <article class="public-saloon-service-card flex items-center gap-4 md:rounded-[1.4rem] md:border md:border-[#F0E7DA] md:px-5 md:py-4">
                 <div class="h-20 w-20 shrink-0 overflow-hidden rounded-[0.95rem] bg-[#F1E7DA] md:h-24 md:w-24 md:rounded-[1.1rem]">
                   {% if service.image %}
                     <div class="media-skeleton h-full w-full" data-skeleton-type="card">
@@ -241,8 +389,9 @@
 
                 <div class="flex min-w-0 flex-1 items-center justify-between gap-4">
                   <div class="min-w-0">
-                    <h2 class="text-[1.1rem] font-normal leading-tight text-[#181818] md:text-[1.45rem]">{{ service.name }}</h2>
-                    <p class="mt-1 text-[1rem] text-[#242424] md:text-[1.02rem]">
+                    <h2 class="text-[1.1rem] font-normal leading-tight text-[#181818] md:text-[1.04rem]">{{ service.name }}</h2>
+                    <p class="mt-1 text-[1rem] text-[#242424] md:text-[0.9rem] md:text-[#756650]">Beauty service</p>
+                    <p class="mt-2 text-[1rem] font-semibold text-[#242424] md:text-[0.98rem]">
                       {% if service.offer_price %}
                         Rs. {{ service.offer_price }}
                       {% else %}
@@ -253,7 +402,7 @@
 
                   <button
                     type="button"
-                    class="service-toggle hidden h-10 shrink-0 items-center justify-center rounded-[0.85rem] border border-[#B89247] bg-[#D2AE63] px-4 text-xs font-medium text-white transition hover:bg-[#C59F53] md:inline-flex md:h-10 md:min-w-[9.5rem] md:px-5 md:text-[0.88rem]"
+                    class="service-toggle hidden h-10 shrink-0 items-center justify-center rounded-full border border-[#B89247] bg-[#D2AE63] px-4 text-xs font-medium text-white transition hover:bg-[#C59F53] md:inline-flex md:h-10 md:min-w-[9.5rem] md:px-5 md:text-[0.82rem]"
                     data-service-id="{{ service.id }}"
                     data-service-name="{{ service.name|escape }}"
                     data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
@@ -288,12 +437,12 @@
 
     <div id="public-tab-gallery" class="public-tab-panel hidden">
       {% if gallery_posts %}
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
           {% for post in gallery_posts %}
             {% with media=post.media.first %}
               <a
                 href="{% url 'public_gallery_detail' slug=saloon.slug post_id=post.id %}"
-                class="gallery-post-trigger block overflow-hidden rounded-[1.2rem] bg-[#F1E7DA] text-left"
+                class="gallery-post-trigger public-saloon-gallery-card block overflow-hidden rounded-[1.3rem] bg-[#F1E7DA] text-left"
               >
                 {% if media %}
                   {% if media.media_type == "video" %}
@@ -326,15 +475,15 @@
     </div>
 
     <div id="public-tab-about" class="public-tab-panel hidden">
-      <div class="space-y-5 pb-20">
-        <div>
-          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl">About</h3>
-          <p class="mt-4 text-sm leading-8 text-[#5A5A5A] sm:text-base">
+      <div class="space-y-5 pb-20 md:grid md:grid-cols-[minmax(0,0.88fr)_minmax(320px,0.72fr)] md:gap-6 md:space-y-0">
+        <div class="public-saloon-section-card md:p-6">
+          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl md:text-[1.35rem]">About</h3>
+          <p class="mt-4 text-sm leading-8 text-[#5A5A5A] sm:text-base md:text-[0.95rem] md:leading-7">
             {{ profile.about|default:"This salon has not added an about section yet." }}
           </p>
         </div>
         <div>
-          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl">Reviews</h3>
+          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl md:text-[1.35rem]">Reviews</h3>
             <div class="mt-4 md:hidden">
               <button
                 type="button"
@@ -446,7 +595,7 @@
             {% endfor %}
           </div>
 
-          <div class="mt-4 hidden rounded-[1.4rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4 sm:p-5 md:block">
+          <div class="mt-4 hidden rounded-[1.5rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4 sm:p-5 md:block public-saloon-section-card">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#A47A38]">Customer Rating</p>
@@ -492,7 +641,7 @@
 
             <div class="mt-5 hidden space-y-3 md:block">
               {% for review in review_cards %}
-                <article class="rounded-[1.2rem] border border-[#EFE4D6] bg-white px-4 py-4">
+                <article class="public-saloon-review-card px-4 py-4">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-3">
                       <div class="h-10 w-10 overflow-hidden rounded-full border border-[#E7DAC8] bg-[#F3ECE4]">
@@ -671,9 +820,79 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
 </div>
+</div>
+</div>
+
+{% if related_nearby_saloons or related_city_saloons %}
+  <section class="border-t border-[#EFE4D6] bg-[#FFFDF9] px-5 py-8 sm:px-8 md:px-10">
+    {% if related_nearby_saloons %}
+      <div>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold text-[#1F1F1F]">More salons near {% if profile.locality %}{{ profile.locality }}{% else %}this area{% endif %}</h2>
+            <p class="mt-1 text-sm text-[#6A6A6A]">Keep exploring similar beauty businesses nearby on Elegentra.</p>
+          </div>
+          {% if profile.locality or profile.city %}
+            <a href="{% url 'public_search' %}?q={% if profile.locality %}{{ profile.locality|urlencode }}{% else %}{{ profile.city|urlencode }}{% endif %}" class="text-sm font-semibold text-[#8A6A38]">
+              View all
+            </a>
+          {% endif %}
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {% for item in related_nearby_saloons %}
+            <a href="{% url 'public_saloon' slug=item.slug %}" class="overflow-hidden rounded-[1.25rem] border border-[#EFE4D6] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div class="media-skeleton h-36 w-full" data-skeleton-type="card">
+                <div class="media-skeleton__placeholder"></div>
+                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
+              </div>
+              <div class="px-4 py-3">
+                <p class="truncate text-base font-semibold text-[#1F1F1F]">{{ item.name }}</p>
+                <p class="mt-1 text-sm text-[#6A6A6A]">{{ item.location }}</p>
+                <p class="mt-2 text-xs font-medium text-[#8A6A38]">
+                  {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
+                </p>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if related_city_saloons %}
+      <div class="{% if related_nearby_saloons %}mt-8{% endif %}">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-semibold text-[#1F1F1F]">More salons in {{ profile.city }}</h2>
+            <p class="mt-1 text-sm text-[#6A6A6A]">Discover other salons, spas, and beauty businesses in the same city.</p>
+          </div>
+          {% if profile.city %}
+            <a href="{% url 'public_search' %}?q={{ profile.city|urlencode }}" class="text-sm font-semibold text-[#8A6A38]">
+              Explore city
+            </a>
+          {% endif %}
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {% for item in related_city_saloons %}
+            <a href="{% url 'public_saloon' slug=item.slug %}" class="overflow-hidden rounded-[1.25rem] border border-[#EFE4D6] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div class="media-skeleton h-36 w-full" data-skeleton-type="card">
+                <div class="media-skeleton__placeholder"></div>
+                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
+              </div>
+              <div class="px-4 py-3">
+                <p class="truncate text-base font-semibold text-[#1F1F1F]">{{ item.name }}</p>
+                <p class="mt-1 text-sm text-[#6A6A6A]">{{ item.location }}</p>
+                <p class="mt-2 text-xs font-medium text-[#8A6A38]">
+                  {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
+                </p>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </section>
+{% endif %}
 
 <div id="reviewLoginPrompt" class="pointer-events-none fixed inset-0 z-[70] hidden bg-black/35 opacity-0 transition">
   <div class="flex min-h-screen items-center justify-center px-4">
@@ -832,6 +1051,57 @@
   })();
 
   (function () {
+    const favoriteButtons = Array.from(document.querySelectorAll("[data-favorite-toggle]"));
+    if (!favoriteButtons.length) return;
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function syncFavoriteState(nextState) {
+      favoriteButtons.forEach(function (button) {
+        button.classList.toggle("is-active", nextState);
+        button.setAttribute("aria-label", nextState ? "Remove from favourites" : "Save to favourites");
+        const icon = button.querySelector("i");
+        if (!icon) return;
+        icon.classList.toggle("fa-solid", nextState);
+        icon.classList.toggle("fa-regular", !nextState);
+      });
+    }
+
+    favoriteButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (!{{ user.is_authenticated|yesno:"true,false" }}) {
+          window.location.href = button.dataset.loginUrl;
+          return;
+        }
+
+        fetch(button.dataset.toggleUrl, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCsrfToken(),
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data.ok) return;
+            syncFavoriteState(Boolean(data.is_favorited));
+            if (data.is_favorited) {
+              favoriteButtons.forEach(function (item) {
+                item.classList.remove("favorite-pop");
+                void item.offsetWidth;
+                item.classList.add("favorite-pop");
+              });
+            }
+          })
+          .catch(function () {});
+      });
+    });
+  })();
+
+  (function () {
     function getCsrfToken() {
       const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
       return match ? decodeURIComponent(match[1]) : "";
@@ -872,6 +1142,7 @@
       tabs.forEach((item) => {
         item.classList.remove("border-[#C5A24B]", "text-[#1F1F1F]");
         item.classList.add("border-transparent", "text-[#1F1F1F]/78");
+        item.classList.remove("is-active");
       });
 
       Object.values(panels).forEach((panel) => {
@@ -883,6 +1154,7 @@
       if (activeTab) {
         activeTab.classList.add("border-[#C5A24B]", "text-[#1F1F1F]");
         activeTab.classList.remove("border-transparent", "text-[#1F1F1F]/78");
+        activeTab.classList.add("is-active");
       }
 
       panels[target].classList.remove("hidden");

@@ -4,7 +4,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}ELEGENTRA{% endblock %}</title>
+  <title>{% block title %}{% if seo and seo.title %}{{ seo.title }}{% else %}ELEGENTRA{% endif %}{% endblock %}</title>
+  <meta name="description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}Discover salons, spas, and beauty professionals near you on Elegentra.{% endif %}">
+  <meta name="robots" content="{% if seo and seo.robots %}{{ seo.robots }}{% else %}index,follow{% endif %}">
+  {% if seo and seo.canonical_url %}<link rel="canonical" href="{{ seo.canonical_url }}">{% endif %}
+
+  <meta property="og:site_name" content="{% if seo and seo.site_name %}{{ seo.site_name }}{% else %}Elegentra{% endif %}">
+  <meta property="og:title" content="{% if seo and seo.title %}{{ seo.title }}{% else %}ELEGENTRA{% endif %}">
+  <meta property="og:description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}Discover salons, spas, and beauty professionals near you on Elegentra.{% endif %}">
+  <meta property="og:type" content="{% if seo and seo.og_type %}{{ seo.og_type }}{% else %}website{% endif %}">
+  {% if seo and seo.canonical_url %}<meta property="og:url" content="{{ seo.canonical_url }}">{% endif %}
+  {% if seo and seo.image_url %}<meta property="og:image" content="{{ seo.image_url }}">{% endif %}
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% if seo and seo.title %}{{ seo.title }}{% else %}ELEGENTRA{% endif %}">
+  <meta name="twitter:description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}Discover salons, spas, and beauty professionals near you on Elegentra.{% endif %}">
+  {% if seo and seo.image_url %}<meta name="twitter:image" content="{{ seo.image_url }}">{% endif %}
+  {% if seo and seo.json_ld %}
+    <script type="application/ld+json">{{ seo.json_ld|safe }}</script>
+  {% endif %}
+  {% block extra_head %}{% endblock %}
 
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -274,23 +293,66 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% block site_footer %}
+  <footer class="{% if active_nav == 'home' %}block{% else %}hidden md:block{% endif %} mx-auto mt-14 max-w-6xl px-4 pb-28 pt-6 md:pb-10">
+    <div class="overflow-hidden rounded-[2rem] border border-[#E8DECF] bg-[linear-gradient(180deg,rgba(255,250,244,0.95),rgba(247,239,229,0.92))] shadow-[0_18px_50px_rgba(74,56,30,0.08)]">
+      <div class="grid gap-8 px-6 py-8 md:grid-cols-[1.3fr_0.9fr_0.9fr] md:px-8">
+        <div>
+          <a href="{% url 'public_home' %}" class="inline-flex items-center text-[#4F3F2E]" aria-label="ELEGENTRA home">
+            <span class="text-[1.9rem] tracking-[0.02em]" style="font-family: 'Bauserif', serif;">Elegentra</span>
+          </a>
+          <p class="mt-3 max-w-md text-sm leading-7 text-[#6E5C45]">
+            Discover salons, spas, and beauty services with a cleaner, calmer way to browse nearby places.
+          </p>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9A7B47]">Explore</p>
+          <div class="mt-4 flex flex-col gap-3 text-sm text-[#5F503F]">
+            <a href="{% url 'public_home' %}" class="transition hover:text-[#B58C4E]">Home</a>
+            <a href="{% url 'public_search' %}" class="transition hover:text-[#B58C4E]">Search</a>
+            <a href="{% url 'public_faq' %}" class="transition hover:text-[#B58C4E]">FAQ</a>
+            <a href="{% url 'partner_home' %}" class="transition hover:text-[#B58C4E]">For Partners</a>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9A7B47]">Account</p>
+          <div class="mt-4 flex flex-col gap-3 text-sm text-[#5F503F]">
+            <a href="{% url 'public_account' %}" class="transition hover:text-[#B58C4E]">Account</a>
+            <a href="{% url 'public_settings' %}" class="transition hover:text-[#B58C4E]">Settings</a>
+            {% if user.is_authenticated %}
+              <a href="{% url 'account_logout' %}" class="transition hover:text-[#B58C4E]">Logout</a>
+            {% else %}
+              <a href="{% url 'account_login' %}" class="transition hover:text-[#B58C4E]">Login</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-[#E8DECF] px-6 py-4 text-xs text-[#8B7860] md:px-8">
+        Copyright {% now "Y" %} Elegentra. Crafted for beauty discovery.
+      </div>
+    </div>
+  </footer>
+  {% endblock %}
+
   {% block page_nav %}
-  <nav class="fixed bottom-0 left-0 flex w-full items-center justify-around gap-10 rounded-t-3xl rounded-b-none border-t border-[#EEE4D8] bg-[#FCF9F5] px-8 py-4 shadow-lg md:bottom-4 md:left-1/2 md:w-auto md:min-w-[430px] md:-translate-x-1/2 md:justify-center md:gap-14 md:rounded-full md:border md:border-[#B58C4E]/50 md:bg-[#FCF9F5] md:px-12 md:shadow-[0_22px_55px_rgba(74,56,30,0.22),0_10px_28px_rgba(181,140,78,0.18)]">
-    <a href="{% url 'public_home' %}" data-geo-link class="{% if active_nav == 'home' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-solid fa-house md:transition md:duration-300"></i>
-      Home
+  <nav class="group fixed bottom-0 left-0 z-40 flex w-full items-center justify-around gap-10 rounded-t-3xl rounded-b-none border-t border-[#EEE4D8] bg-[#FCF9F5] px-8 py-4 shadow-lg md:bottom-auto md:top-1/2 md:left-[-6px] md:h-[400px] md:w-[68px] md:-translate-y-1/2 md:flex-col md:justify-evenly md:gap-0 md:overflow-hidden md:rounded-r-[34px] md:rounded-l-none md:border md:border-l-0 md:border-[#B58C4E]/45 md:bg-[#FCF9F5]/96 md:px-2 md:py-4 md:transition-[width,box-shadow] md:duration-300 md:hover:w-[88px] md:shadow-[0_18px_44px_rgba(74,56,30,0.14),0_8px_20px_rgba(181,140,78,0.10)] md:hover:shadow-[0_22px_55px_rgba(74,56,30,0.18),0_10px_28px_rgba(181,140,78,0.14)]">
+    <a href="{% url 'public_home' %}" data-geo-link class="{% if active_nav == 'home' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-house text-[0.98rem] md:transition md:duration-300"></i>
+      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Home</span>
     </a>
-    <a href="{% url 'public_search' %}" data-geo-link class="{% if active_nav == 'search' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-solid fa-magnifying-glass md:transition md:duration-300"></i>
-      Search
+    <a href="{% url 'public_search' %}" data-geo-link class="{% if active_nav == 'search' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-magnifying-glass text-[0.98rem] md:transition md:duration-300"></i>
+      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Search</span>
     </a>
-    <a href="{% url 'public_favorites' %}" data-geo-link class="{% if active_nav == 'favorites' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-regular fa-heart md:transition md:duration-300"></i>
-      Favourites
+    <a href="{% url 'public_favorites' %}" data-geo-link class="{% if active_nav == 'favorites' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-heart text-[0.98rem] md:transition md:duration-300"></i>
+      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Favourites</span>
     </a>
-    <a href="{% url 'public_account' %}" data-geo-link class="{% if active_nav == 'account' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center gap-1 text-xs md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-regular fa-user md:transition md:duration-300"></i>
-      Account
+    <a href="{% url 'public_account' %}" data-geo-link class="{% if active_nav == 'account' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-user text-[0.98rem] md:transition md:duration-300"></i>
+      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Account</span>
     </a>
   </nav>
   {% endblock %}

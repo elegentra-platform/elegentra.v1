@@ -1,6 +1,7 @@
 import random
 from datetime import timedelta
 
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -10,6 +11,8 @@ from django.contrib import messages
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from core.seo import build_absolute_url, build_image_url, build_seo_payload, truncate_text
+from public.models import FavoriteSaloon
 from .serializers import (
     SaloonOnboardingStepOneSerializer,
     SaloonOnboardingStepTwoSerializer,
@@ -51,6 +54,15 @@ def _format_time_label(value):
     if not value:
         return ""
     return value.strftime("%I:%M %p").lstrip("0")
+
+
+def _display_name(saloon, profile=None):
+    profile = profile or getattr(saloon, "profile", None)
+    if profile and profile.saloon_name:
+        return profile.saloon_name
+    if saloon.name:
+        return saloon.name
+    return "Salon"
 
 
 def _build_hours_summary(profile):
@@ -97,6 +109,164 @@ def _get_review_summary(saloon):
         "average": round(float(average), 1) if total else 0,
         "total": total,
     }
+
+
+def _saloon_card_payload(saloon):
+    profile = getattr(saloon, "profile", None)
+    image_url = ""
+    if saloon.banner_image:
+        image_url = saloon.banner_image.url
+    else:
+        first_service = saloon.services.filter(
+            is_active=True,
+            is_visible=True,
+            is_deleted=False,
+        ).first()
+        if first_service and first_service.image:
+            image_url = first_service.image.url
+
+    location_parts = []
+    if profile and profile.locality:
+        location_parts.append(profile.locality)
+    if profile and profile.city:
+        location_parts.append(profile.city)
+
+    return {
+        "name": _display_name(saloon, profile),
+        "slug": saloon.slug,
+        "image": image_url or f"{settings.STATIC_URL}services/images/hero.webp",
+        "location": ", ".join(location_parts) or "Nearby",
+        "rating": getattr(saloon, "avg_rating", None),
+        "review_count": getattr(saloon, "review_count", 0) or 0,
+    }
+
+
+def _related_saloons(saloon, profile):
+    if not profile:
+        return {"nearby": [], "city": []}
+
+    base_queryset = (
+        Saloon.objects.filter(
+            is_active=True,
+            approval_status=Saloon.APPROVAL_APPROVED,
+        )
+        .exclude(id=saloon.id)
+        .annotate(avg_rating=Avg("reviews__rating", filter=Q(reviews__is_visible=True)))
+        .annotate(review_count=Count("reviews", filter=Q(reviews__is_visible=True)))
+        .select_related("profile")
+        .prefetch_related("services")
+    )
+
+    nearby_queryset = base_queryset.none()
+    if profile.locality and profile.city:
+        nearby_queryset = base_queryset.filter(
+            profile__city__iexact=profile.city,
+            profile__locality__iexact=profile.locality,
+        )
+
+    city_queryset = base_queryset.none()
+    if profile.city:
+        city_queryset = base_queryset.filter(profile__city__iexact=profile.city)
+        if profile.locality:
+            city_queryset = city_queryset.exclude(profile__locality__iexact=profile.locality)
+
+    return {
+        "nearby": [_saloon_card_payload(item) for item in nearby_queryset.order_by("-updated_at", "-id")[:4]],
+        "city": [_saloon_card_payload(item) for item in city_queryset.order_by("-updated_at", "-id")[:4]],
+    }
+
+
+def _saloon_json_ld(request, saloon, profile, display_name, map_url, review_summary, services):
+    locality = profile.locality if profile else ""
+    city = profile.city if profile else ""
+    address = {
+        "@type": "PostalAddress",
+        "addressLocality": city,
+        "streetAddress": locality,
+        "addressCountry": "IN",
+    }
+
+    data = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": display_name,
+        "url": build_absolute_url(request, reverse("public_saloon", kwargs={"slug": saloon.slug})),
+        "description": truncate_text(profile.about if profile else ""),
+        "telephone": saloon.whatsapp_number,
+        "address": address,
+        "areaServed": city or locality,
+        "image": build_image_url(
+            request,
+            saloon.banner_image.url if saloon.banner_image else "",
+        ),
+    }
+
+    if map_url:
+        data["hasMap"] = map_url
+    if profile and profile.latitude is not None and profile.longitude is not None:
+        data["geo"] = {
+            "@type": "GeoCoordinates",
+            "latitude": float(profile.latitude),
+            "longitude": float(profile.longitude),
+        }
+    if profile and profile.opening_time and profile.closing_time:
+        days = profile.operating_days or DAY_KEYS
+        schema_days = [f"https://schema.org/{day.capitalize()}" for day in days]
+        data["openingHoursSpecification"] = [
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": schema_days,
+                "opens": profile.opening_time.strftime("%H:%M"),
+                "closes": profile.closing_time.strftime("%H:%M"),
+            }
+        ]
+    if review_summary["total"]:
+        data["aggregateRating"] = {
+            "@type": "AggregateRating",
+            "ratingValue": review_summary["average"],
+            "reviewCount": review_summary["total"],
+        }
+    if services:
+        data["makesOffer"] = [
+            {
+                "@type": "Offer",
+                "itemOffered": {
+                    "@type": "Service",
+                    "name": service.name,
+                },
+                "priceCurrency": "INR",
+                "price": str(service.offer_price or service.price),
+            }
+            for service in services[:8]
+        ]
+    return data
+
+
+def _saloon_seo(request, saloon, profile, display_name, review_summary, services, map_url):
+    city = profile.city if profile and profile.city else "your city"
+    locality = profile.locality if profile and profile.locality else ""
+    service_names = ", ".join(service.name for service in services[:3])
+    location_label = ", ".join([part for part in [locality, city] if part])
+    description_parts = [
+        f"Discover {display_name}",
+        f"in {location_label}" if location_label else "",
+        f"with services like {service_names}" if service_names else "",
+    ]
+    description = " ".join(part for part in description_parts if part).strip()
+    if review_summary["total"]:
+        description += f". Rated {review_summary['average']} from {review_summary['total']} reviews."
+    else:
+        description += ". Explore services, timings, map location, and contact details."
+
+    return build_seo_payload(
+        request,
+        title=f"{display_name} in {city} | Elegentra",
+        description=description,
+        canonical_url=build_absolute_url(request, reverse("public_saloon", kwargs={"slug": saloon.slug})),
+        image_url=saloon.banner_image.url if saloon.banner_image else "",
+        og_type="business.business",
+        json_ld=_saloon_json_ld(request, saloon, profile, display_name, map_url, review_summary, services),
+    )
 
 
 def _build_review_cards(reviews, current_user=None):
@@ -700,13 +870,7 @@ def public_saloon(request, slug):
         is_visible=True,
         is_deleted=False,
     ).select_related("category")
-    display_name = ""
-    if profile and profile.saloon_name:
-        display_name = profile.saloon_name
-    elif saloon.name:
-        display_name = saloon.name
-    else:
-        display_name = "Salon"
+    display_name = _display_name(saloon, profile)
     whatsapp_template = profile.get_whatsapp_prefill_template() if profile else ""
     whatsapp_number = "".join(ch for ch in saloon.whatsapp_number if ch.isdigit())
     gallery_posts = saloon.gallery_posts.prefetch_related("media").all()[:6]
@@ -714,6 +878,11 @@ def public_saloon(request, slug):
     reviews = saloon.reviews.filter(is_visible=True)[:8]
     review_cards = _build_review_cards(reviews, request.user)
     hours_summary = _build_hours_summary(profile)
+    related_saloons = _related_saloons(saloon, profile)
+    is_favorited = bool(
+        request.user.is_authenticated
+        and FavoriteSaloon.objects.filter(user=request.user, saloon=saloon).exists()
+    )
     return render(
         request,
         "saloons/public_saloon.html",
@@ -730,8 +899,30 @@ def public_saloon(request, slug):
             "review_cards": review_cards,
             "review_summary": review_summary,
             "hours_summary": hours_summary,
+            "is_favorited": is_favorited,
+            "related_nearby_saloons": related_saloons["nearby"],
+            "related_city_saloons": related_saloons["city"],
+            "seo": _saloon_seo(request, saloon, profile, display_name, review_summary, list(services), map_url),
+            "public_has_saloon": bool(request.user.is_authenticated and Saloon.objects.filter(owner=request.user).exists()),
         },
     )
+
+
+@login_required
+@require_POST
+def public_saloon_favorite_toggle(request, slug):
+    saloon = get_object_or_404(
+        Saloon,
+        slug=slug,
+        is_active=True,
+        approval_status=Saloon.APPROVAL_APPROVED,
+    )
+    favorite, created = FavoriteSaloon.objects.get_or_create(user=request.user, saloon=saloon)
+    if created:
+        return JsonResponse({"ok": True, "is_favorited": True})
+
+    favorite.delete()
+    return JsonResponse({"ok": True, "is_favorited": False})
 
 
 @require_POST

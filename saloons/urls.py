@@ -29,6 +29,7 @@ urlpatterns = [
     path("onboarding/step-3/", views.saloon_onboarding_step_three, name="saloon_onboarding_step_three"),
     path("onboarding/step-4/",views.saloon_onboarding_step_four,name="saloon_onboarding_step_four"),
     path("@<slug:slug>/gallery/<int:post_id>/", views.public_gallery_detail, name="public_gallery_detail"),
+    path("@<slug:slug>/favorite-toggle/", views.public_saloon_favorite_toggle, name="public_saloon_favorite_toggle"),
     path("@<slug:slug>/map-click/", views.public_saloon_map_click, name="public_saloon_map_click"),
     path("@<slug:slug>/service-interest/", views.public_service_interest, name="public_service_interest"),
     path("@<slug:slug>/review/", views.public_saloon_add_review, name="public_saloon_add_review"),

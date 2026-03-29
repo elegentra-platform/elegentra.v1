@@ -13,6 +13,7 @@ except ImportError:  # pragma: no cover - local fallback until requirements are 
     dj_database_url = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+SITE_URL = os.getenv("SITE_URL", "").strip().rstrip("/")
 
 # ==================================================
 # CORE

@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Elegentra - Search{% endblock %}
+{% block title %}{{ seo.title|default:"Elegentra - Search" }}{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .public-card-favorite.is-active {
+      color: #c87070;
+      background: rgba(255, 244, 244, 0.96);
+      border-color: rgba(239, 202, 202, 0.95);
+    }
+  </style>
+{% endblock %}
 
 {% block search_bar %}
   <div class="w-full max-w-lg">
@@ -43,7 +54,7 @@
 {% block content %}
   <div class="mt-4 md:min-h-[70vh]">
     {% if has_filters %}
-      <div class="mt-2 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div class="mt-4 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
           {% for category in categories %}
             <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
@@ -88,17 +99,29 @@
           </div>
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {% for salon in search_results %}
-              <a href="{% url 'public_saloon' slug=salon.slug %}" class="group rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm transition hover:bg-white/75">
-                <div class="media-skeleton w-full h-28 lg:h-36 rounded-xl" data-skeleton-type="card">
+              <div class="group rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm transition hover:bg-white/75">
+                <div class="relative media-skeleton w-full h-28 lg:h-36 rounded-xl" data-skeleton-type="card">
                   <div class="media-skeleton__placeholder"></div>
-                  <img src="{{ salon.image }}" class="w-full h-28 lg:h-36 rounded-xl object-cover" alt="{{ salon.name }}" data-skeleton-image />
+                  <a href="{% url 'public_saloon' slug=salon.slug %}" class="block">
+                    <img src="{{ salon.image }}" class="w-full h-28 lg:h-36 rounded-xl object-cover" alt="{{ salon.name }}" data-skeleton-image />
+                  </a>
+                  <button
+                    type="button"
+                    class="public-card-favorite absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/90 text-[#7d6a55] shadow-sm transition {% if salon.is_favorited %}is-active{% endif %}"
+                    data-card-favorite
+                    data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=salon.slug %}"
+                    data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}"
+                    aria-label="{% if salon.is_favorited %}Remove from favourites{% else %}Save to favourites{% endif %}"
+                  >
+                    <i class="{% if salon.is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart text-xs"></i>
+                  </button>
                 </div>
-                <div class="mt-2 min-w-0">
+                <a href="{% url 'public_saloon' slug=salon.slug %}" class="mt-2 block min-w-0">
                   <p class="truncate text-sm lg:text-[15px] font-semibold text-gray-900">{{ salon.name }}</p>
                   <p class="text-[11px] text-gray-600">{{ salon.distance }}</p>
                   <div class="mt-1 text-[11px] text-gray-700"><i class="fa-solid fa-star text-[#B58C4E]"></i> {{ salon.rating }}</div>
-                </div>
-              </a>
+                </a>
+              </div>
             {% endfor %}
           </div>
           {% if page_obj.paginator.num_pages > 1 %}
@@ -119,18 +142,35 @@
         {% endif %}
       </div>
     {% else %}
-      <div class="mt-12 text-center">
-        <div class="mx-auto w-28 h-28 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center">
+      <div class="flex min-h-[calc(100vh-15rem)] flex-col items-center justify-center py-8 text-center md:min-h-[calc(100vh-18rem)] md:py-12">
+        <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-white/60 bg-white/55 shadow-sm">
           <i class="fa-solid fa-magnifying-glass text-5xl text-[#B58C4E]"></i>
         </div>
         <div class="mt-6 text-xl font-medium text-gray-900">Search salons near you</div>
-      </div>
 
-      <div class="mt-10 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
+        <div class="mt-8 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
+            {% for category in categories %}
+              <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
+                <div class="w-14 h-14 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+                  {% if category.icon_url %}
+                    <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
+                      <div class="media-skeleton__placeholder"></div>
+                      <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                    </div>
+                  {% else %}
+                    <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mt-10 hidden w-full items-center justify-center gap-6 md:flex">
           {% for category in categories %}
-            <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
-              <div class="w-14 h-14 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
+            <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
+              <div class="w-16 h-16 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
                 {% if category.icon_url %}
                   <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
                     <div class="media-skeleton__placeholder"></div>
@@ -140,27 +180,10 @@
                   <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
                 {% endif %}
               </div>
+              <div class="text-xs text-gray-800 text-center leading-tight">{{ category.name }}</div>
             </a>
           {% endfor %}
         </div>
-      </div>
-
-      <div class="hidden md:flex mt-20 w-full items-center justify-center gap-6">
-        {% for category in categories %}
-          <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
-            <div class="w-16 h-16 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
-              {% if category.icon_url %}
-                <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
-                  <div class="media-skeleton__placeholder"></div>
-                  <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
-                </div>
-              {% else %}
-                <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
-              {% endif %}
-            </div>
-            <div class="text-xs text-gray-800 text-center leading-tight">{{ category.name }}</div>
-          </a>
-        {% endfor %}
       </div>
     {% endif %}
   </div>
@@ -168,6 +191,46 @@
 
 {% block scripts %}
 <script>
+  (function () {
+    const favoriteButtons = Array.from(document.querySelectorAll("[data-card-favorite]"));
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    favoriteButtons.forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!{{ user.is_authenticated|yesno:"true,false" }}) {
+          window.location.href = button.dataset.loginUrl;
+          return;
+        }
+
+        fetch(button.dataset.toggleUrl, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCsrfToken(),
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            if (!data.ok) return;
+            button.classList.toggle("is-active", Boolean(data.is_favorited));
+            button.setAttribute("aria-label", data.is_favorited ? "Remove from favourites" : "Save to favourites");
+            const icon = button.querySelector("i");
+            if (!icon) return;
+            icon.classList.toggle("fa-solid", Boolean(data.is_favorited));
+            icon.classList.toggle("fa-regular", !data.is_favorited);
+          })
+          .catch(function () {});
+      });
+    });
+  })();
+
   (function () {
     const hasCoords = "{{ user_lat|default:'' }}" && "{{ user_lng|default:'' }}";
     const params = new URLSearchParams(window.location.search);
@@ -184,5 +247,6 @@
       });
     }
   })();
+
 </script>
 {% endblock %}

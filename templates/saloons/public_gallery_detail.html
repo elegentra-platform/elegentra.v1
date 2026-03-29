@@ -4,6 +4,29 @@
 {% block page_header %}{% endblock %}
 {% block page_nav %}{% endblock %}
 {% block main_class %}min-h-screen overflow-x-hidden{% endblock %}
+{% block extra_head %}
+<style>
+  .video-controls {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .video-progress {
+    touch-action: none;
+    user-select: none;
+  }
+
+  .video-player:hover .video-controls,
+  .video-player.is-paused .video-controls,
+  .video-player.is-scrubbing .video-controls {
+    opacity: 1;
+  }
+
+  .video-player.is-playing .video-controls {
+    opacity: 0;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="-mx-4 min-h-screen bg-white sm:-mx-6">
@@ -24,7 +47,7 @@
         {% if prev_post %}
           <a
             href="{% url 'public_gallery_detail' slug=saloon.slug post_id=prev_post.id %}"
-            class="absolute -left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
+            class="absolute -left-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
           >
             <i class="fa-solid fa-chevron-left text-sm"></i>
           </a>
@@ -32,7 +55,7 @@
         {% if next_post %}
           <a
             href="{% url 'public_gallery_detail' slug=saloon.slug post_id=next_post.id %}"
-            class="absolute -right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
+            class="absolute -right-4 top-1/2 z-20 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"
           >
             <i class="fa-solid fa-chevron-right text-sm"></i>
           </a>
@@ -54,12 +77,20 @@
                         <video class="w-full h-[420px] object-contain bg-gray-50" preload="metadata" playsinline>
                           <source src="{{ media.file.url }}" type="video/mp4">
                         </video>
-                        <div class="absolute inset-x-0 bottom-0 px-3 pb-1 video-controls hidden">
-                          <input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">
-                        </div>
-                        <button type="button" class="video-mute absolute top-3 right-3 bg-black/30 text-white text-xs px-2 py-1 rounded-full">
-                          <i class="fa-solid fa-volume-high"></i>
+                        <button type="button" class="video-replay absolute inset-0 hidden items-center justify-center bg-black/20 text-white">
+                          <span class="rounded-full bg-black/55 px-4 py-2 text-sm font-semibold">Watch again</span>
                         </button>
+                        <div class="video-controls pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-3">
+                          <div class="pointer-events-auto flex items-center gap-3 rounded-full bg-black/35 px-3 py-2 backdrop-blur-md">
+                            <button type="button" class="video-mute inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/14 text-white">
+                              <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                            <div class="video-progress relative h-2 flex-1 cursor-pointer rounded-full bg-white/25">
+                              <div class="video-progress-fill absolute inset-y-0 left-0 rounded-full bg-[#D9A441]" style="width:0%"></div>
+                              <div class="video-progress-thumb absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border border-white/70 bg-white shadow" style="left:0%"></div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     {% else %}
                       <img src="{{ media.file.url }}" class="w-full h-[420px] object-contain bg-gray-50" alt="Gallery media">
@@ -146,12 +177,20 @@
                       <video class="w-full h-[26rem] object-contain bg-gray-50" preload="metadata" playsinline>
                         <source src="{{ media.file.url }}" type="video/mp4">
                       </video>
-                      <div class="absolute inset-x-0 bottom-0 px-2 pb-1 video-controls hidden">
-                        <input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">
-                      </div>
-                      <button type="button" class="video-mute absolute top-2 right-2 bg-black/30 text-white text-[10px] px-2 py-1 rounded-full">
-                        <i class="fa-solid fa-volume-high"></i>
+                      <button type="button" class="video-replay absolute inset-0 hidden items-center justify-center bg-black/20 text-white">
+                        <span class="rounded-full bg-black/55 px-4 py-2 text-sm font-semibold">Watch again</span>
                       </button>
+                      <div class="video-controls pointer-events-none absolute inset-x-0 bottom-0 z-10 px-2 pb-2">
+                        <div class="pointer-events-auto flex items-center gap-2 rounded-full bg-black/35 px-3 py-2 backdrop-blur-md">
+                          <button type="button" class="video-mute inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/14 text-[11px] text-white">
+                            <i class="fa-solid fa-volume-high"></i>
+                          </button>
+                          <div class="video-progress relative h-2 flex-1 cursor-pointer rounded-full bg-white/25">
+                            <div class="video-progress-fill absolute inset-y-0 left-0 rounded-full bg-[#D9A441]" style="width:0%"></div>
+                            <div class="video-progress-thumb absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border border-white/70 bg-white shadow" style="left:0%"></div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   {% else %}
                     <img src="{{ media.file.url }}" class="w-full h-[26rem] object-contain bg-gray-50" alt="Gallery media">
@@ -190,6 +229,49 @@
 <script>
   (function () {
     var carousels = {};
+    var autoplayObserver = null;
+
+    function safePlay(video) {
+      if (!video) return;
+      var promise = video.play();
+      if (promise && typeof promise.catch === "function") {
+        promise.catch(function () {});
+      }
+    }
+
+    function pauseVideo(video) {
+      if (!video) return;
+      video.pause();
+    }
+
+    function syncVisibleVideos() {
+      document.querySelectorAll(".video-player").forEach(function (wrap) {
+        var video = wrap.querySelector("video");
+        if (!video) return;
+        if (wrap.dataset.scrubbing === "true") return;
+        if (Number(wrap.dataset.ignoreAutoplayUntil || "0") > Date.now()) return;
+        var slide = wrap.closest(".media-slide");
+        var replay = wrap.querySelector(".video-replay");
+        var isHiddenSlide = slide && slide.classList.contains("hidden");
+
+        if (isHiddenSlide) {
+          pauseVideo(video);
+          if (replay) replay.classList.add("hidden");
+          return;
+        }
+
+        var rect = wrap.getBoundingClientRect();
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        var visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        var visibilityRatio = rect.height > 0 ? visibleHeight / rect.height : 0;
+
+        if (visibilityRatio >= 0.12 && !video.dataset.ended && video.dataset.userPaused !== "true") {
+          safePlay(video);
+        } else if (!video.paused) {
+          pauseVideo(video);
+        }
+      });
+    }
 
     function initCarousel(id) {
       if (carousels[id]) return;
@@ -214,6 +296,8 @@
           dot.classList.toggle("bg-gray-300", idx !== state.index);
         });
       }
+
+      syncVisibleVideos();
     }
 
     function setIndex(id, idx) {
@@ -257,13 +341,19 @@
       var startX = 0;
       var isTouch = false;
 
+      function isInteractiveTarget(target) {
+        return !!(target && target.closest(".video-progress, .video-controls, .video-mute, .video-replay"));
+      }
+
       carousel.addEventListener("touchstart", function (e) {
+        if (isInteractiveTarget(e.target)) return;
         if (!e.touches || !e.touches.length) return;
         isTouch = true;
         startX = e.touches[0].clientX;
       }, { passive: true });
 
       carousel.addEventListener("touchend", function (e) {
+        if (isInteractiveTarget(e.target)) return;
         if (!isTouch) return;
         isTouch = false;
         if (!e.changedTouches || !e.changedTouches.length) return;
@@ -281,60 +371,204 @@
     document.querySelectorAll(".video-player").forEach(function (wrap) {
       var video = wrap.querySelector("video");
       var muteBtn = wrap.querySelector(".video-mute");
-      var range = wrap.querySelector(".video-range");
+      var progress = wrap.querySelector(".video-progress");
+      var progressFill = wrap.querySelector(".video-progress-fill");
+      var progressThumb = wrap.querySelector(".video-progress-thumb");
+      var replayBtn = wrap.querySelector(".video-replay");
+      var wasPlayingBeforeScrub = false;
+      var wasEndedBeforeScrub = false;
+      var activePointerId = null;
 
       if (!video) return;
+      video.controls = false;
+      video.muted = false;
 
-      function updateTime() {
-        if (video.duration) {
-          range.value = Math.floor((video.currentTime / video.duration) * 100);
+      function updateProgress() {
+        if (!progressFill || !progressThumb || !video.duration || wrap.dataset.scrubbing === "true") return;
+        var percent = Math.min(Math.max((video.currentTime / video.duration) * 100, 0), 100);
+        progressFill.style.width = percent + "%";
+        progressThumb.style.left = percent + "%";
+      }
+
+      function seekToClientX(clientX) {
+        if (!progress || !video.duration || !isFinite(video.duration)) return;
+        var rect = progress.getBoundingClientRect();
+        if (!rect.width) return;
+        var ratio = (clientX - rect.left) / rect.width;
+        ratio = Math.min(Math.max(ratio, 0), 1);
+        wrap.dataset.ignoreAutoplayUntil = String(Date.now() + 2500);
+        video.currentTime = ratio * video.duration;
+        video.dataset.ended = "";
+        if (replayBtn) replayBtn.classList.add("hidden");
+        if (progressFill) progressFill.style.width = (ratio * 100) + "%";
+        if (progressThumb) progressThumb.style.left = (ratio * 100) + "%";
+      }
+
+      function startScrub(clientX) {
+        wrap.dataset.scrubbing = "true";
+        wrap.classList.add("is-scrubbing");
+        wasPlayingBeforeScrub = !video.paused;
+        wasEndedBeforeScrub = video.ended || video.dataset.ended === "true";
+        if (wasPlayingBeforeScrub) {
+          pauseVideo(video);
+        } else {
+          video.dataset.userPaused = "true";
+        }
+        seekToClientX(clientX);
+      }
+
+      function moveScrub(clientX) {
+        if (wrap.dataset.scrubbing !== "true") return;
+        seekToClientX(clientX);
+      }
+
+      function endScrub() {
+        if (wrap.dataset.scrubbing !== "true") return;
+        wrap.dataset.scrubbing = "";
+        wrap.classList.remove("is-scrubbing");
+        wrap.dataset.justScrubbed = "true";
+        window.setTimeout(function () {
+          if (wrap.dataset.justScrubbed === "true") {
+            wrap.dataset.justScrubbed = "";
+          }
+        }, 900);
+        if (wasPlayingBeforeScrub || wasEndedBeforeScrub) {
+          video.dataset.userPaused = "";
+          safePlay(video);
         }
       }
 
-      muteBtn.addEventListener("click", function () {
-        video.muted = !video.muted;
-        muteBtn.innerHTML = video.muted
-          ? '<i class="fa-solid fa-volume-xmark"></i>'
-          : '<i class="fa-solid fa-volume-high"></i>';
-      });
+      if (muteBtn) {
+        muteBtn.addEventListener("click", function (event) {
+          event.stopPropagation();
+          video.muted = !video.muted;
+          muteBtn.innerHTML = video.muted
+            ? '<i class="fa-solid fa-volume-xmark"></i>'
+            : '<i class="fa-solid fa-volume-high"></i>';
+        });
+      }
 
-      range.addEventListener("input", function () {
-        if (!video.duration) return;
-        var pct = parseInt(range.value, 10) / 100;
-        video.currentTime = pct * video.duration;
-      });
+      if (progress) {
+        progress.addEventListener("pointerdown", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          activePointerId = event.pointerId;
+          if (progress.setPointerCapture) {
+            progress.setPointerCapture(event.pointerId);
+          }
+          startScrub(event.clientX);
+        });
+        progress.addEventListener("pointermove", function (event) {
+          if (activePointerId !== event.pointerId) return;
+          event.preventDefault();
+          event.stopPropagation();
+          moveScrub(event.clientX);
+        });
+        progress.addEventListener("pointerup", function (event) {
+          if (activePointerId !== event.pointerId) return;
+          event.preventDefault();
+          event.stopPropagation();
+          moveScrub(event.clientX);
+          endScrub();
+          if (progress.releasePointerCapture) {
+            try {
+              progress.releasePointerCapture(event.pointerId);
+            } catch (error) {}
+          }
+          activePointerId = null;
+        });
+        progress.addEventListener("pointercancel", function (event) {
+          if (activePointerId !== event.pointerId) return;
+          endScrub();
+          if (progress.releasePointerCapture) {
+            try {
+              progress.releasePointerCapture(event.pointerId);
+            } catch (error) {}
+          }
+          activePointerId = null;
+        });
+        progress.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      }
 
-      video.addEventListener("click", function () {
+      wrap.addEventListener("click", function (event) {
+        if (event.target.closest(".video-controls, .video-replay, .video-mute")) {
+          return;
+        }
+        if (wrap.dataset.justScrubbed === "true") {
+          event.preventDefault();
+          event.stopPropagation();
+          wrap.dataset.justScrubbed = "";
+          return;
+        }
         if (video.paused) {
-          video.play();
+          video.dataset.ended = "";
+          video.dataset.userPaused = "";
+          if (replayBtn) replayBtn.classList.add("hidden");
+          safePlay(video);
         } else {
-          video.pause();
+          video.dataset.userPaused = "true";
+          pauseVideo(video);
         }
       });
 
-      wrap.addEventListener("mouseenter", function () {
-        var controls = wrap.querySelector(".video-controls");
-        if (controls) controls.classList.remove("hidden");
-      });
-      wrap.addEventListener("mouseleave", function () {
-        if (!video.paused) {
-          var controls = wrap.querySelector(".video-controls");
-          if (controls) controls.classList.add("hidden");
-        }
-      });
+      if (replayBtn) {
+        replayBtn.addEventListener("click", function (event) {
+          event.stopPropagation();
+          video.currentTime = 0;
+          video.dataset.ended = "";
+          video.dataset.userPaused = "";
+          replayBtn.classList.add("hidden");
+          safePlay(video);
+        });
+      }
 
       video.addEventListener("pause", function () {
-        var controls = wrap.querySelector(".video-controls");
-        if (controls) controls.classList.remove("hidden");
+        wrap.classList.remove("is-playing");
+        wrap.classList.add("is-paused");
       });
       video.addEventListener("play", function () {
-        var controls = wrap.querySelector(".video-controls");
-        if (controls) controls.classList.add("hidden");
+        video.dataset.ended = "";
+        video.dataset.userPaused = "";
+        if (replayBtn) replayBtn.classList.add("hidden");
+        wrap.classList.add("is-playing");
+        wrap.classList.remove("is-paused");
+      });
+      video.addEventListener("ended", function () {
+        video.dataset.ended = "true";
+        if (replayBtn) replayBtn.classList.remove("hidden");
+        wrap.classList.remove("is-playing");
+        wrap.classList.add("is-paused");
       });
 
-      video.addEventListener("timeupdate", updateTime);
-      video.addEventListener("loadedmetadata", updateTime);
+      video.addEventListener("timeupdate", updateProgress);
+      video.addEventListener("loadedmetadata", updateProgress);
     });
+
+    if ("IntersectionObserver" in window) {
+      autoplayObserver = new IntersectionObserver(function () {
+        syncVisibleVideos();
+      }, { threshold: [0.05, 0.12, 0.3, 0.6] });
+
+      document.querySelectorAll(".video-player").forEach(function (wrap) {
+        autoplayObserver.observe(wrap);
+      });
+    }
+
+    window.addEventListener("scroll", syncVisibleVideos, { passive: true });
+    window.addEventListener("resize", syncVisibleVideos);
+    window.addEventListener("load", syncVisibleVideos);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        document.querySelectorAll(".video-player video").forEach(pauseVideo);
+      } else {
+        syncVisibleVideos();
+      }
+    });
+
+    syncVisibleVideos();
   })();
 </script>
 {% if selected_post_id %}
@@ -345,6 +579,9 @@
       var isMobile = window.matchMedia("(max-width: 1023px)").matches;
       if (isMobile) {
         target.scrollIntoView({ behavior: "instant", block: "start" });
+        window.setTimeout(function () {
+          window.dispatchEvent(new Event("scroll"));
+        }, 80);
       }
     }
   });
