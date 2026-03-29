@@ -43,7 +43,13 @@ def truncate_text(value, length=160):
 
 
 def build_image_url(request, image_url=None):
-    chosen = image_url or static("services/images/hero.webp")
+    if image_url:
+        chosen = image_url
+    else:
+        try:
+            chosen = static("services/images/hero.webp")
+        except Exception:
+            chosen = f"{settings.STATIC_URL.rstrip('/')}/services/images/hero.webp"
     return build_absolute_url(request, chosen)
 
 
