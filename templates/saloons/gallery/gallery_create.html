@@ -9,17 +9,17 @@
       {% csrf_token %}
 
       <div>
-        <label class="text-sm font-medium text-gray-700">Media (Images or MP4)</label>
+        <label class="text-sm font-medium text-gray-700">Images</label>
         <input
           type="file"
           name="media"
           id="galleryMediaInput"
-          accept="image/*,video/mp4"
+          accept="image/*"
           multiple
           class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
         >
         <p class="text-xs text-gray-500 mt-1">
-          Up to 10 images. With video: max 2 videos + 3 images (total 5).
+          Upload up to 10 images in one post.
         </p>
       </div>
 
@@ -92,19 +92,10 @@
         var wrapper = document.createElement("div");
         wrapper.className = "w-40 h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center";
 
-        if (file.type.startsWith("video/")) {
-          var video = document.createElement("video");
-          video.src = URL.createObjectURL(file);
-          video.muted = true;
-          video.playsInline = true;
-          video.className = "w-full h-full object-cover";
-          wrapper.appendChild(video);
-        } else {
-          var img = document.createElement("img");
-          img.src = URL.createObjectURL(file);
-          img.className = "w-full h-full object-cover";
-          wrapper.appendChild(img);
-        }
+        var img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.className = "w-full h-full object-cover";
+        wrapper.appendChild(img);
 
         var label = document.createElement("div");
         label.className = "mt-2 text-xs text-gray-500 text-center";

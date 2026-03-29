@@ -439,27 +439,16 @@
       {% if gallery_posts %}
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
           {% for post in gallery_posts %}
-            {% with media=post.media.first %}
+            {% with media=post.first_image %}
               <a
                 href="{% url 'public_gallery_detail' slug=saloon.slug post_id=post.id %}"
                 class="gallery-post-trigger public-saloon-gallery-card block overflow-hidden rounded-[1.3rem] bg-[#F1E7DA] text-left"
               >
                 {% if media %}
-                  {% if media.media_type == "video" %}
-                    <div class="relative">
-                      <video class="h-36 w-full object-cover sm:h-48" muted playsinline preload="metadata">
-                        <source src="{{ media.file.url }}" type="video/mp4">
-                      </video>
-                      <span class="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white">
-                        <i class="fa-solid fa-play text-xs"></i>
-                      </span>
-                    </div>
-                  {% else %}
-                    <div class="media-skeleton h-36 w-full sm:h-48" data-skeleton-type="card">
-                      <div class="media-skeleton__placeholder"></div>
-                      <img src="{{ media.file.url }}" alt="{{ post.title|default:display_name }}" class="h-36 w-full object-cover sm:h-48" data-skeleton-image>
-                    </div>
-                  {% endif %}
+                  <div class="media-skeleton h-36 w-full sm:h-48" data-skeleton-type="card">
+                    <div class="media-skeleton__placeholder"></div>
+                    <img src="{{ media.file.url }}" alt="{{ post.title|default:display_name }}" class="h-36 w-full object-cover sm:h-48" data-skeleton-image>
+                  </div>
                 {% else %}
                   <div class="h-36 w-full bg-[#EFE4D5] sm:h-48"></div>
                 {% endif %}
@@ -1313,9 +1302,8 @@
           description: "{{ post.description|default:''|escapejs }}",
           date: "{{ post.created_at|date:'M d, Y'|escapejs }}",
           media: [
-            {% for media in post.media.all %}
+            {% for media in post.image_media %}
               {
-                type: "{{ media.media_type }}",
                 url: "{{ media.file.url|escapejs }}"
               }{% if not forloop.last %},{% endif %}
             {% endfor %}
@@ -1361,22 +1349,7 @@
         desktopOverlay.classList.add("hidden");
       }
 
-        if (item.type === "video") {
-          desktopMedia.innerHTML =
-            '<div class="relative video-player">' +
-              '<video class="h-[420px] w-full object-contain bg-gray-50" preload="metadata" playsinline>' +
-                '<source src="' + item.url + '" type="video/mp4">' +
-              '</video>' +
-              '<div class="absolute inset-x-0 bottom-0 px-3 pb-1 video-controls hidden">' +
-                '<input type="range" min="0" max="100" value="0" class="video-range h-1 w-full accent-blue-500 opacity-90">' +
-              '</div>' +
-              '<button type="button" class="video-mute absolute top-3 right-3 hidden rounded-full bg-black/30 px-2 py-1 text-xs text-white">' +
-                '<i class="fa-solid fa-volume-high"></i>' +
-              '</button>' +
-            '</div>';
-        } else {
-          desktopMedia.innerHTML = '<img src="' + item.url + '" alt="' + post.title + '" class="h-[420px] w-full object-contain bg-gray-50">';
-        }
+      desktopMedia.innerHTML = '<img src="' + item.url + '" alt="' + post.title + '" class="h-[420px] w-full object-contain bg-gray-50">';
 
       dots.innerHTML = post.media.map((_, index) => (
         '<button type="button" class="' +
@@ -1394,23 +1367,6 @@
       mobileFeed.innerHTML = galleryPosts.map((post, postIndex) => {
         const mediaMarkup = post.media.map((media, mediaIndex) => {
           const hiddenClass = mediaIndex === 0 ? "" : " hidden";
-          if (media.type === "video") {
-            return (
-              '<div class="public-mobile-slide' + hiddenClass + '" data-mobile-post="' + postIndex + '">' +
-                '<div class="relative video-player">' +
-                  '<video class="w-full h-72 object-contain bg-gray-50" preload="metadata">' +
-                    '<source src="' + media.url + '" type="video/mp4">' +
-                  '</video>' +
-                  '<div class="absolute inset-x-0 bottom-0 px-2 pb-1 video-controls hidden">' +
-                    '<input type="range" min="0" max="100" value="0" class="video-range w-full h-1 accent-blue-500 opacity-90">' +
-                  '</div>' +
-                  '<button type="button" class="video-mute absolute top-2 right-2 hidden bg-black/30 text-white text-[10px] px-2 py-1 rounded-full">' +
-                    '<i class="fa-solid fa-volume-high"></i>' +
-                  '</button>' +
-                '</div>' +
-              '</div>'
-            );
-          }
           return '<div class="public-mobile-slide' + hiddenClass + '" data-mobile-post="' + postIndex + '"><img src="' + media.url + '" alt="' + post.title + '" class="w-full h-72 object-contain bg-gray-50"></div>';
         }).join("");
 
@@ -1443,77 +1399,6 @@
       }).join("");
 
       initializeMobileGallery();
-    }
-
-    function initializeVideoPlayers(root) {
-      root.querySelectorAll(".video-player").forEach(function (wrap) {
-        var video = wrap.querySelector("video");
-        var muteBtn = wrap.querySelector(".video-mute");
-        var range = wrap.querySelector(".video-range");
-        var controls = wrap.querySelector(".video-controls");
-        if (!video || !muteBtn || !range) return;
-
-        video.controls = false;
-
-        function showControls() {
-          if (controls) controls.classList.remove("hidden");
-          muteBtn.classList.remove("hidden");
-        }
-
-        function hideControls() {
-          if (controls) controls.classList.add("hidden");
-          muteBtn.classList.add("hidden");
-        }
-
-        function updateTime() {
-          if (video.duration) {
-            range.value = Math.floor((video.currentTime / video.duration) * 100);
-          }
-        }
-
-        muteBtn.addEventListener("click", function () {
-          video.muted = !video.muted;
-          muteBtn.innerHTML = video.muted
-            ? '<i class="fa-solid fa-volume-xmark"></i>'
-            : '<i class="fa-solid fa-volume-high"></i>';
-        });
-
-        range.addEventListener("input", function () {
-          if (!video.duration) return;
-          var pct = parseInt(range.value, 10) / 100;
-          video.currentTime = pct * video.duration;
-        });
-
-        video.addEventListener("click", function () {
-          if (video.paused) {
-            video.play();
-          } else {
-            video.pause();
-          }
-        });
-
-        wrap.addEventListener("mouseenter", function () {
-          showControls();
-        });
-        wrap.addEventListener("mouseleave", function () {
-          if (!video.paused) {
-            hideControls();
-          }
-        });
-
-        video.addEventListener("pause", function () {
-          showControls();
-        });
-        video.addEventListener("play", function () {
-          hideControls();
-        });
-
-        video.addEventListener("timeupdate", updateTime);
-        video.addEventListener("loadedmetadata", function () {
-          updateTime();
-          hideControls();
-        });
-      });
     }
 
     function initializeMobileGallery() {
@@ -1570,7 +1455,6 @@
         });
       });
 
-      initializeVideoPlayers(mobileFeed);
     }
 
     function scrollMobileToPost(postIndex) {

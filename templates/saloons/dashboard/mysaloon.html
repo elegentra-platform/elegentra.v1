@@ -184,27 +184,22 @@
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {% for post in saloon.gallery_posts.all %}
-        {% with first_media=post.media.first %}
+        {% with first_media=post.first_image %}
           <a
             href="{% url 'saloon_gallery_detail' username=saloon.owner.username post_id=post.id %}"
             class="relative rounded-xl overflow-hidden border border-gray-100"
           >
             {% if first_media %}
-              {% if first_media.media_type == 'video' %}
-                <video
-                  class="w-full h-32 object-cover"
-                  muted
-                  playsinline
-                  preload="metadata"
-                >
-                  <source src="{{ first_media.file.url }}" type="video/mp4">
-                </video>
-              {% else %}
+              {% if first_media.media_type == 'image' %}
                 <img
                   src="{{ first_media.file.url }}"
                   class="w-full h-32 object-cover"
                   alt="Gallery media"
                 >
+              {% else %}
+                <div class="flex h-32 w-full items-center justify-center bg-[#F6EFE5] text-xs font-medium text-[#8A6A38]">
+                  Image only
+                </div>
               {% endif %}
             {% else %}
               <div class="w-full h-32 bg-gray-100"></div>

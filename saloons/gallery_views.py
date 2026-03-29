@@ -9,9 +9,6 @@ from .models import Saloon, TrustedDevice, GalleryPost, GalleryMedia
 
 
 MAX_IMAGES_ONLY = 10
-MAX_IMAGES_WITH_VIDEO = 3
-MAX_VIDEOS_WITH_VIDEO = 2
-MAX_TOTAL_WITH_VIDEO = 5
 
 
 def _dashboard_guard(request, username):
@@ -45,26 +42,14 @@ def _dashboard_guard(request, username):
 
 def _get_media_type(upload):
     content_type = (upload.content_type or "").lower()
-    name = (upload.name or "").lower()
     if content_type.startswith("image/"):
         return GalleryMedia.TYPE_IMAGE
-    if content_type == "video/mp4" or name.endswith(".mp4"):
-        return GalleryMedia.TYPE_VIDEO
     return None
 
 
-def _validate_media_limits(image_count, video_count):
-    total = image_count + video_count
-    if video_count > 0:
-        if video_count > MAX_VIDEOS_WITH_VIDEO:
-            return "You can upload at most 2 videos in a post."
-        if image_count > MAX_IMAGES_WITH_VIDEO:
-            return "With video, you can upload at most 3 images."
-        if total > MAX_TOTAL_WITH_VIDEO:
-            return "With video, total media cannot exceed 5."
-    else:
-        if image_count > MAX_IMAGES_ONLY:
-            return "You can upload at most 10 images in a post."
+def _validate_media_limits(image_count):
+    if image_count > MAX_IMAGES_ONLY:
+        return "You can upload at most 10 images in a post."
     return None
 
 
@@ -80,7 +65,7 @@ def gallery_create(request, username):
         uploads = request.FILES.getlist("media")
 
         if not uploads:
-            messages.error(request, "Please add at least one image or video.")
+            messages.error(request, "Please add at least one image.")
             return render(
                 request,
                 "saloons/gallery/gallery_create.html",
@@ -96,15 +81,13 @@ def gallery_create(request, username):
 
         media_items = []
         image_count = 0
-        video_count = 0
-
         for upload in uploads:
             media_type = _get_media_type(upload)
             if not media_type:
-                messages.error(request, "Only images and MP4 videos are allowed.")
+                messages.error(request, "Only images are allowed.")
                 return render(
                     request,
-                    "saloons/dashboard/gallery_create.html",
+                    "saloons/gallery/gallery_create.html",
                     {
                         "saloon": saloon,
                         "active_tab": "mysaloon",
@@ -116,11 +99,9 @@ def gallery_create(request, username):
                 )
             if media_type == GalleryMedia.TYPE_IMAGE:
                 image_count += 1
-            else:
-                video_count += 1
             media_items.append((upload, media_type))
 
-        error = _validate_media_limits(image_count, video_count)
+        error = _validate_media_limits(image_count)
         if error:
             messages.error(request, error)
             return render(
@@ -174,13 +155,16 @@ def gallery_detail(request, username, post_id):
         return redirect_response
 
     post = get_object_or_404(GalleryPost, id=post_id, saloon=saloon)
+    if not post.image_media:
+        messages.info(request, "This gallery post no longer appears publicly because video posts are disabled.")
+        return redirect("saloon_dashboard_mysaloon", username=saloon.owner.username)
     viewed_key = f"gallery_viewed_{post.id}"
     if not request.session.get(viewed_key):
         GalleryPost.objects.filter(id=post.id).update(views=F("views") + 1)
         request.session[viewed_key] = True
         request.session.modified = True
         post.refresh_from_db(fields=["views"])
-    posts = list(saloon.gallery_posts.all())
+    posts = [item for item in saloon.gallery_posts.prefetch_related("media").all() if item.image_media]
     post_ids = [p.id for p in posts]
     try:
         index = post_ids.index(post.id)
@@ -228,27 +212,24 @@ def gallery_edit(request, username, post_id):
 
         existing_media = list(post.media.exclude(id__in=remove_ids))
         image_count = sum(1 for m in existing_media if m.media_type == GalleryMedia.TYPE_IMAGE)
-        video_count = sum(1 for m in existing_media if m.media_type == GalleryMedia.TYPE_VIDEO)
 
         new_items = []
         for upload in uploads:
             media_type = _get_media_type(upload)
             if not media_type:
-                messages.error(request, "Only images and MP4 videos are allowed.")
+                messages.error(request, "Only images are allowed.")
                 return redirect("saloon_gallery_edit", username=saloon.owner.username, post_id=post.id)
             if media_type == GalleryMedia.TYPE_IMAGE:
                 image_count += 1
-            else:
-                video_count += 1
             new_items.append((upload, media_type))
 
-        error = _validate_media_limits(image_count, video_count)
+        error = _validate_media_limits(image_count)
         if error:
             messages.error(request, error)
             return redirect("saloon_gallery_edit", username=saloon.owner.username, post_id=post.id)
 
-        if image_count + video_count == 0 and not new_items:
-            messages.error(request, "A post needs at least one image or video.")
+        if image_count == 0 and not new_items:
+            messages.error(request, "A post needs at least one image.")
             return redirect("saloon_gallery_edit", username=saloon.owner.username, post_id=post.id)
 
         if remove_ids:

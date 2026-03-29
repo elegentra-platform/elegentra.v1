@@ -311,6 +311,11 @@ def _build_review_cards(reviews, current_user=None):
     return cards
 
 
+def _gallery_posts_with_images(saloon):
+    posts = list(saloon.gallery_posts.prefetch_related("media").all())
+    return [post for post in posts if post.image_media]
+
+
 def build_service_slots(existing_services, rejection_map):
     """
     Always return exactly 3 slots for the UI
@@ -873,7 +878,7 @@ def public_saloon(request, slug):
     display_name = _display_name(saloon, profile)
     whatsapp_template = profile.get_whatsapp_prefill_template() if profile else ""
     whatsapp_number = "".join(ch for ch in saloon.whatsapp_number if ch.isdigit())
-    gallery_posts = saloon.gallery_posts.prefetch_related("media").all()[:6]
+    gallery_posts = _gallery_posts_with_images(saloon)[:6]
     review_summary = _get_review_summary(saloon)
     reviews = saloon.reviews.filter(is_visible=True)[:8]
     review_cards = _build_review_cards(reviews, request.user)
@@ -1078,7 +1083,10 @@ def public_gallery_detail(request, slug, post_id):
         display_name = "Salon"
 
     post = get_object_or_404(GalleryPost, id=post_id, saloon=saloon)
-    posts = list(saloon.gallery_posts.prefetch_related("media").all())
+    if not post.image_media:
+        return redirect("public_saloon", slug=saloon.slug)
+
+    posts = _gallery_posts_with_images(saloon)
     post_ids = [p.id for p in posts]
     try:
         index = post_ids.index(post.id)

@@ -12,12 +12,12 @@
         <div class="rounded-2xl overflow-hidden border border-gray-100 mb-3">
           {% for media in post.media.all %}
             <div class="relative">
-              {% if media.media_type == "video" %}
-                <video class="w-full h-72 object-cover" controls>
-                  <source src="{{ media.file.url }}" type="video/mp4">
-                </video>
-              {% else %}
+              {% if media.media_type == "image" %}
                 <img src="{{ media.file.url }}" class="w-full h-72 object-cover" alt="Gallery media">
+              {% else %}
+                <div class="flex h-72 items-center justify-center bg-gray-100 text-sm text-gray-500">
+                  Video posts are hidden in the public gallery now.
+                </div>
               {% endif %}
               <label class="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded-full text-xs text-gray-700 flex items-center gap-1">
                 <input type="checkbox" name="remove_media" value="{{ media.id }}">
@@ -30,16 +30,16 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-gray-700">Add More Media</label>
+          <label class="text-sm font-medium text-gray-700">Add More Images</label>
           <input
             type="file"
             name="media"
-            accept="image/*,video/mp4"
+            accept="image/*"
             multiple
             class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
           >
           <p class="text-xs text-gray-500 mt-1">
-            Up to 10 images. With video: max 2 videos + 3 images (total 5).
+            Upload up to 10 images in one post.
           </p>
         </div>
       </div>

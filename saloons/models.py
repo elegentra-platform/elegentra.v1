@@ -386,6 +386,14 @@ class GalleryPost(models.Model):
     class Meta:
         ordering = ["-created_at", "-id"]
 
+    @property
+    def image_media(self):
+        return [media for media in self.media.all() if media.media_type == GalleryMedia.TYPE_IMAGE]
+
+    @property
+    def first_image(self):
+        return next(iter(self.image_media), None)
+
     def __str__(self):
         return f"{self.saloon} - Gallery Post"
 
