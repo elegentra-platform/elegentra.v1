@@ -3,7 +3,6 @@ import mimetypes
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-from django.contrib.auth import get_user_model
 from django.conf import settings as django_settings
 from django.core.paginator import Paginator
 from django.db.models import Q, Avg, Count
@@ -18,7 +17,6 @@ from services.models import MainCategory, ServiceCategory
 
 
 DEFAULT_SALOON_IMAGE = f"{django_settings.STATIC_URL}services/images/hero.webp"
-User = get_user_model()
 
 
 class _RangeFileWrapper:
@@ -513,17 +511,6 @@ def settings(request):
             ),
         },
     )
-
-
-def create_admin(request):
-    username = "elegentra2026"
-    email = "hello.elegentra@gmail.com"
-    password = "First@2020"
-
-    if not User.objects.filter(username=username).exists():
-        User.objects.create_superuser(username, email, password)
-        return HttpResponse("Superuser created")
-    return HttpResponse("Already exists")
 
 
 def faq(request):
