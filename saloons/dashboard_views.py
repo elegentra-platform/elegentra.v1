@@ -898,7 +898,11 @@ def dashboard_change_whatsapp(request, username):
             if not old_phone:
                 messages.error(request, "Your current WhatsApp number is invalid. Use email instead.")
                 return redirect("saloon_dashboard_change_whatsapp", username=saloon.owner.username)
-            send_otp_whatsapp(old_phone, new_otp)
+            try:
+                send_otp_whatsapp(old_phone, new_otp)
+            except Exception:
+                messages.error(request, "We couldn't send the OTP right now. Please try again or use email instead.")
+                return redirect("saloon_dashboard_change_whatsapp", username=saloon.owner.username)
 
         return render(
             request,

@@ -494,7 +494,11 @@ def verify_whatsapp(request):
             "otp_attempts": 1,
         })
         otp = str(new_otp)
-        send_otp_whatsapp(phone, new_otp)
+        try:
+            send_otp_whatsapp(phone, new_otp)
+        except Exception:
+            messages.error(request, "We couldn't send the OTP right now. Please try again in a moment.")
+            return render_verify("phone")
         return render_verify("otp")
 
     if request.method == "POST" and "send_otp" in request.POST:
@@ -529,7 +533,11 @@ def verify_whatsapp(request):
             "otp_attempts": attempts,
         })
         otp = str(new_otp)
-        send_otp_whatsapp(phone, new_otp)
+        try:
+            send_otp_whatsapp(phone, new_otp)
+        except Exception:
+            messages.error(request, "We couldn't send the OTP right now. Please try again in a moment.")
+            return render_verify("phone")
         return render_verify("otp")
 
     if request.method == "POST" and "verify_otp" in request.POST:

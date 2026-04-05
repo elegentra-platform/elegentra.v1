@@ -1,6 +1,9 @@
 import os
+
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from twilio.rest import Client
+
 
 def build_service_slots(services, rejection_map=None):
     slots = []
@@ -23,6 +26,7 @@ def build_service_slots(services, rejection_map=None):
 
     return slots
 
+
 def format_whatsapp_number(raw_phone: str) -> str:
     """
     Ensures phone number is valid E.164 format.
@@ -35,13 +39,11 @@ def format_whatsapp_number(raw_phone: str) -> str:
 
     phone = raw_phone.strip().replace(" ", "").replace("-", "")
 
-    # Must start with +
     if not phone.startswith("+"):
         return ""
 
     digits = phone[1:]
 
-    # E.164 rules: digits only, 8–15 length
     if not digits.isdigit():
         return ""
 
@@ -57,21 +59,24 @@ def send_otp_whatsapp(phone_number: str, otp: int):
     Expects phone_number in E.164 (+XXXXXXXX).
     """
 
-    # 🔐 DEV MODE ONLY
     if settings.DEBUG:
-        print(f"[DEV OTP] {phone_number} → {otp}")
+        print(f"[DEV OTP] {phone_number} -> {otp}")
 
-    client = Client(
-        os.getenv("TWILIO_ACCOUNT_SID"),
-        os.getenv("TWILIO_AUTH_TOKEN"),
-    )
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_WHATSAPP_FROM")
+
+    if not account_sid or not auth_token or not from_number:
+        raise ImproperlyConfigured("Twilio WhatsApp credentials are not configured.")
+
+    client = Client(account_sid, auth_token)
 
     to_number = phone_number
     if not to_number.startswith("whatsapp:"):
         to_number = f"whatsapp:{to_number}"
 
     client.messages.create(
-        from_=os.getenv("TWILIO_WHATSAPP_FROM"),
+        from_=from_number,
         to=to_number,
         body=f"Your Saloon verification code is {otp}",
     )
