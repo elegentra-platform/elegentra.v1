@@ -361,12 +361,12 @@ def partner_home(request):
             return redirect("saloon_dashboard", username=request.user.username)
 
     checklist = [
-        "Salon name, owner name, and contact details",
-        "WhatsApp number for verification and customer contact",
-        "City, locality, opening hours, and Google Maps link",
-        "Owner ID proof and salon verification photos",
-        "Banner image and service images for a stronger public profile",
-        "Bank account details for future business payouts and verification",
+        "Valid ID proof (Aadhaar or PAN)",
+        "Salon front and inside photos",
+        "Banner image for your salon profile",
+        "Service images for the services you plan to list",
+        "Bank account details for verification",
+        "WhatsApp access for OTP verification",
     ]
 
     faqs = [
@@ -376,7 +376,7 @@ def partner_home(request):
         },
         {
             "question": "What should I keep ready before starting?",
-            "answer": "Keep your business contact details, salon photos, owner ID proof, Google Maps link, and at least one service with image and pricing ready for a faster signup.",
+            "answer": "Keep your ID proof, salon front and inside photos, a good banner image, service images, bank details, and access to your WhatsApp number for a faster signup.",
         },
         {
             "question": "Do I need to complete everything in one go?",
@@ -386,14 +386,18 @@ def partner_home(request):
             "question": "Why does Elegentra ask for salon photos and documents?",
             "answer": "These help us verify businesses, improve trust, and make your salon profile look stronger for customers searching nearby beauty services.",
         },
+        {
+            "question": "Can I register my salon on Elegentra without visiting an office?",
+            "answer": "Yes. Elegentra salon registration is fully online. You can complete the onboarding, upload verification items, and submit your business for approval directly from the partner page.",
+        },
     ]
 
     seo = build_seo_payload(
         request,
         title="Elegentra Salon Registration | Register Your Salon, Spa, or Beauty Business",
         description=(
-            "Register your salon on Elegentra and create a premium business profile with services, gallery images, location, "
-            "verification, and customer-ready contact details."
+            "Register your salon on Elegentra with a premium partner profile, business verification, service images, gallery setup, "
+            "and customer-ready contact details for salon discovery."
         ),
         canonical_url=build_absolute_url(request, reverse("partner_home")),
     )
