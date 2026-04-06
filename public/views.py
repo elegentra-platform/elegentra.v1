@@ -32,6 +32,12 @@ def _category_icon_fallback(slug):
     return CATEGORY_ICON_FALLBACKS.get(slug, f"{django_settings.STATIC_URL}services/images/hero.webp")
 
 
+def _category_icon_url(slug, uploaded_url=""):
+    if slug in CATEGORY_ICON_FALLBACKS:
+        return CATEGORY_ICON_FALLBACKS[slug]
+    return uploaded_url or _category_icon_fallback(slug)
+
+
 class _RangeFileWrapper:
     def __init__(self, file_obj, offset, length, block_size=8192):
         self.file_obj = file_obj
@@ -130,7 +136,10 @@ def _public_categories():
             {
                 "slug": category.slug,
                 "name": category.name,
-                "icon_url": category.icon_image.url if category.icon_image else "",
+                "icon_url": _category_icon_url(
+                    category.slug,
+                    category.icon_image.url if category.icon_image else "",
+                ),
                 "icon_fallback_url": _category_icon_fallback(category.slug),
             }
             for category in main_categories
@@ -144,10 +153,13 @@ def _public_categories():
         {
             "slug": category.main_category.slug if category.main_category else category.slug,
             "name": category.name,
-            "icon_url": (
-                category.main_category.icon_image.url
-                if category.main_category and category.main_category.icon_image
-                else ""
+            "icon_url": _category_icon_url(
+                category.main_category.slug if category.main_category else category.slug,
+                (
+                    category.main_category.icon_image.url
+                    if category.main_category and category.main_category.icon_image
+                    else ""
+                ),
             ),
             "icon_fallback_url": _category_icon_fallback(
                 category.main_category.slug if category.main_category else category.slug
