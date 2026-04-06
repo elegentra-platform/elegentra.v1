@@ -59,10 +59,10 @@
           {% for category in categories %}
             <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
               <div class="w-14 h-14 rounded-full {% if selected_category == category.slug %}bg-[#efe2c6] border-[#d6b16f]{% else %}bg-white/55 border-white/60{% endif %} border shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
-                {% if category.icon_url %}
+                {% if category.icon_url or category.icon_fallback_url %}
                   <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
                     <div class="media-skeleton__placeholder"></div>
-                    <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                    <img src="{{ category.icon_url|default:category.icon_fallback_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image onerror="this.onerror=null;this.src='{{ category.icon_fallback_url }}';">
                   </div>
                 {% else %}
                   <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
@@ -77,10 +77,10 @@
         {% for category in categories %}
           <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
             <div class="w-16 h-16 rounded-full {% if selected_category == category.slug %}bg-[#efe2c6] border-[#d6b16f]{% else %}bg-white/55 border-white/60{% endif %} border shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
-              {% if category.icon_url %}
+              {% if category.icon_url or category.icon_fallback_url %}
                 <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
                   <div class="media-skeleton__placeholder"></div>
-                  <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                  <img src="{{ category.icon_url|default:category.icon_fallback_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image onerror="this.onerror=null;this.src='{{ category.icon_fallback_url }}';">
                 </div>
               {% else %}
                 <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
@@ -153,10 +153,10 @@
             {% for category in categories %}
               <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
                 <div class="w-14 h-14 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
-                  {% if category.icon_url %}
+                  {% if category.icon_url or category.icon_fallback_url %}
                     <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
                       <div class="media-skeleton__placeholder"></div>
-                      <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                      <img src="{{ category.icon_url|default:category.icon_fallback_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image onerror="this.onerror=null;this.src='{{ category.icon_fallback_url }}';">
                     </div>
                   {% else %}
                     <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>
@@ -171,10 +171,10 @@
           {% for category in categories %}
             <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
               <div class="w-16 h-16 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
-                {% if category.icon_url %}
+                {% if category.icon_url or category.icon_fallback_url %}
                   <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="pill-icon">
                     <div class="media-skeleton__placeholder"></div>
-                    <img src="{{ category.icon_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image>
+                    <img src="{{ category.icon_url|default:category.icon_fallback_url }}" alt="{{ category.name }}" class="h-full w-full rounded-full object-cover" data-skeleton-image onerror="this.onerror=null;this.src='{{ category.icon_fallback_url }}';">
                   </div>
                 {% else %}
                   <span class="text-xs font-semibold">{{ category.name|slice:":1"|upper }}</span>

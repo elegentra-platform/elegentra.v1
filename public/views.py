@@ -8,6 +8,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Avg, Count
 from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
+from django.templatetags.static import static
 from django.urls import reverse
 
 from core.seo import build_absolute_url, build_seo_payload
@@ -17,6 +18,19 @@ from services.models import MainCategory, ServiceCategory
 
 
 DEFAULT_SALOON_IMAGE = f"{django_settings.STATIC_URL}services/images/hero.webp"
+
+CATEGORY_ICON_FALLBACKS = {
+    "haircut-styling": static("services/images/haircut.jpg"),
+    "hair-coloring": static("services/images/haircoloring.webp"),
+    "bridal-makeup": static("services/images/about.jpg"),
+    "kids-grooming": static("services/images/hero.webp"),
+    "spa-massage": static("services/images/about.jpg"),
+    "nails-beauty": static("services/images/banner-grimrend.png"),
+}
+
+
+def _category_icon_fallback(slug):
+    return CATEGORY_ICON_FALLBACKS.get(slug, static("services/images/hero.webp"))
 
 
 class _RangeFileWrapper:
@@ -118,6 +132,7 @@ def _public_categories():
                 "slug": category.slug,
                 "name": category.name,
                 "icon_url": category.icon_image.url if category.icon_image else "",
+                "icon_fallback_url": _category_icon_fallback(category.slug),
             }
             for category in main_categories
         ]
@@ -134,6 +149,9 @@ def _public_categories():
                 category.main_category.icon_image.url
                 if category.main_category and category.main_category.icon_image
                 else ""
+            ),
+            "icon_fallback_url": _category_icon_fallback(
+                category.main_category.slug if category.main_category else category.slug
             ),
         }
         for category in categories
