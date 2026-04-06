@@ -33,8 +33,6 @@ def _category_icon_fallback(slug):
 
 
 def _category_icon_url(slug, uploaded_url=""):
-    if slug in CATEGORY_ICON_FALLBACKS:
-        return CATEGORY_ICON_FALLBACKS[slug]
     return uploaded_url or _category_icon_fallback(slug)
 
 
