@@ -4,53 +4,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grow your salon on Elegentra</title>
+  <title>{{ seo.title|default:"Elegentra Salon Registration" }}</title>
+  <meta name="description" content="{{ seo.description|default:'Register your salon on Elegentra.' }}">
+  <link rel="canonical" href="{{ seo.canonical_url }}">
+  <meta property="og:title" content="{{ seo.og_title|default:seo.title }}">
+  <meta property="og:description" content="{{ seo.og_description|default:seo.description }}">
+  <meta property="og:url" content="{{ seo.canonical_url }}">
+  <meta property="og:type" content="website">
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
 </head>
 
-<body class="min-h-screen bg-gray-100 flex items-center justify-center">
+<body class="min-h-screen bg-[#f7f0e7] text-[#23190f]">
+  <div class="relative overflow-hidden">
+    <div class="absolute inset-x-0 top-0 h-[36rem] bg-[radial-gradient(circle_at_top_left,_rgba(188,150,79,0.18),_transparent_44%),linear-gradient(135deg,_#f8efdf_0%,_#f4e8d6_38%,_#fdf9f3_100%)]"></div>
+    <div class="absolute -left-16 top-24 h-56 w-56 rounded-full bg-[#d8b374]/15 blur-3xl"></div>
+    <div class="absolute right-[-4rem] top-10 h-72 w-72 rounded-full bg-[#a96e2a]/10 blur-3xl"></div>
 
-  <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
-
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">
-      Grow your salon with Elegentra
-    </h1>
-
-    <p class="text-gray-600 mb-6">
-      Get more customers, online presence, and WhatsApp-based bookings.
-    </p>
-
-    {% if user.is_authenticated %}
-
-      {% if user.saloon %}
-        <!-- User already has a saloon -->
-        <a href="{% url 'saloon_dashboard' user.username %}"
-           class="block w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition">
-          Go to your dashboard
+    <main class="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between">
+        <a href="{% url 'public_home' %}" class="text-3xl font-medium tracking-tight text-[#5d431d]">Elegentra</a>
+        <a href="{% url 'public_home' %}" class="inline-flex items-center gap-2 rounded-full border border-[#ddcfbb] bg-white/75 px-4 py-2 text-sm font-semibold text-[#5d431d] shadow-sm backdrop-blur">
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+          Back to Home
         </a>
-      {% else %}
-        <!-- Logged in but no saloon yet -->
-        <a href="{% url 'verify_whatsapp' %}"
-           class="block w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition">
-          Register your salon
-        </a>
-      {% endif %}
+      </div>
 
-    {% else %}
+      <section class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] lg:items-start">
+        <div class="overflow-hidden rounded-[2rem] border border-[#eadcc7] bg-white/72 shadow-[0_20px_60px_rgba(58,39,13,0.08)] backdrop-blur">
+          <div class="relative overflow-hidden border-b border-[#efe3d1] px-6 py-8 sm:px-8 sm:py-10">
+            <div class="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,_rgba(217,164,65,0.18),_transparent_70%)] lg:block"></div>
+            <div class="relative max-w-2xl">
+              <span class="inline-flex rounded-full border border-[#e3c994] bg-[#fff7e8] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8a6a38]">
+                For Salons, Spas & Beauty Studios
+              </span>
+              <h1 class="mt-4 text-4xl font-semibold leading-tight text-[#20160d] sm:text-5xl">
+                Get started with Elegentra salon registration
+              </h1>
+              <p class="mt-4 max-w-xl text-base leading-8 text-[#5d5145] sm:text-lg">
+                Build a premium business profile, add services, upload your gallery, and help nearby customers discover your salon with confidence.
+              </p>
 
-      <!-- Not logged in -->
-      <a href="{% url 'account_login' %}?next={% url 'partner_home' %}"
-         class="block w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-900 transition">
-        Register your salon
-      </a>
+              <div class="mt-8 flex flex-wrap gap-3">
+                {% if user.is_authenticated %}
+                  {% if user.saloon %}
+                    <a href="{% url 'saloon_dashboard' user.username %}" class="inline-flex items-center justify-center rounded-full bg-[#1c1712] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(28,23,18,0.25)] transition hover:bg-[#2d241b]">
+                      Go to Your Dashboard
+                    </a>
+                  {% else %}
+                    <a href="{% url 'verify_whatsapp' %}" class="inline-flex items-center justify-center rounded-full bg-[#1c1712] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(28,23,18,0.25)] transition hover:bg-[#2d241b]">
+                      Start Salon Registration
+                    </a>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'account_login' %}?next={% url 'partner_home' %}" class="inline-flex items-center justify-center rounded-full bg-[#1c1712] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(28,23,18,0.25)] transition hover:bg-[#2d241b]">
+                    Get Started
+                  </a>
+                  <span class="inline-flex items-center rounded-full border border-[#e8dccb] bg-white/70 px-4 py-3 text-sm text-[#6a5a49]">
+                    Login first to continue
+                  </span>
+                {% endif %}
+              </div>
 
-      <p class="text-sm text-gray-500 mt-4">
-        You’ll need to log in first
-      </p>
+              <div class="mt-8 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-[1.35rem] border border-[#efe3d1] bg-[#fffaf3] px-4 py-4">
+                  <div class="text-2xl font-semibold text-[#23190f]">01</div>
+                  <p class="mt-2 text-sm font-medium text-[#46372b]">Verify WhatsApp</p>
+                </div>
+                <div class="rounded-[1.35rem] border border-[#efe3d1] bg-[#fffaf3] px-4 py-4">
+                  <div class="text-2xl font-semibold text-[#23190f]">02</div>
+                  <p class="mt-2 text-sm font-medium text-[#46372b]">Add salon details</p>
+                </div>
+                <div class="rounded-[1.35rem] border border-[#efe3d1] bg-[#fffaf3] px-4 py-4">
+                  <div class="text-2xl font-semibold text-[#23190f]">03</div>
+                  <p class="mt-2 text-sm font-medium text-[#46372b]">Submit for approval</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-    {% endif %}
+          <div class="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
+            <div class="rounded-[1.75rem] border border-[#eadcc7] bg-[#fffdf9] p-6 shadow-[0_14px_34px_rgba(58,39,13,0.05)]">
+              <h2 class="text-2xl font-semibold text-[#20160d]">Please keep these ready</h2>
+              <p class="mt-2 text-sm leading-7 text-[#6b5b4b]">
+                These are the things Elegentra will ask during salon onboarding, so keeping them ready makes signup much smoother.
+              </p>
+              <div class="mt-6 grid gap-4 sm:grid-cols-2">
+                {% for item in checklist %}
+                  <div class="flex gap-3 rounded-[1.2rem] border border-[#f0e5d6] bg-[#fff8ee] px-4 py-4">
+                    <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#d9f0cf] text-[#2f8a3a]">
+                      <i class="fa-solid fa-check text-[11px]"></i>
+                    </span>
+                    <p class="text-sm font-medium leading-6 text-[#3e3024]">{{ item }}</p>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
 
+            <div class="rounded-[1.75rem] border border-[#eadcc7] bg-[linear-gradient(180deg,_#fff7ea_0%,_#fffdf8_100%)] p-6 shadow-[0_14px_34px_rgba(58,39,13,0.05)]">
+              <h2 class="text-2xl font-semibold text-[#20160d]">Why salons join Elegentra</h2>
+              <div class="mt-5 space-y-4">
+                <div class="rounded-[1.15rem] border border-[#efdfc9] bg-white/85 px-4 py-4">
+                  <p class="text-sm font-semibold text-[#2b2118]">Premium public profile</p>
+                  <p class="mt-1 text-sm leading-6 text-[#6b5b4b]">Show your salon, services, gallery, location, and trust signals in one polished page.</p>
+                </div>
+                <div class="rounded-[1.15rem] border border-[#efdfc9] bg-white/85 px-4 py-4">
+                  <p class="text-sm font-semibold text-[#2b2118]">Nearby discovery</p>
+                  <p class="mt-1 text-sm leading-6 text-[#6b5b4b]">Help customers searching for salons, spas, and beauty services near them find you faster.</p>
+                </div>
+                <div class="rounded-[1.15rem] border border-[#efdfc9] bg-white/85 px-4 py-4">
+                  <p class="text-sm font-semibold text-[#2b2118]">Control from one dashboard</p>
+                  <p class="mt-1 text-sm leading-6 text-[#6b5b4b]">Manage services, business details, images, pricing, and profile visibility from your partner dashboard.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="overflow-hidden rounded-[2rem] border border-[#eadcc7] bg-white/72 p-6 shadow-[0_20px_60px_rgba(58,39,13,0.08)] backdrop-blur">
+            <div class="rounded-[1.7rem] border border-[#eadcc7] bg-[linear-gradient(160deg,_#f6ead8_0%,_#fffaf3_52%,_#efe3d5_100%)] p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[#8a6a38]">Salon onboarding</p>
+                  <p class="mt-2 text-2xl font-semibold leading-tight text-[#23190f]">Sharp setup, premium presence</p>
+                </div>
+                <span class="inline-flex rounded-full border border-[#d8c3a5] bg-white/75 px-3 py-1 text-xs font-semibold text-[#6f5329]">
+                  Elegentra Partner
+                </span>
+              </div>
+
+              <div class="mt-6 space-y-3">
+                <div class="rounded-[1.2rem] bg-white/90 px-4 py-4 shadow-sm">
+                  <p class="text-sm font-semibold text-[#2f241a]">Business details</p>
+                  <p class="mt-1 text-sm text-[#6e5f50]">Salon name, city, locality, timings, map link</p>
+                </div>
+                <div class="rounded-[1.2rem] bg-white/90 px-4 py-4 shadow-sm">
+                  <p class="text-sm font-semibold text-[#2f241a]">Verification</p>
+                  <p class="mt-1 text-sm text-[#6e5f50]">Owner ID proof, salon inside and outside photos</p>
+                </div>
+                <div class="rounded-[1.2rem] bg-white/90 px-4 py-4 shadow-sm">
+                  <p class="text-sm font-semibold text-[#2f241a]">Services and visuals</p>
+                  <p class="mt-1 text-sm text-[#6e5f50]">Service pricing, images, and a premium banner for your page</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-[2rem] border border-[#eadcc7] bg-white/72 p-6 shadow-[0_20px_60px_rgba(58,39,13,0.08)] backdrop-blur">
+            <h2 class="text-2xl font-semibold text-[#20160d]">Salon registration FAQ</h2>
+            <div class="mt-5 space-y-3">
+              {% for item in partner_faqs %}
+                <div class="rounded-[1.25rem] border border-[#efe3d1] bg-[#fffdf9] px-4 py-4">
+                  <p class="text-sm font-semibold text-[#2f241a]">{{ item.question }}</p>
+                  <p class="mt-2 text-sm leading-7 text-[#6a5a49]">{{ item.answer }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
-
 </body>
 </html>

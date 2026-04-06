@@ -360,7 +360,53 @@ def partner_home(request):
 
             return redirect("saloon_dashboard", username=request.user.username)
 
-    return render(request, "saloons/partner_home.html")
+    checklist = [
+        "Salon name, owner name, and contact details",
+        "WhatsApp number for verification and customer contact",
+        "City, locality, opening hours, and Google Maps link",
+        "Owner ID proof and salon verification photos",
+        "Banner image and service images for a stronger public profile",
+        "Bank account details for future business payouts and verification",
+    ]
+
+    faqs = [
+        {
+            "question": "How do I register my salon on Elegentra?",
+            "answer": "Sign in, verify your WhatsApp number, and complete the onboarding steps with your salon details, verification photos, and service information.",
+        },
+        {
+            "question": "What should I keep ready before starting?",
+            "answer": "Keep your business contact details, salon photos, owner ID proof, Google Maps link, and at least one service with image and pricing ready for a faster signup.",
+        },
+        {
+            "question": "Do I need to complete everything in one go?",
+            "answer": "No. Elegentra saves your progress through the onboarding flow, so you can continue and finish your salon registration step by step.",
+        },
+        {
+            "question": "Why does Elegentra ask for salon photos and documents?",
+            "answer": "These help us verify businesses, improve trust, and make your salon profile look stronger for customers searching nearby beauty services.",
+        },
+    ]
+
+    seo = build_seo_payload(
+        request,
+        title="Elegentra Salon Registration | Register Your Salon, Spa, or Beauty Business",
+        description=(
+            "Register your salon on Elegentra and create a premium business profile with services, gallery images, location, "
+            "verification, and customer-ready contact details."
+        ),
+        canonical_url=build_absolute_url(request, reverse("partner_home")),
+    )
+
+    return render(
+        request,
+        "saloons/partner_home.html",
+        {
+            "checklist": checklist,
+            "partner_faqs": faqs,
+            "seo": seo,
+        },
+    )
 
 
 @login_required
