@@ -234,8 +234,8 @@ if find_spec("whitenoise"):
         },
     }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
 
 # ==================================================
 # DEFAULT PK
