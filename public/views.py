@@ -8,7 +8,6 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Avg, Count
 from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
 from django.shortcuts import render
-from django.templatetags.static import static
 from django.urls import reverse
 
 from core.seo import build_absolute_url, build_seo_payload
@@ -20,17 +19,17 @@ from services.models import MainCategory, ServiceCategory
 DEFAULT_SALOON_IMAGE = f"{django_settings.STATIC_URL}services/images/hero.webp"
 
 CATEGORY_ICON_FALLBACKS = {
-    "haircut-styling": static("services/images/haircut.jpg"),
-    "hair-coloring": static("services/images/haircoloring.webp"),
-    "bridal-makeup": static("services/images/about.jpg"),
-    "kids-grooming": static("services/images/hero.webp"),
-    "spa-massage": static("services/images/about.jpg"),
-    "nails-beauty": static("services/images/banner-grimrend.png"),
+    "haircut-styling": f"{django_settings.STATIC_URL}services/images/haircut.jpg",
+    "hair-coloring": f"{django_settings.STATIC_URL}services/images/haircoloring.webp",
+    "bridal-makeup": f"{django_settings.STATIC_URL}services/images/about.jpg",
+    "kids-grooming": f"{django_settings.STATIC_URL}services/images/hero.webp",
+    "spa-massage": f"{django_settings.STATIC_URL}services/images/about.jpg",
+    "nails-beauty": f"{django_settings.STATIC_URL}services/images/banner-grimrend.png",
 }
 
 
 def _category_icon_fallback(slug):
-    return CATEGORY_ICON_FALLBACKS.get(slug, static("services/images/hero.webp"))
+    return CATEGORY_ICON_FALLBACKS.get(slug, f"{django_settings.STATIC_URL}services/images/hero.webp")
 
 
 class _RangeFileWrapper:
