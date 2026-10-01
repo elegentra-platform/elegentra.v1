@@ -1,11 +1,11 @@
 {% extends "saloons/dashboard/dashboard.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-2 sm:px-4">
-  <h2 class="text-xl sm:text-2xl font-semibold mb-4">Create Gallery Post</h2>
+<div class="mx-auto max-w-4xl px-2 sm:px-4">
+  <h2 class="mb-4 text-xl font-semibold sm:text-2xl">Create Gallery Post</h2>
 
-  <div class="bg-white rounded-2xl border border-gray-100 p-4">
-    <form method="post" enctype="multipart/form-data" class="space-y-4">
+  <div class="rounded-2xl border border-gray-100 bg-white p-4">
+    <form method="post" enctype="multipart/form-data" class="space-y-4" id="galleryPostForm">
       {% csrf_token %}
 
       <div>
@@ -16,52 +16,95 @@
           id="galleryMediaInput"
           accept="image/*"
           multiple
-          class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+          class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-gray-700 hover:file:bg-gray-200"
         >
-        <p class="text-xs text-gray-500 mt-1">
+        <p class="mt-1 text-xs text-gray-500">
           Upload up to 10 images in one post.
         </p>
       </div>
 
-      <div class="border border-dashed border-gray-300 rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-2">
+      <div class="rounded-2xl border border-dashed border-gray-300 p-4">
+        <div class="mb-2 flex items-center justify-between">
           <p class="text-sm font-semibold text-gray-700">Preview</p>
-          <span id="mediaCount" class="text-xs text-gray-500">0 selected</span>
+          <span id="mediaCount" class="text-xs text-gray-500">
+            {% if draft_media %}{{ draft_media|length }} saved{% else %}0 selected{% endif %}
+          </span>
         </div>
-        <div id="previewStrip" class="flex gap-3 overflow-x-auto"></div>
+        <div id="previewStrip" class="flex gap-3 overflow-x-auto">
+          {% for media in draft_media %}
+            <div class="w-40 shrink-0" data-draft-preview>
+              <div class="flex h-28 w-40 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                <img src="{{ media.url }}" class="h-full w-full object-cover" alt="{{ media.name }}">
+              </div>
+              <div class="mt-2 text-center text-xs text-gray-500">{{ forloop.counter }}/{{ draft_media|length }}</div>
+            </div>
+          {% endfor %}
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="text-sm font-medium text-gray-700">Title</label>
           <input
             type="text"
             name="title"
-            class="mt-1 w-full h-11 rounded-xl border border-gray-200 px-3"
+            id="galleryTitleInput"
+            value="{{ form_title|default:'' }}"
+            class="mt-1 h-11 w-full rounded-xl border border-gray-200 px-3"
             placeholder="e.g. Bridal Glow"
           >
         </div>
+
+        <div>
+          <div class="flex items-center justify-between gap-3">
+            <label class="text-sm font-medium text-gray-700">Related service</label>
+            <a
+              href="{% url 'service_create' %}?return_to=gallery_create"
+              id="addGalleryServiceLink"
+              class="shrink-0 text-xs font-semibold text-blue-600"
+            >
+              Add new service
+            </a>
+          </div>
+          <select
+            name="service"
+            id="galleryServiceSelect"
+            class="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-700"
+          >
+            <option value="">No service tag</option>
+            {% for service in services %}
+              <option value="{{ service.id }}" {% if selected_service_id == service.id|stringformat:'s' %}selected{% endif %}>
+                {{ service.name }} - Rs. {{ service.offer_price|default:service.price }}
+              </option>
+            {% endfor %}
+          </select>
+          <p id="serviceDraftStatus" class="mt-1 hidden text-xs font-medium text-blue-700">
+            Saving your post draft...
+          </p>
+        </div>
+
         <div class="sm:col-span-2">
           <label class="text-sm font-medium text-gray-700">Description</label>
           <textarea
             name="description"
+            id="galleryDescriptionInput"
             rows="4"
             class="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2"
             placeholder="Short description for this post"
-          ></textarea>
+          >{{ form_description|default:'' }}</textarea>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
           type="submit"
-          class="bg-blue-500 text-white px-5 h-10 rounded-xl text-sm font-semibold"
+          class="h-10 rounded-xl bg-blue-500 px-5 text-sm font-semibold text-white"
         >
           Publish
         </button>
         <a
           href="{% url 'saloon_dashboard_mysaloon' username=saloon.owner.username %}?tab=gallery"
-          class="px-5 h-10 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 flex items-center"
+          class="flex h-10 items-center justify-center rounded-xl border border-gray-200 px-5 text-sm font-semibold text-gray-700"
         >
           Cancel
         </a>
@@ -77,35 +120,134 @@
     var input = document.getElementById("galleryMediaInput");
     var strip = document.getElementById("previewStrip");
     var count = document.getElementById("mediaCount");
+    var titleInput = document.getElementById("galleryTitleInput");
+    var descriptionInput = document.getElementById("galleryDescriptionInput");
+    var serviceSelect = document.getElementById("galleryServiceSelect");
+    var addServiceLink = document.getElementById("addGalleryServiceLink");
+    var status = document.getElementById("serviceDraftStatus");
+    var storageKey = "elegentraGalleryDraft:{{ saloon.owner.username|escapejs }}";
+    var draftSaveUrl = "{{ gallery_draft_save_url }}";
+    var hasServerDraft = {{ has_gallery_draft|yesno:"true,false" }};
 
-    if (!input || !strip || !count) return;
+    function selectedFiles() {
+      return input ? Array.from(input.files || []) : [];
+    }
 
-    input.addEventListener("change", function (e) {
-      strip.innerHTML = "";
-      var files = Array.from(e.target.files || []);
-      count.textContent = files.length + " selected";
+    function getCsrfToken() {
+      var match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
 
-      files.forEach(function (file, index) {
-        var card = document.createElement("div");
-        card.className = "w-40 shrink-0";
+    function saveTextDraft() {
+      if (!titleInput || !descriptionInput || !serviceSelect) return;
+      sessionStorage.setItem(storageKey, JSON.stringify({
+        title: titleInput.value || "",
+        description: descriptionInput.value || "",
+        service: serviceSelect.value || ""
+      }));
+    }
 
-        var wrapper = document.createElement("div");
-        wrapper.className = "w-40 h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center";
+    function restoreTextDraft() {
+      var raw = sessionStorage.getItem(storageKey);
+      if (!raw) return;
+      try {
+        var draft = JSON.parse(raw);
+        if (titleInput && !titleInput.value) titleInput.value = draft.title || "";
+        if (descriptionInput && !descriptionInput.value) descriptionInput.value = draft.description || "";
+        if (serviceSelect && !serviceSelect.value && draft.service) serviceSelect.value = draft.service;
+      } catch (error) {}
+    }
 
-        var img = document.createElement("img");
-        img.src = URL.createObjectURL(file);
-        img.className = "w-full h-full object-cover";
-        wrapper.appendChild(img);
+    function setStatus(text, isError) {
+      if (!status) return;
+      status.textContent = text;
+      status.classList.remove("hidden", "text-blue-700", "text-red-600");
+      status.classList.add(isError ? "text-red-600" : "text-blue-700");
+    }
 
-        var label = document.createElement("div");
-        label.className = "mt-2 text-xs text-gray-500 text-center";
-        label.textContent = (index + 1) + "/" + files.length;
-
-        card.appendChild(wrapper);
-        card.appendChild(label);
-        strip.appendChild(card);
+    function saveServerDraft() {
+      var body = new FormData();
+      body.append("title", titleInput ? titleInput.value : "");
+      body.append("description", descriptionInput ? descriptionInput.value : "");
+      body.append("service", serviceSelect ? serviceSelect.value : "");
+      selectedFiles().forEach(function (file) {
+        body.append("media", file);
       });
-    });
+
+      return fetch(draftSaveUrl, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: body
+      }).then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.ok) {
+            throw new Error(data.message || "Could not save draft.");
+          }
+          return data;
+        });
+      });
+    }
+
+    restoreTextDraft();
+
+    if (input && strip && count) {
+      input.addEventListener("change", function (e) {
+        strip.innerHTML = "";
+        hasServerDraft = false;
+        var files = Array.from(e.target.files || []);
+        count.textContent = files.length + " selected";
+
+        files.forEach(function (file, index) {
+          var card = document.createElement("div");
+          card.className = "w-40 shrink-0";
+
+          var wrapper = document.createElement("div");
+          wrapper.className = "flex h-28 w-40 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50";
+
+          var img = document.createElement("img");
+          img.src = URL.createObjectURL(file);
+          img.className = "h-full w-full object-cover";
+          wrapper.appendChild(img);
+
+          var label = document.createElement("div");
+          label.className = "mt-2 text-center text-xs text-gray-500";
+          label.textContent = (index + 1) + "/" + files.length;
+
+          card.appendChild(wrapper);
+          card.appendChild(label);
+          strip.appendChild(card);
+        });
+      });
+    }
+
+    if (addServiceLink) {
+      addServiceLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        var targetUrl = addServiceLink.href;
+        saveTextDraft();
+        setStatus("Saving your post draft...", false);
+        addServiceLink.classList.add("pointer-events-none", "opacity-60");
+
+        saveServerDraft()
+          .then(function () {
+            window.location.href = targetUrl;
+          })
+          .catch(function (error) {
+            setStatus(error.message || "Could not save draft. Try again.", true);
+            addServiceLink.classList.remove("pointer-events-none", "opacity-60");
+          });
+      });
+    }
+
+    var form = document.getElementById("galleryPostForm");
+    if (form) {
+      form.addEventListener("submit", function () {
+        sessionStorage.removeItem(storageKey);
+      });
+    }
   })();
 </script>
 {% endblock %}

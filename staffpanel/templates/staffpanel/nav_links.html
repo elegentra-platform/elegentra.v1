@@ -1,0 +1,29 @@
+<nav class="mt-6 space-y-2 text-sm">
+  <a href="{% url 'staffpanel:dashboard' %}" class="staff-nav-link {% if active_tab == 'dashboard' %}is-active{% endif %}"><i class="fa-solid fa-gauge mr-2"></i> Dashboard</a>
+  <a href="{% url 'staffpanel:saloon_queue' %}" class="staff-nav-link {% if active_tab == 'saloons' %}is-active{% endif %}"><i class="fa-solid fa-shop mr-2"></i> Vendor Approvals</a>
+  <a href="{% url 'staffpanel:saloon_list' %}" class="staff-nav-link {% if active_tab == 'all_saloons' %}is-active{% endif %}"><i class="fa-solid fa-store mr-2"></i> All Vendors</a>
+  <a href="{% url 'staffpanel:category_queue' %}" class="staff-nav-link {% if active_tab == 'categories' %}is-active{% endif %}"><i class="fa-solid fa-list-check mr-2"></i> Service Categories</a>
+
+  {% if is_staff_admin %}
+    <div class="staff-nav-divider"></div>
+    <a href="{% url 'staffpanel:staff_management' %}" class="staff-nav-link {% if active_tab == 'staff_management' %}is-active{% endif %}"><i class="fa-solid fa-user-gear mr-2"></i> Staff Management</a>
+    <a href="{% url 'staffpanel:subscription_management' %}" class="staff-nav-link {% if active_tab == 'subscription_management' %}is-active{% endif %}"><i class="fa-regular fa-credit-card mr-2"></i> Subscription Management</a>
+    <a href="{% url 'staffpanel:reports' %}" class="staff-nav-link {% if active_tab == 'reports' %}is-active{% endif %}"><i class="fa-solid fa-chart-column mr-2"></i> Reports</a>
+    <a href="{% url 'staffpanel:notifications' %}" class="staff-nav-link {% if active_tab == 'notifications' %}is-active{% endif %}"><i class="fa-regular fa-bell mr-2"></i> Notifications</a>
+  {% endif %}
+
+  {% if is_staff_super_admin %}
+    <div class="staff-nav-divider"></div>
+    <a href="{% url 'staffpanel:admin_management' %}" class="staff-nav-link {% if active_tab == 'admin_management' %}is-active{% endif %}"><i class="fa-solid fa-user-shield mr-2"></i> Admin Management</a>
+    <a href="{% url 'staffpanel:founder_program' %}" class="staff-nav-link {% if active_tab == 'founder_program' %}is-active{% endif %}"><i class="fa-solid fa-crown mr-2"></i> Founder Program</a>
+    <a href="{% url 'staffpanel:plans' %}" class="staff-nav-link {% if active_tab == 'plans' %}is-active{% endif %}"><i class="fa-solid fa-layer-group mr-2"></i> Plans</a>
+    <a href="{% url 'staffpanel:analytics' %}" class="staff-nav-link {% if active_tab == 'analytics' %}is-active{% endif %}"><i class="fa-solid fa-chart-pie mr-2"></i> Analytics</a>
+    <a href="{% url 'staffpanel:audit_logs' %}" class="staff-nav-link {% if active_tab == 'audit_logs' %}is-active{% endif %}"><i class="fa-solid fa-clock-rotate-left mr-2"></i> Audit Logs</a>
+    <a href="{% url 'staffpanel:system_settings' %}" class="staff-nav-link {% if active_tab == 'system_settings' %}is-active{% endif %}"><i class="fa-solid fa-sliders mr-2"></i> System Settings</a>
+    <a href="{% url 'staffpanel:razorpay' %}" class="staff-nav-link {% if active_tab == 'razorpay' %}is-active{% endif %}"><i class="fa-solid fa-money-check-dollar mr-2"></i> Razorpay</a>
+    <a href="{% url 'staffpanel:feature_flags' %}" class="staff-nav-link {% if active_tab == 'feature_flags' %}is-active{% endif %}"><i class="fa-solid fa-toggle-on mr-2"></i> Feature Flags</a>
+  {% endif %}
+
+  <div class="staff-nav-divider"></div>
+  <a href="{% url 'staffpanel:staff_logout' %}" class="staff-nav-link"><i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Logout</a>
+</nav>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elegentra Staff Login</title>
+  <link rel="stylesheet" href="/static/css/output.css">
+</head>
+<body class="min-h-screen bg-[#f4f7fb] text-slate-900">
+  <main class="flex min-h-screen items-center justify-center px-4">
+    <section class="w-full max-w-md rounded-2xl border border-[#d8e0ea] bg-white p-6 shadow-sm">
+      <h1 class="text-2xl font-semibold">Elegentra Staff</h1>
+      <p class="mt-1 text-sm text-slate-500">{% if step == 'code' and staff_user %}Welcome {{ staff_user.get_full_name|default:staff_user.email }}{% else %}Enter your staff email to continue.{% endif %}</p>
+      {% if messages %}{% for message in messages %}<div class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ message }}</div>{% endfor %}{% endif %}
+      {% if step == 'code' and staff_user %}
+        <form method="post" class="mt-5 space-y-4">{% csrf_token %}
+          <input type="hidden" name="email" value="{{ email }}">
+          <div>
+            <label class="text-sm font-medium text-slate-700">Staff Code</label>
+            <input name="code" autocomplete="one-time-code" class="mt-2 w-full rounded-xl border border-[#d8e0ea] px-4 py-3 text-sm uppercase outline-none focus:border-slate-900" placeholder="ELG-X8P2-A91M" required>
+          </div>
+          <button name="login" value="1" class="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Login</button>
+          <a href="{% url 'staffpanel:staff_login' %}" class="block text-center text-sm text-slate-500">Use another email</a>
+        </form>
+      {% else %}
+        <form method="post" class="mt-5 space-y-4">{% csrf_token %}
+          <div>
+            <label class="text-sm font-medium text-slate-700">Email</label>
+            <input type="email" name="email" value="{{ email }}" class="mt-2 w-full rounded-xl border border-[#d8e0ea] px-4 py-3 text-sm outline-none focus:border-slate-900" required>
+          </div>
+          <button name="continue" value="1" class="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">Continue</button>
+          <a href="{% url 'staffpanel:admin_login' %}" class="block text-center text-sm text-slate-500">Admin login</a>
+        </form>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

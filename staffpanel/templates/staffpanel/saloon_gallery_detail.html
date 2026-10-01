@@ -1,0 +1,345 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Gallery - {{ display_name }}{% endblock %}
+{% block page_header %}{% endblock %}
+{% block page_nav %}{% endblock %}
+{% block main_class %}min-h-screen overflow-x-hidden{% endblock %}
+
+{% block content %}
+<div class="-mx-4 min-h-screen bg-white sm:-mx-6">
+  <div class="fixed inset-x-0 top-0 z-40 border-b border-gray-200 bg-white px-3 py-3 text-gray-900 shadow-sm sm:sticky sm:px-6">
+    <div class="mx-auto flex w-full max-w-6xl items-center justify-between">
+      <a href="{{ back_url }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100 sm:h-auto sm:w-auto sm:gap-2 sm:rounded-none sm:hover:bg-transparent">
+        <i class="fa-solid fa-arrow-left text-sm"></i>
+        <span class="hidden text-sm font-semibold sm:inline">Back</span>
+      </a>
+      <p class="text-base font-semibold sm:text-sm">Gallery</p>
+      <div class="w-12"></div>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-6xl px-0 pt-16 sm:px-4 sm:pt-0">
+    <div class="hidden lg:block">
+      <div class="relative border-b border-gray-200 py-6">
+        {% if prev_post %}
+          <a href="{% url 'staffpanel:saloon_gallery_detail' saloon.id prev_post.id %}" class="absolute -left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow">
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+          </a>
+        {% endif %}
+        {% if next_post %}
+          <a href="{% url 'staffpanel:saloon_gallery_detail' saloon.id next_post.id %}" class="absolute -right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white shadow">
+            <i class="fa-solid fa-chevron-right text-sm"></i>
+          </a>
+        {% endif %}
+
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <div class="relative overflow-hidden border border-gray-100">
+              {% if post.image_media|length > 1 %}
+                <div class="absolute right-3 top-3 z-10 rounded-full bg-black/30 px-2 py-1 text-xs text-white" data-overlay="{{ post.id }}">1/{{ post.image_media|length }}</div>
+              {% endif %}
+              <div class="media-carousel touch-pan-y overflow-hidden" data-gallery="{{ post.id }}">
+                <div class="media-track flex will-change-transform" data-gallery-track="{{ post.id }}">
+                  {% for media in post.image_media %}
+                    <div class="media-slide shrink-0 basis-full" data-gallery="{{ post.id }}">
+                      <img src="{{ media.file.url }}" class="h-[420px] w-full select-none bg-gray-50 object-contain" alt="Gallery image" draggable="false">
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            {% if post.image_media|length > 1 %}
+              <div class="mt-2 flex items-center justify-center gap-1" data-dots="{{ post.id }}">
+                {% for media in post.image_media %}
+                  <button type="button" class="{% if forloop.first %}h-1.5 w-6 rounded-full bg-gray-900{% else %}h-1.5 w-1.5 rounded-full bg-gray-300{% endif %}" data-dot="{{ post.id }}" data-index="{{ forloop.counter0 }}" aria-label="Go to image {{ forloop.counter }}"></button>
+                {% endfor %}
+              </div>
+              <div class="mt-3 flex items-center justify-between">
+                <button type="button" class="text-sm font-semibold text-gray-700" data-action="prev" data-gallery="{{ post.id }}">Prev</button>
+                <button type="button" class="text-sm font-semibold text-gray-700" data-action="next" data-gallery="{{ post.id }}">Next</button>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="relative border border-gray-100 p-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex min-w-0 items-center gap-2">
+                <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200">
+                  {% if saloon.banner_image %}<img src="{{ saloon.banner_image.url }}" class="h-full w-full object-cover" alt="{{ display_name }}">{% else %}<div class="h-full w-full bg-[#EFE4D5]"></div>{% endif %}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-gray-900">{{ display_name }}</p>
+                  <p class="text-xs text-gray-500">{{ post.created_at|date:"M d, Y" }}</p>
+                </div>
+              </div>
+              <div class="relative shrink-0">
+                <button type="button" class="js-post-menu-toggle flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50" data-menu-target="post-menu-{{ post.id }}" aria-label="Post moderation actions">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <div id="post-menu-{{ post.id }}" class="js-post-menu-panel hidden absolute right-0 top-12 z-50 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-2xl" style="width: min(24rem, calc(100vw - 2rem));">
+                  <form method="post" action="{% url 'staffpanel:gallery_post_moderate' saloon.id post.id 'hide' %}" class="space-y-3">
+                    {% csrf_token %}
+                    <label class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hide reason</label>
+                    <textarea name="reason" rows="3" required class="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-950" placeholder="Why are we hiding this post?"></textarea>
+                    <button class="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-700">Hide post</button>
+                  </form>
+                  <div class="my-4 border-t border-slate-100"></div>
+                  <form method="post" action="{% url 'staffpanel:gallery_post_moderate' saloon.id post.id 'delete' %}" class="space-y-3" onsubmit="return confirm('Delete this gallery post permanently?');">
+                    {% csrf_token %}
+                    <label class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Delete reason</label>
+                    <textarea name="reason" rows="3" required class="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-950" placeholder="Why are we deleting this post?"></textarea>
+                    <button class="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700">Delete post</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <p class="text-sm font-semibold text-gray-900">{{ post.title|default:"Untitled" }}</p>
+              {% if post.service %}
+                <div class="relative mt-2 inline-block max-w-full">
+                  <button type="button" class="inline-flex max-w-full items-center gap-2 rounded-md border border-[#e4ddd2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#3a3027] shadow-[0_1px_0_rgba(35,28,20,0.04)] transition hover:border-[#cdbb9f] hover:bg-[#fbfaf8]" data-service-info-toggle="staff-post-{{ post.id }}">
+                    <span class="text-[10px] font-semibold uppercase tracking-wide text-[#a18962]">Service</span>
+                    <span class="truncate">{{ post.service.name }}</span>
+                  </button>
+                  <div class="hidden absolute left-0 z-30 mt-2 w-72 max-w-[84vw] rounded-lg border border-[#e8e1d7] bg-white/95 p-4 text-left shadow-[0_22px_55px_rgba(24,20,16,0.14)] backdrop-blur" data-service-info-card="staff-post-{{ post.id }}">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
+                    <p class="mt-1 break-words text-[15px] font-semibold leading-5 text-[#211b16]">{{ post.service.name }}</p>
+                    <p class="mt-3 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ post.service.offer_price|default:post.service.price }}</p>
+                    {% if post.service.category %}<p class="mt-1 text-xs text-gray-500">{{ post.service.category.name }}</p>{% endif %}
+                  </div>
+                </div>
+              {% endif %}
+              {% if post.description %}<p class="mt-2 whitespace-pre-line text-sm text-gray-700">{{ post.description }}</p>{% endif %}
+              {% if post.is_hidden and post.moderation_reason %}<p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Hidden reason: {{ post.moderation_reason }}</p>{% endif %}
+              {% for media in post.media.all %}{% if media.media_type == 'video' %}<a href="{{ media.file.url }}" target="_blank" class="mt-4 inline-flex rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700">Open video</a>{% endif %}{% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:hidden divide-y divide-gray-200 px-2">
+      {% for item in ordered_posts %}
+        <div class="scroll-mt-20 py-4" id="post-{{ item.id }}">
+          <div class="px-3">
+            <div class="flex min-w-0 items-start justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-2">
+                <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-gray-200">
+                  {% if saloon.banner_image %}<img src="{{ saloon.banner_image.url }}" class="h-full w-full object-cover" alt="{{ display_name }}">{% else %}<div class="h-full w-full bg-[#EFE4D5]"></div>{% endif %}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-xs font-semibold text-gray-900">{{ display_name }}</p>
+                  <p class="text-[11px] text-gray-500">{{ item.created_at|date:"M d, Y" }}</p>
+                </div>
+              </div>
+              <div class="relative shrink-0">
+                <button type="button" class="js-post-menu-toggle flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm" data-menu-target="mobile-post-menu-{{ item.id }}" aria-label="Post moderation actions">
+                  <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                </button>
+                <div id="mobile-post-menu-{{ item.id }}" class="js-post-menu-panel hidden absolute right-0 top-10 z-50 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-2xl" style="width: min(22rem, calc(100vw - 2rem));">
+                  <form method="post" action="{% url 'staffpanel:gallery_post_moderate' saloon.id item.id 'hide' %}" class="space-y-3">
+                    {% csrf_token %}
+                    <label class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Hide reason</label>
+                    <textarea name="reason" rows="3" required class="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-950" placeholder="Why are we hiding this post?"></textarea>
+                    <button class="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-700">Hide post</button>
+                  </form>
+                  <div class="my-4 border-t border-slate-100"></div>
+                  <form method="post" action="{% url 'staffpanel:gallery_post_moderate' saloon.id item.id 'delete' %}" class="space-y-3" onsubmit="return confirm('Delete this gallery post permanently?');">
+                    {% csrf_token %}
+                    <label class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Delete reason</label>
+                    <textarea name="reason" rows="3" required class="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-950" placeholder="Why are we deleting this post?"></textarea>
+                    <button class="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700">Delete post</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="relative mt-3 overflow-hidden border-y border-gray-100">
+            {% if item.image_media|length > 1 %}<div class="absolute right-3 top-3 z-10 rounded-full bg-black/30 px-2 py-1 text-[11px] text-white" data-overlay="m{{ item.id }}">1/{{ item.image_media|length }}</div>{% endif %}
+            <div class="media-carousel touch-pan-y overflow-hidden" data-gallery="m{{ item.id }}">
+              <div class="media-track flex will-change-transform" data-gallery-track="m{{ item.id }}">
+                {% for media in item.image_media %}
+                  <div class="media-slide shrink-0 basis-full" data-gallery="m{{ item.id }}">
+                    <img src="{{ media.file.url }}" class="h-[26rem] w-full select-none bg-gray-50 object-contain" alt="Gallery image" draggable="false">
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% if item.image_media|length > 1 %}
+            <div class="mt-2 flex items-center justify-center gap-1" data-dots="m{{ item.id }}">
+              {% for media in item.image_media %}
+                <button type="button" class="{% if forloop.first %}h-1.5 w-6 rounded-full bg-gray-900{% else %}h-1.5 w-1.5 rounded-full bg-gray-300{% endif %}" data-dot="m{{ item.id }}" data-index="{{ forloop.counter0 }}" aria-label="Go to image {{ forloop.counter }}"></button>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div class="overflow-hidden px-4 pt-3">
+            <p class="break-words text-sm font-semibold text-gray-900">{{ item.title|default:"Untitled" }}</p>
+            {% if item.service %}
+              <div class="relative mt-2 inline-block max-w-full">
+                <button type="button" class="inline-flex max-w-full items-center gap-2 rounded-md border border-[#e4ddd2] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#3a3027]" data-service-info-toggle="staff-item-{{ item.id }}">
+                  <span class="text-[10px] font-semibold uppercase tracking-wide text-[#a18962]">Service</span>
+                  <span class="truncate">{{ item.service.name }}</span>
+                </button>
+                <div class="hidden absolute left-0 z-30 mt-2 w-72 max-w-[84vw] rounded-lg border border-[#e8e1d7] bg-white/95 p-4 text-left shadow-[0_22px_55px_rgba(24,20,16,0.14)] backdrop-blur" data-service-info-card="staff-item-{{ item.id }}">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
+                  <p class="mt-1 break-words text-[15px] font-semibold leading-5 text-[#211b16]">{{ item.service.name }}</p>
+                  <p class="mt-3 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ item.service.offer_price|default:item.service.price }}</p>
+                  {% if item.service.category %}<p class="mt-1 text-xs text-gray-500">{{ item.service.category.name }}</p>{% endif %}
+                </div>
+              </div>
+            {% endif %}
+            {% if item.description %}<p class="mt-2 break-words whitespace-pre-line text-sm text-gray-700">{{ item.description }}</p>{% endif %}
+            {% if item.is_hidden and item.moderation_reason %}<p class="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Hidden reason: {{ item.moderation_reason }}</p>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var carousels = {};
+    function updateDotsAndOverlay(id) {
+      var state = carousels[id];
+      if (!state) return;
+      var overlay = document.querySelector('[data-overlay="' + id + '"]');
+      if (overlay) overlay.textContent = (state.index + 1) + '/' + state.total;
+      document.querySelectorAll('[data-dots="' + id + '"] [data-dot]').forEach(function (dot, idx) {
+        dot.className = idx === state.index ? 'h-1.5 w-6 rounded-full bg-gray-900' : 'h-1.5 w-1.5 rounded-full bg-gray-300';
+      });
+    }
+    function renderCarousel(id, withTransition) {
+      var state = carousels[id];
+      if (!state) return;
+      state.width = state.root.clientWidth || 1;
+      state.track.style.transition = withTransition ? 'transform 260ms ease' : 'none';
+      state.track.style.transform = 'translate3d(' + ((state.index * -state.width) + state.delta) + 'px, 0, 0)';
+      updateDotsAndOverlay(id);
+    }
+    function setIndex(id, index) {
+      var state = carousels[id];
+      if (!state) return;
+      state.index = Math.max(0, Math.min(index, state.total - 1));
+      state.delta = 0;
+      renderCarousel(id, true);
+    }
+    function initCarousel(root) {
+      var id = root.getAttribute('data-gallery');
+      if (!id || carousels[id]) return;
+      var track = root.querySelector('[data-gallery-track="' + id + '"]');
+      var slides = Array.from(root.querySelectorAll('.media-slide[data-gallery="' + id + '"]'));
+      if (!track || !slides.length) return;
+      carousels[id] = { root: root, track: track, total: slides.length, index: 0, delta: 0, startX: 0, dragging: false, pointerId: null, width: root.clientWidth || 1 };
+      if (slides.length > 1) {
+        root.addEventListener('pointerdown', function (event) {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          var state = carousels[id];
+          state.dragging = true;
+          state.pointerId = event.pointerId;
+          state.startX = event.clientX;
+          state.delta = 0;
+          state.track.style.transition = 'none';
+          if (root.setPointerCapture) root.setPointerCapture(event.pointerId);
+        });
+        root.addEventListener('pointermove', function (event) {
+          var state = carousels[id];
+          if (!state.dragging || state.pointerId !== event.pointerId) return;
+          var rawDelta = event.clientX - state.startX;
+          if ((state.index === 0 && rawDelta > 0) || (state.index === state.total - 1 && rawDelta < 0)) rawDelta *= 0.35;
+          state.delta = rawDelta;
+          renderCarousel(id, false);
+        });
+        function finishDrag(event) {
+          var state = carousels[id];
+          if (!state.dragging || state.pointerId !== event.pointerId) return;
+          var threshold = state.width * 0.18;
+          var targetIndex = state.index;
+          if (state.delta <= -threshold && state.index < state.total - 1) targetIndex += 1;
+          else if (state.delta >= threshold && state.index > 0) targetIndex -= 1;
+          state.dragging = false;
+          state.pointerId = null;
+          state.delta = 0;
+          state.index = targetIndex;
+          renderCarousel(id, true);
+        }
+        root.addEventListener('pointerup', finishDrag);
+        root.addEventListener('pointercancel', finishDrag);
+      }
+      renderCarousel(id, false);
+    }
+    document.querySelectorAll('.media-carousel').forEach(initCarousel);
+    window.addEventListener('resize', function () { Object.keys(carousels).forEach(function (id) { renderCarousel(id, false); }); });
+    document.querySelectorAll('[data-action]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var id = button.getAttribute('data-gallery');
+        var state = carousels[id];
+        if (!state) return;
+        setIndex(id, button.getAttribute('data-action') === 'next' ? state.index + 1 : state.index - 1);
+      });
+    });
+    document.querySelectorAll('[data-dot]').forEach(function (dot) {
+      dot.addEventListener('click', function () { setIndex(dot.getAttribute('data-dot'), parseInt(dot.getAttribute('data-index'), 10) || 0); });
+    });
+  })();
+</script>
+<script>
+  (function () {
+    function closePostMenus(exceptId) {
+      document.querySelectorAll('.js-post-menu-panel').forEach(function (panel) {
+        if (panel.id !== exceptId) panel.classList.add('hidden');
+      });
+    }
+    document.querySelectorAll('.js-post-menu-toggle').forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var id = button.getAttribute('data-menu-target');
+        var panel = document.getElementById(id);
+        if (!panel) return;
+        var willOpen = panel.classList.contains('hidden');
+        closePostMenus(id);
+        panel.classList.toggle('hidden', !willOpen);
+      });
+    });
+    document.querySelectorAll('.js-post-menu-panel').forEach(function (panel) {
+      panel.addEventListener('click', function (event) { event.stopPropagation(); });
+    });
+
+    function closeServiceCards(exceptId) {
+      document.querySelectorAll('[data-service-info-card]').forEach(function (card) {
+        if (card.getAttribute('data-service-info-card') !== exceptId) card.classList.add('hidden');
+      });
+    }
+    document.querySelectorAll('[data-service-info-toggle]').forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var id = button.getAttribute('data-service-info-toggle');
+        var card = document.querySelector('[data-service-info-card="' + id + '"]');
+        if (!card) return;
+        var willOpen = card.classList.contains('hidden');
+        closeServiceCards(id);
+        card.classList.toggle('hidden', !willOpen);
+      });
+    });
+    document.addEventListener('click', function () {
+      closePostMenus();
+      closeServiceCards();
+    });
+  })();
+</script>
+{% if selected_post_id %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var target = document.getElementById('post-{{ selected_post_id }}');
+    if (!target) return;
+    if (window.matchMedia('(max-width: 1023px)').matches) target.scrollIntoView({ behavior: 'instant', block: 'start' });
+  });
+</script>
+{% endif %}
+{% endblock %}
+

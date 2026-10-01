@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if seo.title %}{{ seo.title }}{% else %}Elegentra Pricing{% endif %}</title>
+    {% if seo.description %}<meta name="description" content="{{ seo.description }}">{% endif %}
+    {% if seo.canonical_url %}<link rel="canonical" href="{{ seo.canonical_url }}">{% endif %}
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(226,231,239,0.72),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(245,241,236,0.92),transparent_34%),linear-gradient(180deg,#f6f6f4_0%,#f3f1ee_100%)] font-sans text-[#191919]">
+    <main class="mx-auto min-h-screen w-[min(1180px,calc(100%-40px))] px-0 pb-24 pt-[34px] max-[720px]:w-[min(100%-22px,100%)] max-[720px]:pb-[42px] max-[720px]:pt-4">
+        <div class="flex min-h-screen flex-col max-[720px]:min-h-[100svh]">
+        <div class="mb-[18px] flex items-center justify-between gap-4 border-b border-[rgba(99,73,39,0.08)] pb-[14px] max-[720px]:mb-3 max-[720px]:pb-3">
+            <a href="{% url 'public_home' %}" class="inline-flex h-12 shrink-0 items-center leading-none text-[#4F3F2E]" aria-label="ELEGENTRA home">
+                <span class="block font-bauserif text-[clamp(1.74rem,3vw,2.22rem)] tracking-[0.02em] [text-shadow:0_1px_0_rgba(255,255,255,0.55),0_2px_10px_rgba(97,72,39,0.14)]">Elegentra</span>
+            </a>
+
+            <div class="hidden flex-wrap items-center gap-3 md:flex">
+                <a class="inline-flex min-h-11 items-center justify-center rounded-full px-[18px] font-semibold text-[#2b241d]" href="/saloons/partner/">Partner page</a>
+                <a class="inline-flex min-h-11 items-center justify-center rounded-full border border-black/10 bg-white/50 px-[18px] font-semibold text-[#3a3027]" href="{% url 'account_signup' %}?next={% url 'partner_home' %}">Create partner account</a>
+            </div>
+
+            <button type="button" class="relative inline-flex h-[46px] w-[46px] items-center justify-center rounded-full border border-black/10 bg-white/55 shadow-[0_10px_24px_rgba(0,0,0,0.04)] md:hidden" id="pricing-mobile-menu-open" aria-label="Open menu">
+                <span class="absolute left-1/2 top-[15px] h-[2px] w-[18px] -translate-x-1/2 rounded-full bg-[#4c3d2d] shadow-[0_1px_0_rgba(255,255,255,0.35)]"></span>
+                <span class="h-[2px] w-[18px] rounded-full bg-[#4c3d2d] shadow-[0_1px_0_rgba(255,255,255,0.35)]"></span>
+                <span class="absolute bottom-[15px] left-1/2 h-[2px] w-[18px] -translate-x-1/2 rounded-full bg-[#4c3d2d] shadow-[0_1px_0_rgba(255,255,255,0.35)]"></span>
+            </button>
+        </div>
+
+        <div class="pointer-events-none fixed inset-0 z-40 bg-[rgba(28,20,11,0.16)] opacity-0 transition-opacity duration-200 md:hidden" id="pricing-mobile-menu">
+            <div class="ml-auto h-full w-[min(88vw,340px)] translate-x-full bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,239,227,0.96))] p-[18px] shadow-[-18px_0_38px_rgba(0,0,0,0.08)] transition-transform duration-200" id="pricing-mobile-menu-panel">
+                <div class="flex items-center justify-between gap-3 border-b border-[rgba(99,73,39,0.08)] pb-4">
+                    <a href="{% url 'public_home' %}" class="inline-flex h-12 shrink-0 items-center leading-none text-[#4F3F2E]" aria-label="ELEGENTRA home">
+                        <span class="block font-bauserif text-[clamp(1.74rem,3vw,2.22rem)] tracking-[0.02em] [text-shadow:0_1px_0_rgba(255,255,255,0.55),0_2px_10px_rgba(97,72,39,0.14)]">Elegentra</span>
+                    </a>
+                    <button type="button" class="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full border border-black/10 bg-white/65 text-[1.35rem] leading-none text-[#3a3027]" id="pricing-mobile-menu-close" aria-label="Close menu">&times;</button>
+                </div>
+                <div class="mt-[18px] grid gap-3">
+                    <a href="/saloons/partner/" class="inline-flex min-h-12 items-center justify-center rounded-full border border-black/10 bg-white/70 px-4 font-semibold text-[#2f2821]">Partner page</a>
+                    <a href="{% url 'account_signup' %}?next={% url 'partner_home' %}" class="inline-flex min-h-12 items-center justify-center rounded-full border border-black/10 bg-white/70 px-4 font-semibold text-[#2f2821]">Create partner account</a>
+                </div>
+            </div>
+        </div>
+
+        <section class="relative flex flex-1 flex-col items-center justify-center px-[clamp(20px,6vw,72px)] pb-[clamp(34px,6vw,50px)] pt-[clamp(18px,3vw,30px)] text-center max-[720px]:px-1 max-[720px]:pb-8 max-[720px]:pt-4">
+            <div class="pointer-events-none absolute right-[-12%] top-[8%] hidden h-[180px] w-[180px] rounded-full bg-[rgba(181,140,78,0.14)] blur-[18px] max-[720px]:block"></div>
+            <div class="pointer-events-none absolute bottom-[10%] left-[-14%] hidden h-[150px] w-[150px] rounded-full bg-[rgba(226,231,239,0.55)] blur-[18px] max-[720px]:block"></div>
+
+            <div class="relative z-[1] inline-flex min-h-[38px] w-fit items-center justify-center rounded-full border border-black/10 bg-white/55 px-[14px] text-[0.78rem] font-bold uppercase tracking-[0.12em] text-[#6e655c] max-[720px]:min-h-[34px] max-[720px]:px-3 max-[720px]:text-[0.68rem] max-[720px]:tracking-[0.14em]">
+                Early Partner Access
+            </div>
+            <h1 class="relative z-[1] mt-[22px] whitespace-nowrap text-[clamp(2.6rem,5vw,4.5rem)] font-bold leading-[1.02] tracking-[-0.08em] max-[720px]:mt-[10px] max-[720px]:max-w-[13ch] max-[720px]:whitespace-normal max-[720px]:text-balance max-[720px]:text-[clamp(2.2rem,9.3vw,2.9rem)] max-[720px]:leading-[1.28]">
+                <span class="inline max-[720px]:block">Premium website.</span>
+                <span class="hidden max-[720px]:block max-[720px]:h-2"></span>
+                <span class="inline max-[720px]:mt-4 max-[720px]:block">Real visibility.</span>
+            </h1>
+            <p class="relative z-[1] mx-auto max-w-[760px] text-base leading-[1.8] text-[#66625d] max-[720px]:mt-3 max-[720px]:max-w-[24ch] max-[720px]:text-[0.84rem] max-[720px]:leading-[1.55]">
+                <span class="max-[720px]:hidden">
+                    Elegentra is priced as a premium salon presence, not as basic software. Your salon gets a personal website
+                    feel, stronger visibility, SEO-friendly public pages, and direct customer enquiries through WhatsApp.
+                </span>
+                <span class="hidden max-[720px]:inline">
+                    Build a premium salon identity customers trust at first glance, get discovered more often, and convert interest into direct WhatsApp enquiries.
+                </span>
+            </p>
+
+            <div class="relative z-[1] mt-6 flex flex-wrap justify-center gap-3 max-[720px]:mt-3 max-[720px]:w-full max-[720px]:max-w-[292px] max-[720px]:justify-center max-[720px]:gap-0">
+                <span class="inline-flex min-h-[42px] items-center justify-center rounded-full border border-black/10 bg-white/50 px-[15px] text-[0.92rem] font-semibold text-[#494949] max-[720px]:hidden">Limited 50 partners</span>
+                <span class="inline-flex min-h-[42px] items-center justify-center rounded-full border border-black/10 bg-white/50 px-[15px] text-[0.92rem] font-semibold text-[#494949] max-[720px]:hidden">Introductory access included</span>
+                <span class="inline-flex min-h-[42px] items-center justify-center rounded-full border border-black/10 bg-white/50 px-[15px] text-[0.92rem] font-semibold text-[#494949] max-[720px]:min-h-[38px] max-[720px]:w-full max-[720px]:border-[rgba(181,140,78,0.16)] max-[720px]:bg-[rgba(255,255,255,0.72)] max-[720px]:text-[0.72rem] max-[720px]:font-bold max-[720px]:text-[#4f4336] max-[720px]:shadow-[0_10px_24px_rgba(0,0,0,0.035)]">
+                    Rs. 999/month plan - Limited 50 partners
+                </span>
+            </div>
+
+            <div class="relative z-[1] mt-7 flex flex-wrap justify-center gap-3 max-[720px]:mt-[14px] max-[720px]:w-full max-[720px]:max-w-[292px] max-[720px]:flex-col max-[720px]:gap-2">
+                <a class="inline-flex min-h-[54px] items-center justify-center rounded-full bg-[#121212] px-6 font-bold text-white shadow-[0_16px_28px_rgba(0,0,0,0.12)] transition duration-200 hover:-translate-y-px max-[720px]:min-h-[46px] max-[720px]:px-[18px] max-[720px]:text-[0.9rem]" href="{% url 'account_signup' %}?next={% url 'partner_home' %}">Claim early partner access</a>
+                <a class="inline-flex min-h-[54px] items-center justify-center rounded-full border border-black/10 bg-white/45 px-6 font-bold text-[#2f2821] transition duration-200 hover:-translate-y-px max-[720px]:hidden" href="/saloons/partner/">View partner registration</a>
+            </div>
+
+            <div class="relative z-[1] mt-[22px] flex flex-wrap justify-center gap-3 max-[720px]:hidden">
+                {% for item in pricing_highlights %}
+                    <span class="inline-flex min-h-[42px] items-center justify-center rounded-full border border-black/10 bg-white/50 px-[15px] text-[0.92rem] font-semibold text-[#494949]">{{ item }}</span>
+                {% endfor %}
+            </div>
+        </section>
+        </div>
+
+        <section class="relative mt-[26px] overflow-hidden rounded-[34px] border border-black/10 bg-white/70 p-[26px] shadow-[0_18px_40px_rgba(0,0,0,0.04)] max-[720px]:mt-0 max-[720px]:rounded-[26px] max-[720px]:p-4">
+            <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(226,231,239,0.42),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(245,241,236,0.82),transparent_34%)]"></div>
+            <div class="relative z-[1] grid grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] gap-6 max-[900px]:grid-cols-1 max-[720px]:gap-4">
+                <div class="rounded-[30px] border border-black/5 bg-white/90 p-[34px] shadow-[0_14px_30px_rgba(0,0,0,0.03)] max-[720px]:rounded-[22px] max-[720px]:p-[22px_20px]">
+                    <h2 class="mb-[10px] text-[clamp(2rem,4vw,3rem)] leading-[1.02] tracking-[-0.06em] max-[720px]:text-[1.55rem]">What salons are paying for</h2>
+                    <p class="leading-[1.85] text-[#66625d]">
+                        The value is not just "being listed". Elegentra is positioned as your salon's premium digital
+                        presentation with the visibility needed to help people discover and trust your business.
+                    </p>
+
+                    <div class="mt-7 grid grid-cols-2 gap-x-[30px] gap-y-4 max-[900px]:grid-cols-1 max-[720px]:gap-[14px]">
+                        {% for point in pricing_points %}
+                            <div class="flex items-start gap-3">
+                                <div class="mt-[5px] inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white/70 bg-[linear-gradient(135deg,rgba(228,199,140,0.95),rgba(181,140,78,0.78))] shadow-[0_6px_14px_rgba(181,140,78,0.16)]"></div>
+                                <div>
+                                    <strong class="block text-base font-semibold leading-[1.45]">{{ point.title }}</strong>
+                                    <span class="mt-1 block text-[0.9rem] leading-[1.6] text-[#66625d]">{{ point.description }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="rounded-[30px] border border-black/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(249,241,229,0.96))] p-7 shadow-[0_14px_30px_rgba(0,0,0,0.03)] max-[720px]:order-first max-[720px]:rounded-[22px] max-[720px]:bg-[radial-gradient(circle_at_top_right,rgba(181,140,78,0.14),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.99),rgba(249,241,229,0.96))] max-[720px]:p-[22px_20px] max-[720px]:shadow-[0_18px_34px_rgba(0,0,0,0.06)]">
+                    <div class="inline-flex min-h-[34px] items-center rounded-full bg-[rgba(181,140,78,0.12)] px-3 text-[0.76rem] font-bold uppercase tracking-[0.1em] text-[#7b6237]">Premium Presence</div>
+                    <h3 class="mt-[18px] text-[1.8rem] leading-[1.06] tracking-[-0.05em] max-[720px]:text-[1.55rem]">Built for salons that want to look serious online.</h3>
+                    <p class="mt-2 text-[#66625d] leading-[1.75]">
+                        A premium website + visibility plan designed for salons that want stronger presentation,
+                        better discoverability, and direct enquiries without looking like a directory listing.
+                    </p>
+
+                    <div class="mt-[26px] flex items-end gap-2 max-[720px]:mt-5">
+                        <strong class="text-[3rem] leading-[0.95] tracking-[-0.07em] max-[720px]:text-[2.7rem]">Rs. 999</strong>
+                        <span class="font-semibold text-[#66625d]">/ month</span>
+                    </div>
+                    <p class="mt-2 text-[0.92rem] leading-[1.7] text-[#7b6237]">Currently offered through limited early partner access for selected salons.</p>
+
+                    <ul class="mt-[22px] grid gap-3 max-[720px]:mt-[18px] max-[720px]:gap-[10px]">
+                        <li class="flex items-start gap-3 text-[#2c2721]">
+                            <span class="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#b58c4e]"></span>
+                            Premium salon website experience on Elegentra
+                        </li>
+                        <li class="flex items-start gap-3 text-[#2c2721]">
+                            <span class="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#b58c4e]"></span>
+                            Customer-facing services, gallery, reviews, and trust signals
+                        </li>
+                        <li class="flex items-start gap-3 text-[#2c2721]">
+                            <span class="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#b58c4e]"></span>
+                            SEO-friendly public page structure
+                        </li>
+                        <li class="flex items-start gap-3 text-[#2c2721]">
+                            <span class="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#b58c4e]"></span>
+                            Direct WhatsApp lead flow
+                        </li>
+                        <li class="flex items-start gap-3 text-[#2c2721]">
+                            <span class="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-[#b58c4e]"></span>
+                            Visibility on the Elegentra platform
+                        </li>
+                    </ul>
+
+                    <div class="mt-6">
+                        <a class="inline-flex min-h-[54px] w-full items-center justify-center rounded-full bg-[#121212] px-6 font-bold text-white shadow-[0_16px_28px_rgba(0,0,0,0.12)] transition duration-200 hover:-translate-y-px" href="{% url 'account_signup' %}?next={% url 'partner_home' %}">Start with Elegentra</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mt-7 rounded-[30px] border border-black/10 bg-white/80 p-[30px] shadow-[0_18px_40px_rgba(0,0,0,0.04)] max-[720px]:mt-5 max-[720px]:rounded-[22px] max-[720px]:p-[22px]">
+            <h3 class="mb-[10px] text-[1.7rem] leading-[1.08] tracking-[-0.05em] max-[720px]:text-[1.55rem]">Pricing FAQ</h3>
+            <p class="mb-[18px] leading-[1.8] text-[#66625d]">Clear answers for salon owners comparing Elegentra with software tools, listing sites, or local marketing options.</p>
+
+            <div class="grid gap-3">
+                {% for faq in pricing_faqs %}
+                    <div class="rounded-[20px] border border-black/10 bg-white/70 px-5 py-[18px]">
+                        <strong class="mb-[7px] block text-[0.97rem] leading-[1.5]">{{ faq.question }}</strong>
+                        <p class="m-0 text-[0.91rem] leading-[1.7] text-[#66625d]">{{ faq.answer }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <footer class="mt-[34px] border-t border-black/10 px-0 pb-[10px] pt-6">
+            <div class="grid grid-cols-[minmax(0,1.2fr)_minmax(160px,0.6fr)_minmax(160px,0.6fr)] gap-6 max-[720px]:grid-cols-1 max-[720px]:gap-5">
+                <div>
+                    <a href="{% url 'public_home' %}" class="text-[#4F3F2E]" aria-label="ELEGENTRA home">
+                        <span class="inline-block font-bauserif text-[1.95rem] tracking-[0.02em] [text-shadow:0_1px_0_rgba(255,255,255,0.55),0_2px_10px_rgba(97,72,39,0.14)]">Elegentra</span>
+                    </a>
+                    <p class="mt-[10px] max-w-[38ch] text-[0.93rem] leading-[1.75] text-[#66625d]">
+                        Premium salon websites with visibility, trust, and direct customer discovery built into the experience.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="mb-[10px] text-[0.82rem] uppercase tracking-[0.12em] text-[#7d6a52]">Pricing</h4>
+                    <div class="grid gap-[10px] text-[0.95rem] leading-[1.5] text-[#332b24]">
+                        <a class="hover:text-[#111111]" href="/saloons/partner/pricing/">Pricing page</a>
+                        <a class="hover:text-[#111111]" href="/saloons/partner/">Partner registration</a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="mb-[10px] text-[0.82rem] uppercase tracking-[0.12em] text-[#7d6a52]">Account</h4>
+                    <div class="grid gap-[10px] text-[0.95rem] leading-[1.5] text-[#332b24]">
+                        <a class="hover:text-[#111111]" href="{% url 'account_login' %}?next={% url 'partner_home' %}">Log in</a>
+                        <a class="hover:text-[#111111]" href="{% url 'account_signup' %}?next={% url 'partner_home' %}">Create account</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-[22px] border-t border-black/5 pt-[14px] text-[0.86rem] text-[#7a7066]">
+                Copyright {% now "Y" %} Elegentra. Crafted for beauty discovery.
+            </div>
+        </footer>
+    </main>
+    <script>
+        (function () {
+            const menu = document.getElementById("pricing-mobile-menu");
+            const panel = document.getElementById("pricing-mobile-menu-panel");
+            const openButton = document.getElementById("pricing-mobile-menu-open");
+            const closeButton = document.getElementById("pricing-mobile-menu-close");
+
+            if (!menu || !panel || !openButton || !closeButton) {
+                return;
+            }
+
+            function openMenu() {
+                menu.classList.remove("pointer-events-none", "opacity-0");
+                menu.classList.add("pointer-events-auto", "opacity-100");
+                panel.classList.remove("translate-x-full");
+                document.body.style.overflow = "hidden";
+            }
+
+            function closeMenu() {
+                menu.classList.remove("pointer-events-auto", "opacity-100");
+                menu.classList.add("pointer-events-none", "opacity-0");
+                panel.classList.add("translate-x-full");
+                document.body.style.overflow = "";
+            }
+
+            openButton.addEventListener("click", openMenu);
+            closeButton.addEventListener("click", closeMenu);
+            menu.addEventListener("click", function (event) {
+                if (event.target === menu) {
+                    closeMenu();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

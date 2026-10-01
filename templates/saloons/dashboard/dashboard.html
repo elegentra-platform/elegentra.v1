@@ -5,18 +5,15 @@
   <meta charset="UTF-8">
   <title>ELEGENTRA Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=20260930">
+  <link rel="shortcut icon" href="/favicon.ico?v=20260930" sizes="any">
+  <link rel="apple-touch-icon" sizes="256x256" href="/favicon.png?v=20260930">
+  <link rel="manifest" href="{% url 'site_webmanifest' %}">
+  <meta name="theme-color" content="#f7f0ea">
 
   <!-- Core CSS -->
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <link rel="stylesheet" href="{% static 'css/dashboard/message.css' %}">
-  <style>
-    @font-face {
-      font-family: "Bauserif";
-      src: url("{% static 'fonts/bauserif.ttf' %}") format("truetype");
-      font-weight: 400;
-      font-style: normal;
-    }
-  </style>
 
   <!-- Icons & Charts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -31,8 +28,7 @@
   <aside class="hidden lg:flex w-64 bg-white border-r border-gray-200 px-6 py-8 flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen">
     <div class="mb-10 leading-none text-[#5B4B37]">
       <div
-        class="text-[2.08rem] tracking-[0.03em]"
-        style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(110,85,48,0.12);"
+        class="font-bauserif text-[2.08rem] tracking-[0.03em] [text-shadow:0_1px_0_rgba(255,255,255,0.55),0_2px_10px_rgba(110,85,48,0.12)]"
       >
         Elegentra
       </div>
@@ -46,16 +42,18 @@
         <i class="fa-solid fa-chart-line"></i> Dashboard
       </a>
 
-      <a href="{% url 'saloon_dashboard_mysaloon' user.username %}"
-         class="flex items-center gap-3 px-4 py-3 rounded-xl
-         {% if active_tab == 'mysaloon' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
-        <i class="fa-solid fa-store"></i> My Salon
+      <a href="{% if subscription_locked %}{% url 'saloon_dashboard_subscription' user.username %}{% else %}{% url 'saloon_dashboard_mysaloon' user.username %}{% endif %}"
+         class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl {% if subscription_locked %}cursor-not-allowed opacity-45 text-gray-500{% elif active_tab == 'mysaloon' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}"
+         {% if subscription_locked %}title="Subscription required"{% endif %}>
+        <span class="flex items-center gap-3"><i class="fa-solid fa-store"></i> My Salon</span>
+        {% if subscription_locked %}<i class="fa-solid fa-lock text-xs"></i>{% endif %}
       </a>
 
-      <a href="{% url 'saloon_dashboard_services' user.username %}"
-         class="flex items-center gap-3 px-4 py-3 rounded-xl
-         {% if active_tab == 'services' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}">
-        <i class="fa-solid fa-scissors"></i> Services
+      <a href="{% if subscription_locked %}{% url 'saloon_dashboard_subscription' user.username %}{% else %}{% url 'saloon_dashboard_services' user.username %}{% endif %}"
+         class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl {% if subscription_locked %}cursor-not-allowed opacity-45 text-gray-500{% elif active_tab == 'services' %} bg-black text-white {% else %} text-gray-600 hover:bg-gray-100 {% endif %}"
+         {% if subscription_locked %}title="Subscription required"{% endif %}>
+        <span class="flex items-center gap-3"><i class="fa-solid fa-scissors"></i> Services</span>
+        {% if subscription_locked %}<i class="fa-solid fa-lock text-xs"></i>{% endif %}
       </a>
 
       <a href="{% url 'saloon_dashboard_subscription' user.username %}"
@@ -77,40 +75,98 @@
   <main class="flex-1 flex flex-col lg:pl-64 lg:h-screen lg:overflow-hidden">
 
     <!-- HEADER -->
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-[9999]">
       <h1 class="text-xl font-semibold">Dashboard</h1>
 
-      <div class="flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search here..."
-          class="hidden md:block px-4 py-2 rounded-lg border border-gray-300 focus:outline-none"
-        />
-
-        <i class="fa-regular fa-bell text-gray-600"></i>
-
-        <div class="w-8 h-8 rounded-full overflow-hidden">
-          <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
-            <div class="media-skeleton__placeholder"></div>
-            <img
-              src="{{ user.socialaccount_set.all.0.get_avatar_url|default:'/static/img/default-avatar.png' }}"
-              class="w-full h-full object-cover"
-              alt="Profile"
-              data-skeleton-image
-            />
-          </div>
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="relative hidden md:block" data-dashboard-search-wrap>
+          <label class="sr-only" for="dashboardSearchInput">Search dashboard</label>
+          <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></span>
+          <input
+            id="dashboardSearchInput"
+            type="text"
+            placeholder="Search dashboard..."
+            class="w-56 rounded-xl border border-gray-300 bg-white py-2 pl-9 pr-4 text-sm shadow-sm transition focus:border-[#c7a24d] focus:outline-none focus:ring-2 focus:ring-[#ead7a8]/60"
+            data-dashboard-search
+            data-search-url="{% url 'saloon_dashboard_search' user.username %}"
+            autocomplete="off"
+          />
+          <div class="hidden fixed w-80 overflow-hidden rounded-2xl border border-[#e7dccd] bg-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]" style="z-index:10000;" data-dashboard-search-results></div>
         </div>
 
-        <span class="text-sm font-medium">
-          {{ user.get_full_name|default:user.username }}
-        </span>
+        <details id="dashboard-notification-menu" class="group relative">
+          <summary class="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-[#E4D7C4] bg-[#FFFDF9] text-[#5F503F] shadow-[0_10px_24px_rgba(74,56,30,0.10)] transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#D8B86D]/35 group-open:border-[#CFA75C] group-open:bg-white" aria-label="Notifications">
+            <i class="fa-regular fa-bell text-[15px]"></i>
+            {% if unread_notifications_count %}
+              <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B58C4E] px-1 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(181,140,78,0.28)] ring-2 ring-white">{{ unread_notifications_count|default:0 }}</span>
+            {% endif %}
+          </summary>
+          <div style="position:fixed; top:4.6rem; right:1rem; z-index:80; width:min(22rem, calc(100vw - 2rem)); max-width:22rem; overflow:hidden; border-radius:1.45rem; background:linear-gradient(180deg,#FFFDF9 0%,#FFF8EE 54%,#F8EDDC 100%); border:1px solid #D9C6AA; box-shadow:0 30px 80px rgba(48,35,18,0.24),0 8px 22px rgba(181,140,78,0.10),inset 0 1px 0 rgba(255,255,255,0.78);">
+            <div style="position:absolute; right:4.25rem; top:-0.42rem; width:0.85rem; height:0.85rem; transform:rotate(45deg); background:#FFFDF9; border-left:1px solid #D9C6AA; border-top:1px solid #D9C6AA;"></div>
+            <div class="flex items-center justify-between gap-4 px-5 py-4" style="position:relative; background:radial-gradient(circle at 12% 18%,rgba(218,184,112,0.20),transparent 34%),linear-gradient(180deg,#FFFDF9,#FFF3E2); border-bottom:1px solid #E6D8C2;">
+              <p class="text-[15px] font-semibold leading-5 text-[#2E2418]">Notifications</p>
+              <a href="{% url 'saloon_dashboard_notifications' user.username %}" class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-semibold leading-none text-[#6E4F1B] transition hover:-translate-y-0.5" style="background:#FFFFFF; border:1px solid #E4D1B0; box-shadow:0 10px 22px rgba(74,56,30,0.10), inset 0 1px 0 rgba(255,255,255,0.8);">
+                View all
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+              </a>
+            </div>
+            <div class="max-h-[22rem] overflow-y-auto p-2.5" style="background:linear-gradient(180deg,#FFF9EF,#FBF0E0);">
+              {% if recent_notifications %}
+                {% for notification in recent_notifications %}
+                  <a href="{{ notification.url|default:'#' }}" class="group/notice mb-2 block rounded-[1.05rem] px-3 py-3 transition focus:outline-none" style="background:rgba(255,255,255,0.92); border:1px solid transparent; box-shadow:0 8px 20px rgba(74,56,30,0.05);">
+                    <span class="flex items-start gap-3">
+                      <span class="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F4E4C2] text-[#875F24] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                        <i class="fa-regular fa-bell text-sm"></i>
+                        {% if not notification.is_read %}<span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#B58C4E] ring-2 ring-[#F4E4C2]"></span>{% endif %}
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-semibold text-[#2E2418]">{{ notification.title }}</span>
+                        {% if notification.message %}<span class="mt-0.5 line-clamp-2 block text-xs leading-5 text-[#6E5C45]">{{ notification.message }}</span>{% endif %}
+                        <span class="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[#9A7B47]"><i class="fa-regular fa-clock text-[10px]"></i>{{ notification.created_at|date:"d M Y, h:i A" }}</span>
+                      </span>
+                    </span>
+                  </a>
+                {% endfor %}
+              {% else %}
+                <div class="mx-1.5 my-1.5 px-6 py-8 text-center" style="border-radius:1.35rem; background:linear-gradient(180deg,#FFFFFF,#FFF8ED); border:1px solid #E8D8BC; box-shadow:0 14px 30px rgba(74,56,30,0.08), inset 0 1px 0 rgba(255,255,255,0.8);">
+                  <img src="{% static 'images/no-notifications.png' %}" alt="" class="mx-auto h-20 w-20 object-contain" loading="lazy">
+                  <p class="mt-4 text-[15px] font-semibold leading-5 text-[#2E2418]">No notifications yet</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </details>
+
+        <details id="dashboard-profile-menu" class="group relative">
+          <summary class="flex cursor-pointer list-none items-center gap-2 rounded-full py-1 pl-1 pr-2 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#d8b86d]/35" aria-label="Profile menu">
+            <span class="block h-9 w-9 overflow-hidden rounded-full bg-[#5f1dbb] text-white shadow-sm">
+              <span class="flex h-full w-full items-center justify-center text-sm font-semibold uppercase">
+                {{ user.first_name|default:user.username|slice:":1" }}
+              </span>
+            </span>
+            <span class="hidden max-w-[8rem] truncate text-sm font-semibold text-gray-900 sm:block">{{ user.get_full_name|default:user.username }}</span>
+            <i class="fa-solid fa-chevron-down hidden text-[10px] text-gray-400 transition group-open:rotate-180 sm:inline-block"></i>
+          </summary>
+          <div class="absolute right-0 top-12 z-50 w-56 overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
+            <div class="border-b border-gray-100 px-3 py-3">
+              <p class="truncate text-sm font-semibold text-gray-900">{{ user.get_full_name|default:user.username }}</p>
+              <p class="truncate text-xs text-gray-500">{{ user.email|default:"Salon partner" }}</p>
+            </div>
+            <a href="{% url 'saloon_dashboard_settings' user.username %}" class="mt-2 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"><i class="fa-solid fa-gear w-4 text-gray-400"></i>Settings</a>
+            <a href="{% url 'saloon_dashboard_subscription' user.username %}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"><i class="fa-regular fa-credit-card w-4 text-gray-400"></i>Subscription</a>
+            <form method="post" action="{% url 'account_logout' %}" class="mt-1 border-t border-gray-100 pt-2">
+              {% csrf_token %}
+              <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"><i class="fa-solid fa-arrow-right-from-bracket w-4"></i>Logout</button>
+            </form>
+          </div>
+        </details>
       </div>
     </header>
 
     <!-- PAGE CONTENT -->
     <div class="flex-1 overflow-y-auto px-3 sm:px-6 pb-28 {% if content_bg_white %}bg-white min-h-screen{% endif %} {% if show_back_button %}pt-14 sm:pt-0{% else %}pt-6{% endif %} lg:overscroll-contain">
       {% if show_back_button %}
-        <div class="hidden sm:flex sticky top-0 z-30 -mx-6 px-6 py-3 bg-gray-100 border-b border-gray-200 mb-3" style="position: -webkit-sticky; position: sticky; top: 0;">
+        <div class="sticky top-0 z-20 -mx-6 mb-3 hidden border-b border-gray-200 bg-gray-100 px-6 py-3 sm:flex">
           <div class="flex items-center gap-2 text-sm text-gray-500">
             <a href="{{ back_url }}" class="text-gray-600 hover:text-gray-900">
               {{ back_parent_label|default:"Back" }}
@@ -142,14 +198,14 @@
     <i class="fa-solid fa-chart-line"></i>
   </a>
 
-  <a href="{% url 'saloon_dashboard_services' user.username %}"
-     class="{% if active_tab == 'services' %}text-black{% else %}text-gray-500{% endif %}">
-    <i class="fa-solid fa-scissors"></i>
+  <a href="{% if subscription_locked %}{% url 'saloon_dashboard_subscription' user.username %}{% else %}{% url 'saloon_dashboard_services' user.username %}{% endif %}"
+     class="relative {% if subscription_locked %}cursor-not-allowed text-gray-300{% elif active_tab == 'services' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-scissors"></i>{% if subscription_locked %}<i class="fa-solid fa-lock absolute -right-2 -top-2 text-[9px]"></i>{% endif %}
   </a>
 
-  <a href="{% url 'saloon_dashboard_mysaloon' user.username %}"
-     class="{% if active_tab == 'mysaloon' %}text-black{% else %}text-gray-500{% endif %}">
-    <i class="fa-solid fa-store"></i>
+  <a href="{% if subscription_locked %}{% url 'saloon_dashboard_subscription' user.username %}{% else %}{% url 'saloon_dashboard_mysaloon' user.username %}{% endif %}"
+     class="relative {% if subscription_locked %}cursor-not-allowed text-gray-300{% elif active_tab == 'mysaloon' %}text-black{% else %}text-gray-500{% endif %}">
+    <i class="fa-solid fa-store"></i>{% if subscription_locked %}<i class="fa-solid fa-lock absolute -right-2 -top-2 text-[9px]"></i>{% endif %}
   </a>
 
   <a href="{% url 'saloon_dashboard_subscription' user.username %}"
@@ -164,7 +220,7 @@
 
 </nav>
 
-<!-- 🔔 TOAST CONTAINER -->
+<!-- ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- TOAST SCRIPT -->
@@ -176,7 +232,7 @@
     toast.className = `toast ${type}`;
 
     toast.innerHTML = `
-      <div class="toast-icon">${type === "success" ? "✓" : "!"}</div>
+      <div class="toast-icon">${type === "success" ? "ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ" : "!"}</div>
       <div class="toast-text">
         <div class="toast-title">${title}</div>
         <div class="toast-desc">${desc}</div>
@@ -202,8 +258,123 @@
       {% endfor %}
     });
   {% endif %}
+
+  document.querySelector('[data-close-subscription-lock]')?.addEventListener('click', function () {
+    document.getElementById('subscription-lock-modal')?.remove();
+  });
+
+  (function () {
+    const menus = [
+      document.getElementById("dashboard-notification-menu"),
+      document.getElementById("dashboard-profile-menu")
+    ].filter(Boolean);
+    if (menus.length) {
+      document.addEventListener("click", function (event) {
+        menus.forEach(function (menu) {
+          if (!menu.open || menu.contains(event.target)) return;
+          menu.open = false;
+        });
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          menus.forEach(function (menu) { menu.open = false; });
+        }
+      });
+    }
+  })();
+
+  (function () {
+    const input = document.querySelector("[data-dashboard-search]");
+    const panel = document.querySelector("[data-dashboard-search-results]");
+    if (!input || !panel) return;
+    let timer = null;
+
+    function positionPanel() {
+      const rect = input.getBoundingClientRect();
+      const width = Math.min(320, window.innerWidth - 24);
+      const left = Math.max(12, Math.min(rect.right - width, window.innerWidth - width - 12));
+      panel.style.width = width + "px";
+      panel.style.left = left + "px";
+      panel.style.top = rect.bottom + 22 + "px";
+    }
+
+    function render(items, query) {
+      positionPanel();
+      panel.classList.remove("hidden");
+      const title = query ? "Results" : "";
+      if (!items.length) {
+        panel.innerHTML = '<div class="p-4 text-sm font-semibold text-gray-500">No result found</div>';
+        return;
+      }
+      panel.innerHTML = `
+        ${title ? `<div class="border-b border-[#efe6d9] bg-[#fffaf2] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7B47]">${title}</div>` : ""}
+        <div class="p-1.5">
+          ${items.map(item => `
+            <a href="${item.url}" class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-[#fff3df] focus:bg-[#fff3df] focus:outline-none">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f7e8c7] text-[#8a6428]"><i class="fa-solid ${item.icon}"></i></span>
+              <span class="min-w-0 flex-1"><span class="block truncate font-semibold text-gray-900">${item.title}</span><span class="block text-xs text-gray-500">${item.type}</span></span>
+              <i class="fa-solid fa-arrow-right text-[10px] text-[#b99a5b]"></i>
+            </a>`).join("")}
+        </div>`;
+    }
+
+    async function searchDashboard(query) {
+      const url = new URL(input.dataset.searchUrl, window.location.origin);
+      url.searchParams.set("q", query);
+      const response = await fetch(url, {headers: {"X-Requested-With": "XMLHttpRequest"}});
+      const data = await response.json();
+      render(data.results || [], query);
+    }
+
+    input.addEventListener("input", function () {
+      const query = input.value.trim();
+      clearTimeout(timer);
+      timer = setTimeout(function () { searchDashboard(query); }, 140);
+    });
+    input.addEventListener("focus", function () { searchDashboard(input.value.trim()); });
+    window.addEventListener("resize", function () { if (!panel.classList.contains("hidden")) positionPanel(); });
+    window.addEventListener("scroll", function () { if (!panel.classList.contains("hidden")) positionPanel(); }, true);
+    document.addEventListener("click", function (event) {
+      if (event.target.closest("[data-dashboard-search-wrap]") || panel.contains(event.target)) return;
+      panel.classList.add("hidden");
+    });
+  })();
+  (function () {
+    function markLoaded(media) {
+      if (!media) return;
+      media.dataset.loaded = "true";
+      const wrapper = media.closest(".media-skeleton");
+      if (wrapper) wrapper.dataset.skeletonReady = "true";
+    }
+
+    document.querySelectorAll("img:not([data-skeleton-image]):not([data-no-auto-skeleton])").forEach(function (img) {
+      img.dataset.autoSkeleton = "true";
+    });
+
+    document.querySelectorAll("[data-skeleton-image], img[data-auto-skeleton='true']").forEach(function (media) {
+      if ((media.tagName === "IMG" && media.complete) || media.dataset.loaded === "true") {
+        markLoaded(media);
+        return;
+      }
+
+      media.addEventListener("load", function () { markLoaded(media); }, { once: true });
+      media.addEventListener("error", function () { markLoaded(media); }, { once: true });
+    });
+  })();
 </script>
 
 {% block scripts %}{% endblock %}
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+

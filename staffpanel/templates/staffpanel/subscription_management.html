@@ -1,0 +1,23 @@
+{% extends "staffpanel/base.html" %}
+{% block title %}Subscription Management{% endblock %}
+{% block content %}
+<h2 class="text-xl font-semibold">Subscription Management</h2>
+<div class="mt-4 overflow-hidden rounded-xl border border-[#d8e0ea] bg-white shadow-sm">
+  <table class="staff-table">
+    <thead><tr><th>Salon</th><th>Plan</th><th>Status</th><th>Trial Ends</th><th>Razorpay ID</th></tr></thead>
+    <tbody>
+      {% for subscription in subscriptions %}
+        <tr>
+          <td><span class="staff-mobile-label">Salon</span><strong>{{ subscription.saloon.name }}</strong></td>
+          <td><span class="staff-mobile-label">Plan</span>{{ subscription.plan.name }}</td>
+          <td><span class="staff-mobile-label">Status</span>{{ subscription.get_status_display }}</td>
+          <td><span class="staff-mobile-label">Trial Ends</span>{{ subscription.trial_ends_at|date:"d M Y" }}</td>
+          <td><span class="staff-mobile-label">Razorpay ID</span><span class="break-all text-slate-500">{{ subscription.razorpay_subscription_id|default:"-" }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-slate-500">No subscriptions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

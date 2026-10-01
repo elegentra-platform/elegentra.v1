@@ -4,42 +4,48 @@
 
 {% block content %}
 <h2 class="text-xl font-semibold">Dashboard</h2>
-<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+<div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+  <a href="{% url 'staffpanel:saloon_queue' %}" class="rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm transition hover:border-slate-400">
     <p class="text-sm text-slate-600">Pending vendor approvals</p>
-    <p class="mt-2 text-3xl font-semibold">{{ pending_saloon_approvals }}</p>
-  </div>
-  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
-    <p class="text-sm text-slate-600">Pending service category approvals</p>
-    <p class="mt-2 text-3xl font-semibold">{{ pending_service_category_approvals }}</p>
-  </div>
-  <div class="rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
+    <p class="mt-2 text-2xl font-semibold sm:text-3xl">{{ pending_saloon_approvals }}</p>
+    <p class="mt-2 text-xs text-slate-500">Open approval queue</p>
+  </a>
+  <a href="{% url 'staffpanel:category_queue' %}" class="rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm transition hover:border-slate-400">
+    <p class="text-sm text-slate-600">Pending service categories</p>
+    <p class="mt-2 text-2xl font-semibold sm:text-3xl">{{ pending_service_category_approvals }}</p>
+    <p class="mt-2 text-xs text-slate-500">Review categories</p>
+  </a>
+  <a href="{% url 'staffpanel:saloon_list' %}" class="rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm transition hover:border-slate-400">
+    <p class="text-sm text-slate-600">All vendors</p>
+    <p class="mt-2 text-2xl font-semibold sm:text-3xl">{{ total_saloons }}</p>
+    <p class="mt-2 text-xs text-slate-500">Open vendor list</p>
+  </a>
+  <div class="rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm">
     <p class="text-sm text-slate-600">Staff online</p>
-    <p class="mt-2 text-3xl font-semibold">{{ online_staff_count }}</p>
+    <p class="mt-2 text-2xl font-semibold sm:text-3xl">{{ online_staff_count }}</p>
+    <p class="mt-2 text-xs text-slate-500">Active sessions</p>
   </div>
 </div>
 
-<div class="mt-6 rounded-xl border border-[#eadfcf] bg-white p-4 shadow-sm">
-  <h3 class="text-base font-semibold">Vendor approval status</h3>
-  <div class="mt-3 overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="text-left text-slate-500">
-          <th class="py-2">Status</th>
-          <th class="py-2">Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in saloon_status_breakdown %}
-          <tr class="border-t border-slate-100">
-            <td class="py-2">{{ row.approval_status }}</td>
-            <td class="py-2">{{ row.total }}</td>
-          </tr>
-        {% empty %}
-          <tr><td class="py-2 text-slate-500" colspan="2">No data.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="mt-6 rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm">
+  <h3 class="text-base font-semibold">Recent Activity</h3>
+  <div class="mt-3 divide-y divide-slate-100">
+    {% for saloon in recent_saloons %}
+      <div class="flex items-center justify-between gap-4 py-3 text-sm">
+        <div><p class="font-medium">{{ saloon.get_approval_status_display }} vendor</p><p class="text-slate-500">{{ saloon.name|default:saloon.owner.email }}</p></div>
+        <span class="text-xs text-slate-500">{{ saloon.updated_at|date:"H:i" }}</span>
+      </div>
+    {% endfor %}
+    {% for payment in recent_payments %}
+      <div class="flex items-center justify-between gap-4 py-3 text-sm">
+        <div><p class="font-medium">Subscription {{ payment.get_payment_status_display }}</p><p class="text-slate-500">{{ payment.saloon.name }}</p></div>
+        <span class="text-xs text-slate-500">{{ payment.created_at|date:"H:i" }}</span>
+      </div>
+    {% endfor %}
+    {% if not recent_saloons and not recent_payments %}
+      <div class="py-8 text-center text-sm text-slate-500">No recent activity yet.</div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
+

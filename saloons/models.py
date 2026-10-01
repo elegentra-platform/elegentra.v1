@@ -1,11 +1,68 @@
 import uuid
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
+from .utils import normalize_saloon_slug
+
+
+# =========================
+# LOCATION MASTER
+# =========================
+
+class State(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+    slug = models.SlugField(unique=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            count = 1
+            while State.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class District(models.Model):
+    state = models.ForeignKey(
+        State,
+        on_delete=models.CASCADE,
+        related_name="districts"
+    )
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = [("state", "name"), ("state", "slug")]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.name)
+            slug = base_slug
+            count = 1
+            while District.objects.filter(state=self.state, slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{count}"
+                count += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name}, {self.state.name}"
 
 
 # =========================
@@ -45,6 +102,10 @@ class Saloon(models.Model):
         blank=True
     )
 
+    is_verified = models.BooleanField(default=False)
+
+    myfestivo_handoff_at = models.DateTimeField(null=True, blank=True)
+
     is_active = models.BooleanField(default=True)
 
     approval_status = models.CharField(
@@ -64,7 +125,7 @@ class Saloon(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             base = self.name or self.owner.username
-            slug = slugify(base)
+            slug = normalize_saloon_slug(base) or slugify(base)
             unique_slug = slug
             count = 1
 
@@ -103,6 +164,20 @@ class SaloonProfile(models.Model):
 
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES)
 
+    state = models.ForeignKey(
+        State,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="saloon_profiles",
+    )
+    district = models.ForeignKey(
+        District,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="saloon_profiles",
+    )
     city = models.CharField(max_length=100)
     locality = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -128,8 +203,13 @@ class SaloonProfile(models.Model):
             return None
 
         try:
-            latitude = Decimal(match.group(1))
-            longitude = Decimal(match.group(2))
+            # Google Maps URLs commonly encode coordinates with 7+ decimal
+            # digits, but the latitude/longitude fields only store 6
+            # (~11cm precision, plenty for a salon pin). Round instead of
+            # rejecting, so a pasted link doesn't silently fail validation
+            # further down the line.
+            latitude = Decimal(match.group(1)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+            longitude = Decimal(match.group(2)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
         except (InvalidOperation, TypeError, ValueError):
             return None
 
@@ -378,9 +458,26 @@ class GalleryPost(models.Model):
         on_delete=models.CASCADE,
         related_name="gallery_posts"
     )
+    service = models.ForeignKey(
+        "services.Service",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="gallery_posts"
+    )
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     views = models.PositiveIntegerField(default=0)
+    is_hidden = models.BooleanField(default=False)
+    moderation_reason = models.TextField(blank=True)
+    moderated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="moderated_gallery_posts",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -440,3 +537,4 @@ class ApprovedSaloon(Saloon):
         proxy = True
         verbose_name = "Approved Saloon"
         verbose_name_plural = "Approved Saloons"
+

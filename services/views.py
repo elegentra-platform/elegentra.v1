@@ -32,6 +32,8 @@ def service_list(request):
 @login_required
 def service_create(request):
     saloon = get_object_or_404(Saloon, owner=request.user)
+    return_to = request.POST.get("return_to") or request.GET.get("return_to") or "services"
+    from_gallery = return_to == "gallery_create"
 
     if saloon.approval_status != Saloon.APPROVAL_APPROVED:
         messages.error(request, "You cannot add services before approval.")
@@ -42,20 +44,22 @@ def service_create(request):
     ).filter(
         Q(is_approved=True) | Q(created_by_saloon=saloon)
     )
+    gallery_create_url = reverse("saloon_gallery_create", kwargs={"username": request.user.username})
+    service_create_url = reverse("service_create")
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
         price = request.POST.get("price")
         category_id = request.POST.get("category")
         new_category = request.POST.get("new_category", "").strip()
-        image = request.FILES.get("image")
         description = request.POST.get("description", "")
         offer_price = request.POST.get("offer_price") or None
         is_visible = request.POST.get("is_visible") == "on"
 
         if not name or not price:
             messages.error(request, "Name and price are required.")
-            return redirect("service_create")
+            redirect_url = service_create_url + "?return_to=gallery_create" if from_gallery else service_create_url
+            return redirect(redirect_url)
 
         # CATEGORY LOGIC
         if new_category:
@@ -72,38 +76,41 @@ def service_create(request):
             category = get_object_or_404(ServiceCategory, id=category_id)
         else:
             messages.error(request, "Please select or add a category.")
-            return redirect("service_create")
+            redirect_url = service_create_url + "?return_to=gallery_create" if from_gallery else service_create_url
+            return redirect(redirect_url)
 
-        Service.objects.create(
+        service = Service.objects.create(
             saloon=saloon,
             name=name,
             price=price,
             offer_price=offer_price,
             category=category,
             description=description,
-            image=image,
             is_visible=is_visible,
             is_active=True,
             added_during_onboarding=False,
         )
 
         messages.success(request, "Service added successfully.")
+        if from_gallery:
+            return redirect(f"{gallery_create_url}?selected_service={service.id}")
         return redirect(
             "saloon_dashboard_services",
             username=request.user.username
         )
 
+    back_url = gallery_create_url if from_gallery else reverse("saloon_dashboard_services", kwargs={"username": request.user.username})
 
     return render(request, "services/service_form.html", {
         "saloon": saloon,
         "categories": categories,
-        "active_tab": "services",
+        "active_tab": "mysaloon" if from_gallery else "services",
         "show_back_button": True,
-        "back_url": reverse("saloon_dashboard_services", kwargs={"username": request.user.username}),
-        "back_parent_label": "Services",
-        "back_label": "Add",
+        "back_url": back_url,
+        "back_parent_label": "Gallery" if from_gallery else "Services",
+        "back_label": "Add Service",
+        "return_to": return_to,
     })
-
 
 
 @login_required
@@ -131,9 +138,6 @@ def service_edit(request, service_id):
         category_id = request.POST.get("category")
         if category_id:
             service.category = get_object_or_404(ServiceCategory, id=category_id)
-
-        if request.FILES.get("image"):
-            service.image = request.FILES["image"]
 
         service.save()
         messages.success(request, "Service updated.")

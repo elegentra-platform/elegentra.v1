@@ -5,6 +5,7 @@
   <title>Salon onboarding</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
 
 <body class="bg-gray-100 min-h-screen">
@@ -25,6 +26,17 @@
   <form method="post" class="space-y-10">
     {% csrf_token %}
 
+    {% if rejection_map %}
+      <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p class="font-medium">Please fix the following before continuing:</p>
+        <ul class="mt-1 list-inside list-disc space-y-0.5">
+          {% for field, message in rejection_map.items %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
     <!-- BASIC INFO -->
     <div class="bg-white rounded-2xl p-8 shadow-sm">
       <h2 class="text-lg font-medium mb-6">Basic information</h2>
@@ -35,6 +47,7 @@
           type="text"
           name="saloon_name"
           value="{{ data.saloon_name|default:'' }}"
+          required
           class="w-full rounded-xl bg-gray-50 border px-4 py-3
           {% if rejection_map.saloon_name %}border-red-500{% else %}border-gray-200{% endif %}"
         >
@@ -82,6 +95,7 @@
           <label class="block text-sm mb-2">Owner full name</label>
           <input type="text" name="owner_full_name"
             value="{{ data.owner_full_name|default:'' }}"
+            required
             class="w-full rounded-xl bg-gray-50 border px-4 py-3
             {% if rejection_map.owner_full_name %}border-red-500{% else %}border-gray-200{% endif %}">
           {% if rejection_map.owner_full_name %}
@@ -95,6 +109,7 @@
           <label class="block text-sm mb-2">Contact number</label>
           <input type="text" name="contact_number"
             value="{{ data.contact_number|default:'' }}"
+            required
             class="w-full rounded-xl bg-gray-50 border px-4 py-3
             {% if rejection_map.contact_number %}border-red-500{% else %}border-gray-200{% endif %}">
           {% if rejection_map.contact_number %}
@@ -110,11 +125,47 @@
     <div class="bg-white rounded-2xl p-8 shadow-sm">
       <h2 class="text-lg font-medium mb-6">Location</h2>
 
-      <div class="grid md:grid-cols-3 gap-6">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm mb-2">State</label>
+          <select
+            name="state_id"
+            id="onboardingState"
+            required
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3 {% if rejection_map.state_id %}border-red-500{% else %}border-gray-200{% endif %}"
+          >
+            <option value="">Select state</option>
+            {% for state in states %}
+              <option value="{{ state.id }}" {% if data.state_id|stringformat:"s" == state.id|stringformat:"s" %}selected{% endif %}>{{ state.name }}</option>
+            {% endfor %}
+          </select>
+          {% if rejection_map.state_id %}
+            <p class="text-sm text-red-600 mt-1">{{ rejection_map.state_id }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm mb-2">District</label>
+          <select
+            name="district_id"
+            id="onboardingDistrict"
+            required
+            data-selected="{{ data.district_id|default:'' }}"
+            class="w-full rounded-xl bg-gray-50 border px-4 py-3 {% if rejection_map.district_id %}border-red-500{% else %}border-gray-200{% endif %}"
+          >
+            <option value="">Select district</option>
+          </select>
+          {% if rejection_map.district_id %}
+            <p class="text-sm text-red-600 mt-1">{{ rejection_map.district_id }}</p>
+          {% endif %}
+        </div>
+
         <div>
           <label class="block text-sm mb-2">Area / Locality</label>
           <input type="text" name="area_locality"
+            id="onboardingLocality"
             value="{{ data.area_locality|default:'' }}"
+            required
             class="w-full rounded-xl bg-gray-50 border px-4 py-3
             {% if rejection_map.area_locality %}border-red-500{% else %}border-gray-200{% endif %}">
         </div>
@@ -122,12 +173,14 @@
         <div>
           <label class="block text-sm mb-2">City</label>
           <input type="text" name="city"
+            id="onboardingCity"
             value="{{ data.city|default:'' }}"
+            required
             class="w-full rounded-xl bg-gray-50 border px-4 py-3
             {% if rejection_map.city %}border-red-500{% else %}border-gray-200{% endif %}">
         </div>
 
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <input type="hidden" name="latitude" id="onboardingLatitude" value="{{ data.latitude|default:'' }}">
           <input type="hidden" name="longitude" id="onboardingLongitude" value="{{ data.longitude|default:'' }}">
 
@@ -193,9 +246,11 @@
         <div>
           <label class="block text-sm mb-2">Opening time</label>
           <input
-            type="time"
+            type="text"
             name="opening_time"
+            id="openingTime"
             value="{{ data.opening_time|default:'' }}"
+            placeholder="Select opening time"
             class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3"
           >
         </div>
@@ -203,9 +258,11 @@
         <div>
           <label class="block text-sm mb-2">Closing time</label>
           <input
-            type="time"
+            type="text"
             name="closing_time"
+            id="closingTime"
             value="{{ data.closing_time|default:'' }}"
+            placeholder="Select closing time"
             class="w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3"
           >
         </div>
@@ -260,6 +317,27 @@
   </form>
 </div>
 
+{{ districts_by_state|json_script:"district-master-data" }}
+
+<div id="onboardingAutofillConfirm" class="pointer-events-none fixed inset-0 z-[91] hidden bg-black/35 opacity-0 transition">
+  <div class="flex min-h-screen items-center justify-center px-4">
+    <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+      <p class="text-lg font-semibold text-[#1F1F1F]">Fill location details automatically?</p>
+      <p class="mt-2 text-sm text-[#6A6A6A]">
+        We found a map location. Do you want Elegentra to fill state, district, city, and locality for you? You can still edit them after.
+      </p>
+      <div class="mt-5 flex gap-3">
+        <button type="button" id="onboardingAutofillYes" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-black px-5 text-sm font-semibold text-white">
+          Yes, fill it
+        </button>
+        <button type="button" id="onboardingAutofillNo" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+          No
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="onboardingLocationConfirm" class="pointer-events-none fixed inset-0 z-[90] hidden bg-black/35 opacity-0 transition">
   <div class="flex min-h-screen items-center justify-center px-4">
     <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
@@ -283,6 +361,255 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var stateSelect = document.getElementById("onboardingState");
+    var districtSelect = document.getElementById("onboardingDistrict");
+    var cityInput = document.getElementById("onboardingCity");
+    var localityInput = document.getElementById("onboardingLocality");
+    var latitudeInput = document.getElementById("onboardingLatitude");
+    var longitudeInput = document.getElementById("onboardingLongitude");
+    var mapLinkInput = document.getElementById("onboardingMapLink");
+    var status = document.getElementById("onboardingLocationStatus");
+    var dataElement = document.getElementById("district-master-data");
+    var autofillModal = document.getElementById("onboardingAutofillConfirm");
+    var autofillYes = document.getElementById("onboardingAutofillYes");
+    var autofillNo = document.getElementById("onboardingAutofillNo");
+    if (!stateSelect || !districtSelect || !dataElement) return;
+
+    var districtsByState = {};
+    try {
+      districtsByState = JSON.parse(dataElement.textContent || "{}");
+    } catch (error) {
+      districtsByState = {};
+    }
+
+    function renderDistrictOptions() {
+      var stateId = stateSelect.value;
+      var selectedDistrictId = districtSelect.getAttribute("data-selected") || districtSelect.value;
+      var districts = districtsByState[stateId] || [];
+      districtSelect.innerHTML = '<option value="">Select district</option>';
+
+      districts.forEach(function (district) {
+        var option = document.createElement("option");
+        option.value = district.id;
+        option.textContent = district.name;
+        if (String(selectedDistrictId) === String(district.id)) {
+          option.selected = true;
+        }
+        districtSelect.appendChild(option);
+      });
+    }
+
+    function normalize(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function setStateAndDistrict(stateName, districtName) {
+      if (stateName) {
+        var matchedState = Array.from(stateSelect.options).find(function (option) {
+          return normalize(option.textContent) === normalize(stateName);
+        });
+        if (matchedState) stateSelect.value = matchedState.value;
+      }
+
+      districtSelect.setAttribute("data-selected", "");
+      renderDistrictOptions();
+
+      if (districtName) {
+        var matchedDistrict = Array.from(districtSelect.options).find(function (option) {
+          return normalize(option.textContent) === normalize(districtName);
+        });
+        if (matchedDistrict) districtSelect.value = matchedDistrict.value;
+      }
+    }
+
+    function deriveLocality(address, cityName) {
+      var candidates = [
+        address.suburb,
+        address.neighbourhood,
+        address.subdistrict,
+        address.quarter,
+        address.hamlet,
+        address.residential,
+        address.borough,
+        address.village,
+        address.road,
+        address.city_district,
+      ].filter(Boolean);
+
+      var normalizedCity = normalize(cityName);
+
+      function extractSpecificPart(item) {
+        var parts = String(item || "")
+          .split(",")
+          .map(function (part) { return part.trim(); })
+          .filter(Boolean);
+
+        if (!parts.length) return "";
+
+        var filteredParts = parts.filter(function (part) {
+          return normalize(part) !== normalizedCity;
+        });
+
+        if (filteredParts.length) {
+          return filteredParts[filteredParts.length - 1];
+        }
+
+        return normalize(parts[0]) === normalizedCity ? "" : parts[0];
+      }
+
+      var chosen = candidates
+        .map(extractSpecificPart)
+        .find(function (item) { return normalize(item); });
+
+      return chosen || "";
+    }
+
+    function applyAddress(address) {
+      var cityName =
+        address.city ||
+        address.town ||
+        address.village ||
+        address.municipality ||
+        address.city_district ||
+        "";
+      var districtName = address.state_district || address.county || "";
+      var stateName = address.state || "";
+      var localityName = deriveLocality(address, cityName);
+
+      setStateAndDistrict(stateName, districtName);
+      if (cityName) cityInput.value = cityName;
+      localityInput.value = localityName || "";
+      if (status) status.textContent = "Location fields filled automatically. You can still edit them before continuing.";
+    }
+
+    function reverseGeocode(lat, lng) {
+      if (!lat || !lng) return Promise.resolve();
+      if (status) status.textContent = "Filling location details automatically...";
+      return fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + encodeURIComponent(lat) + "&lon=" + encodeURIComponent(lng) + "&addressdetails=1", {
+        headers: {
+          "Accept": "application/json"
+        }
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error("Reverse geocode failed");
+          return response.json();
+        })
+        .then(function (payload) {
+          if (payload && payload.address) {
+            applyAddress(payload.address);
+          } else if (status) {
+            status.textContent = "Location saved, but we could not fill the area details automatically.";
+          }
+        })
+        .catch(function () {
+          if (status) status.textContent = "Location saved. Please fill state, district, city, and locality manually if needed.";
+        });
+    }
+
+    function parseCoordinatesFromMapUrl(url) {
+      if (!url) return null;
+      var decoded = decodeURIComponent(url);
+      var atMatch = decoded.match(/@(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+      if (atMatch) return { lat: atMatch[1], lng: atMatch[2] };
+
+      var qMatch = decoded.match(/[?&](?:q|query|ll|sll|daddr)=(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+      if (qMatch) return { lat: qMatch[1], lng: qMatch[2] };
+
+      var plainMatch = decoded.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+      if (plainMatch) return { lat: plainMatch[1], lng: plainMatch[2] };
+      return null;
+    }
+
+    function getCsrfToken() {
+      var match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function resolveMapLinkThroughBackend(url) {
+      return fetch("{% url 'resolve_map_location' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          "X-CSRFToken": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: new URLSearchParams({ google_map_link: url }).toString()
+      }).then(function (response) {
+        return response.json().then(function (payload) {
+          if (!response.ok || !payload.ok) {
+            throw payload;
+          }
+          return payload;
+        });
+      });
+    }
+
+    function openAutofillModal() {
+      if (!autofillModal) return;
+      autofillModal.classList.remove("hidden", "pointer-events-none", "opacity-0");
+      requestAnimationFrame(function () {
+        autofillModal.classList.add("opacity-100");
+      });
+    }
+
+    function closeAutofillModal() {
+      if (!autofillModal) return;
+      autofillModal.classList.remove("opacity-100");
+      autofillModal.classList.add("opacity-0");
+      window.setTimeout(function () {
+        autofillModal.classList.add("hidden", "pointer-events-none");
+      }, 200);
+    }
+
+    stateSelect.addEventListener("change", function () {
+      districtSelect.setAttribute("data-selected", "");
+      renderDistrictOptions();
+    });
+
+    if (autofillYes) {
+      autofillYes.addEventListener("click", function () {
+        closeAutofillModal();
+        reverseGeocode(latitudeInput.value, longitudeInput.value);
+      });
+    }
+
+    if (autofillNo) {
+      autofillNo.addEventListener("click", function () {
+        closeAutofillModal();
+        if (status) status.textContent = "Location saved. You can fill the other location fields manually.";
+      });
+    }
+
+    if (mapLinkInput) {
+      mapLinkInput.addEventListener("change", function () {
+        var rawUrl = mapLinkInput.value.trim();
+        if (!rawUrl) return;
+
+        resolveMapLinkThroughBackend(rawUrl)
+          .then(function (payload) {
+            mapLinkInput.value = payload.expanded_link || rawUrl;
+            latitudeInput.value = payload.latitude;
+            longitudeInput.value = payload.longitude;
+            if (status) status.textContent = "Map coordinates found. Choose if you want us to fill the other location fields.";
+            openAutofillModal();
+          })
+          .catch(function () {
+            var parsed = parseCoordinatesFromMapUrl(rawUrl);
+            if (!parsed) return;
+            latitudeInput.value = parsed.lat;
+            longitudeInput.value = parsed.lng;
+            if (status) status.textContent = "Map coordinates found. Choose if you want us to fill the other location fields.";
+            openAutofillModal();
+          });
+      });
+    }
+
+    renderDistrictOptions();
+  })();
+</script>
 
 <script>
   (function () {
@@ -345,6 +672,13 @@
 
           button.disabled = false;
           button.textContent = "Update current location";
+          var autofillModal = document.getElementById("onboardingAutofillConfirm");
+          if (autofillModal) {
+            autofillModal.classList.remove("hidden", "pointer-events-none", "opacity-0");
+            requestAnimationFrame(function () {
+              autofillModal.classList.add("opacity-100");
+            });
+          }
         },
         function () {
           status.textContent = "We could not access your location. Please allow location permission and try again.";
@@ -372,6 +706,32 @@
         if (event.target === modal) closeModal();
       });
     }
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  (function () {
+    var openingTime = document.getElementById("openingTime");
+    var closingTime = document.getElementById("closingTime");
+
+    function attachClockPicker(element) {
+      if (!element || typeof flatpickr === "undefined") return;
+
+      flatpickr(element, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        altInput: true,
+        altFormat: "h:i K",
+        time_24hr: false,
+        minuteIncrement: 5,
+        disableMobile: true,
+      });
+    }
+
+    attachClockPicker(openingTime);
+    attachClockPicker(closingTime);
   })();
 </script>
 

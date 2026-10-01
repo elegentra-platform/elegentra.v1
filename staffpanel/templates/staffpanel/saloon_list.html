@@ -1,0 +1,272 @@
+{% extends "staffpanel/base.html" %}
+
+{% block title %}All Vendors{% endblock %}
+
+{% block content %}
+<style>
+  .vendor-page { display: grid; gap: 18px; }
+  .vendor-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .vendor-eyebrow { margin: 0 0 4px; color: #9a6b25; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  .vendor-title { margin: 0; color: #0f172a; font-size: 26px; line-height: 1.15; font-weight: 800; }
+  .vendor-subtitle { margin: 6px 0 0; color: #64748b; font-size: 14px; }
+  .vendor-link { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid #dbc9ad; border-radius: 10px; background: #fff; color: #172033; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+  .vendor-link:hover { border-color: #475569; background: #f8fafc; }
+
+  .filter-panel { border: 1px solid #d8e0ea; border-radius: 14px; background: #fff; padding: 14px; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+  .filter-row { display: grid; grid-template-columns: minmax(260px, 1.6fr) 150px 155px 150px; gap: 10px; align-items: center; }
+  .filter-control { position: relative; display: flex; align-items: center; height: 42px; border: 1px solid #d8e0eb; border-radius: 10px; background: #f8fafc; overflow: hidden; }
+  .filter-control:focus-within { border-color: #9b7cf7; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,.13); }
+  .filter-icon { width: 40px; height: 100%; border: 0; border-right: 1px solid #e2e8f0; background: transparent; color: #475569; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 40px; }
+  .filter-control input, .filter-control select { min-width: 0; width: 100%; height: 100%; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: 13px; padding: 0 12px; }
+  .filter-control select { cursor: pointer; appearance: auto; }
+  .filter-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+  .pill-label { color: #64748b; font-size: 12px; font-weight: 700; }
+  .filter-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; border-radius: 999px; background: #f8fafc; color: #334155; padding: 6px 10px; font-size: 12px; font-weight: 700; text-decoration: none; }
+  .filter-pill i { color: #64748b; font-size: 11px; }
+  .filter-clear { margin-left: auto; border-color: #fecaca; background: #fff5f5; color: #b91c1c; }
+
+  .directory-card { overflow: hidden; border: 1px solid #d8e0ea; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.06); }
+  .directory-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #eef2f7; }
+  .directory-title { margin: 0; color: #0f172a; font-size: 15px; font-weight: 800; }
+  .directory-meta { margin: 3px 0 0; color: #64748b; font-size: 12px; }
+  .result-pill { border-radius: 999px; background: #f7efe2; color: #7a5a22; padding: 6px 10px; font-size: 12px; font-weight: 800; }
+  .vendor-table-wrap { overflow-x: auto; }
+  .vendor-table { min-width: 920px; width: 100%; border-collapse: collapse; font-size: 13px; }
+  .vendor-table thead { background: #f8fafc; color: #64748b; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+  .vendor-table th, .vendor-table td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid #eef2f7; }
+  .vendor-table tbody tr:hover { background: #f8fafc; }
+  .vendor-cell { display: flex; align-items: center; gap: 12px; }
+  .vendor-avatar { width: 40px; height: 40px; border-radius: 12px; background: #111827; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+  .vendor-main { color: #0f172a; font-weight: 800; }
+  .vendor-muted { margin-top: 3px; color: #64748b; font-size: 12px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; }
+  .status-dot { width: 7px; height: 7px; border-radius: 999px; }
+  .status-approved { background: #ecfdf5; color: #047857; }
+  .status-approved .status-dot { background: #10b981; }
+  .status-rejected { background: #fff1f2; color: #be123c; }
+  .status-rejected .status-dot { background: #f43f5e; }
+  .status-pending { background: #fffbeb; color: #b45309; }
+  .status-pending .status-dot { background: #f59e0b; }
+  .status-submitting { background: #f1f5f9; color: #475569; }
+  .status-submitting .status-dot { background: #94a3b8; }
+  .open-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 78px; height: 34px; border: 1px solid #d8e0eb; border-radius: 9px; background: #fff; color: #172033; font-size: 12px; font-weight: 800; text-decoration: none; }
+  .open-btn:hover { border-color: #475569; background: #f8fafc; }
+  .empty-state { padding: 54px 18px; text-align: center; }
+  .empty-icon { margin: 0 auto; width: 48px; height: 48px; border-radius: 14px; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; }
+  .empty-state h3 { margin: 14px 0 4px; color: #0f172a; font-size: 16px; font-weight: 800; }
+  .empty-state p { margin: 0; color: #64748b; font-size: 13px; }
+  .reset-btn { margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; background: #111827; color: #fff; padding: 9px 14px; font-size: 13px; font-weight: 800; text-decoration: none; }
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #64748b; font-size: 13px; }
+  .pager-actions { display: flex; gap: 8px; }
+  .pager a { border: 1px solid #d8e0eb; border-radius: 9px; background: #fff; color: #172033; padding: 8px 12px; font-weight: 700; text-decoration: none; }
+
+  @media (max-width: 1100px) { .filter-row { grid-template-columns: 1fr 1fr; } }
+  .filter-date input { padding-left: 12px; }
+  @media (max-width: 720px) {
+    .vendor-page { gap: 14px; }
+    .vendor-head, .directory-top, .pager { align-items: stretch; flex-direction: column; }
+    .vendor-title { font-size: 22px; }
+    .vendor-subtitle { font-size: 13px; }
+    .filter-panel { padding: 10px; border-radius: 16px; }
+    .filter-row { grid-template-columns: minmax(0, 1fr) 44px 44px 44px; gap: 8px; }
+    .filter-control { height: 44px; border-radius: 13px; }
+    .filter-search .filter-icon { width: 38px; flex-basis: 38px; }
+    .filter-search input { padding-left: 10px; font-size: 12px; }
+    .filter-compact { width: 44px; overflow: hidden; }
+    .filter-compact .filter-icon { width: 44px; flex-basis: 44px; border-right: 0; pointer-events: none; }
+    .filter-compact select,
+    .filter-compact input[type=month] { position: absolute; inset: 0; width: 44px; height: 44px; opacity: 0; cursor: pointer; padding: 0; }
+    .filter-date { justify-content: center; }
+    .filter-date::before { content: ''; position: absolute; inset: 0; pointer-events: none; }
+    .filter-date input[type=month] { opacity: 1; color: transparent; background: transparent; }
+    .filter-date input[type=month]::-webkit-calendar-picker-indicator { opacity: 1; cursor: pointer; width: 22px; height: 22px; margin: 0 auto; filter: brightness(0) saturate(100%) invert(34%) sepia(12%) saturate(1005%) hue-rotate(176deg) brightness(88%) contrast(86%); }
+    .filter-date input[type=month]::-webkit-datetime-edit { display: none; }
+    .filter-pills { gap: 6px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+    .filter-pill { white-space: nowrap; }
+    .filter-clear { margin-left: 0; }
+    .vendor-table { min-width: 760px; }
+  }
+</style>
+
+<div class="vendor-page">
+  <div class="vendor-head">
+    <div>
+      <p class="vendor-eyebrow">Vendor operations</p>
+      <h2 class="vendor-title">All Vendors</h2>
+      <p class="vendor-subtitle">Review every salon account, approval state, owner, and submitted profile.</p>
+    </div>
+    <a href="{% url 'staffpanel:saloon_queue' %}" class="vendor-link"><i class="fa-solid fa-list-check"></i> Approval queue</a>
+  </div>
+
+  <form method="get" id="vendorFilterForm" class="filter-panel">
+    <div class="filter-row">
+      <div class="filter-control filter-search">
+        <button class="filter-icon" type="submit" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <input type="search" name="q" value="{{ query }}" placeholder="Search vendor, owner, email, WhatsApp">
+      </div>
+
+      <label class="filter-control filter-compact">
+        <span class="filter-icon js-open-select" title="Status"><i class="fa-solid fa-circle-check"></i></span>
+        <select name="status" data-instant-filter aria-label="Filter by status">
+          <option value="">All statuses</option>
+          {% for value,label in status_choices %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="filter-control filter-compact filter-date" title="Month">
+        <input type="month" name="month" value="{{ month }}" data-instant-filter aria-label="Filter by month">
+      </label>
+
+      <label class="filter-control filter-compact">
+        <span class="filter-icon js-open-select" title="Sort"><i class="fa-solid fa-arrow-down-wide-short"></i></span>
+        <select name="sort" data-instant-filter aria-label="Sort vendors">
+          <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+          <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+        </select>
+      </label>
+    </div>
+
+    {% if query or status or month or sort == 'oldest' %}
+      <div class="filter-pills">
+        <span class="pill-label">Applied</span>
+        {% if query %}
+          <a class="filter-pill" href="?status={{ status }}&month={{ month }}&sort={{ sort }}"><span>Search: {{ query }}</span><i class="fa-solid fa-xmark"></i></a>
+        {% endif %}
+        {% if status %}
+          <a class="filter-pill" href="?q={{ query|urlencode }}&month={{ month }}&sort={{ sort }}"><span>Status: {{ status }}</span><i class="fa-solid fa-xmark"></i></a>
+        {% endif %}
+        {% if month %}
+          <a class="filter-pill" href="?q={{ query|urlencode }}&status={{ status }}&sort={{ sort }}"><span>Month: {{ month }}</span><i class="fa-solid fa-xmark"></i></a>
+        {% endif %}
+        {% if sort == 'oldest' %}
+          <a class="filter-pill" href="?q={{ query|urlencode }}&status={{ status }}&month={{ month }}&sort=newest"><span>Oldest first</span><i class="fa-solid fa-xmark"></i></a>
+        {% endif %}
+        <a href="{% url 'staffpanel:saloon_list' %}" class="filter-pill filter-clear"><span>Clear all</span><i class="fa-solid fa-xmark"></i></a>
+      </div>
+    {% endif %}
+  </form>
+
+  <div class="directory-card">
+    <div class="directory-top">
+      <div>
+        <h3 class="directory-title">Vendor directory</h3>
+        <p class="directory-meta">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</p>
+      </div>
+      <span class="result-pill">{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}</span>
+    </div>
+
+    <div class="vendor-table-wrap">
+      <table class="vendor-table">
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Owner</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for saloon in saloons %}
+            <tr>
+              <td>
+                <div class="vendor-cell">
+                  <div class="vendor-avatar">{{ saloon.name|default:saloon.owner.email|first|upper }}</div>
+                  <div>
+                    <div class="vendor-main">{{ saloon.name|default:"(No name)" }}</div>
+                    <div class="vendor-muted">{{ saloon.whatsapp_number|default:"No WhatsApp" }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="vendor-main" style="font-weight:700;">{{ saloon.owner.email|default:"No email" }}</div>
+                {% if saloon.profile %}<div class="vendor-muted">{{ saloon.profile.owner_full_name }}</div>{% endif %}
+              </td>
+              <td>
+                {% if saloon.profile %}
+                  <div style="color:#334155;">{{ saloon.profile.locality }}</div>
+                  <div class="vendor-muted">{{ saloon.profile.city }}</div>
+                {% else %}
+                  <span style="color:#94a3b8;">Profile incomplete</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if saloon.approval_status == 'approved' %}
+                  <span class="status-pill status-approved"><span class="status-dot"></span>Approved</span>
+                {% elif saloon.approval_status == 'rejected' %}
+                  <span class="status-pill status-rejected"><span class="status-dot"></span>Rejected</span>
+                {% elif saloon.approval_status == 'pending' %}
+                  <span class="status-pill status-pending"><span class="status-dot"></span>Pending</span>
+                {% else %}
+                  <span class="status-pill status-submitting"><span class="status-dot"></span>Submitting</span>
+                {% endif %}
+              </td>
+              <td style="color:#475569;">{{ saloon.created_at|date:"M d, Y" }}</td>
+              <td style="text-align:right;"><a href="{% url 'staffpanel:saloon_review' saloon.id %}" class="open-btn">Open <i class="fa-solid fa-arrow-right"></i></a></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="fa-solid fa-store-slash"></i></div>
+                  <h3>No vendors found</h3>
+                  <p>Try changing the status, month, or search text.</p>
+                  <a href="{% url 'staffpanel:saloon_list' %}" class="reset-btn"><i class="fa-solid fa-rotate-left"></i> Reset filters</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pager">
+      <p>Showing {{ saloons|length }} vendors on this page</p>
+      <div class="pager-actions">
+        {% if page_obj.has_previous %}
+          <a href="?q={{ query|urlencode }}&status={{ status }}&month={{ month }}&sort={{ sort }}&page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?q={{ query|urlencode }}&status={{ status }}&month={{ month }}&sort={{ sort }}&page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('vendorFilterForm');
+    if (!form) return;
+
+    form.querySelectorAll('[data-instant-filter]').forEach(function (field) {
+      field.addEventListener('change', function () {
+        form.submit();
+      });
+    });
+
+    form.querySelectorAll('.js-open-select').forEach(function (icon) {
+      icon.addEventListener('click', function () {
+        var select = icon.parentElement.querySelector('select');
+        if (!select) return;
+        select.focus();
+        if (typeof select.showPicker === 'function') select.showPicker();
+      });
+    });
+
+    form.querySelectorAll('.js-open-picker').forEach(function (icon) {
+      icon.addEventListener('click', function () {
+        var input = icon.parentElement.querySelector('input');
+        if (!input) return;
+        input.focus();
+        if (typeof input.showPicker === 'function') input.showPicker();
+      });
+    });
+  })();
+</script>
+{% endblock %}

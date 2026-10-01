@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notifications | Elegentra{% endblock %}
+
+{% block content %}
+<section class="px-4 pb-10 pt-16 md:px-0 md:pb-14 md:pt-20">
+  <div class="mx-auto max-w-5xl">
+    <div class="relative mb-5 overflow-hidden rounded-[1.75rem] border border-[#E8DECF] bg-[linear-gradient(135deg,rgba(255,253,249,0.98),rgba(248,240,229,0.94))] px-5 py-5 shadow-[0_18px_48px_rgba(74,56,30,0.08)] backdrop-blur-md md:px-6 md:py-6">
+      <div class="pointer-events-none absolute -right-20 -top-24 h-48 w-48 rounded-full bg-[#E7C978]/20 blur-3xl"></div>
+      <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-center gap-4">
+          <div class="min-w-0">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#9A7B47]">Account updates</p>
+            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-[#1F1F1F] md:text-3xl">Notifications</h1>
+          </div>
+        </div>
+        {% if notifications %}
+          <form method="post" action="{% url 'public_notifications_clear' %}" onsubmit="return confirm('Clear all notifications permanently?');" class="shrink-0">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#E7D8C3] bg-white/80 px-4 py-2.5 text-sm font-semibold text-[#8A6428] shadow-[0_10px_22px_rgba(74,56,30,0.07)] transition hover:-translate-y-0.5 hover:bg-[#FFF6E8] sm:w-auto">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+              Clear all
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="overflow-hidden rounded-[1.75rem] border border-[#E8DECF] bg-[linear-gradient(180deg,rgba(255,252,248,0.94),rgba(248,240,229,0.86))] p-3 shadow-[0_18px_48px_rgba(74,56,30,0.08)] backdrop-blur-md md:p-4">
+      {% if notifications %}
+        <div class="space-y-3">
+          {% for notification in notifications %}
+            <article class="group grid gap-4 rounded-[1.35rem] border border-[#E8DECF] bg-white/82 px-4 py-4 shadow-[0_10px_24px_rgba(74,56,30,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-[#D9C6AA] hover:bg-[#FFFDF9] hover:shadow-[0_16px_34px_rgba(74,56,30,0.08)] sm:px-5 md:grid-cols-[1fr_auto] md:items-center md:py-5">
+              <a href="{{ notification.url|default:'#' }}" class="flex min-w-0 items-start gap-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D8B86D]/30">
+                <span class="relative mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F4E4C2] text-[#875F24] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] transition group-hover:bg-[#EFD8A8]">
+                  <i class="fa-regular fa-bell"></i>
+                  {% if not notification.is_read %}<span class="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#B58C4E] ring-2 ring-[#F4E4C2]"></span>{% endif %}
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-base font-semibold leading-6 text-[#2E2418]">{{ notification.title }}</span>
+                  {% if notification.message %}
+                    <span class="mt-1 line-clamp-2 block text-sm leading-6 text-[#6E5C45]">{{ notification.message }}</span>
+                  {% endif %}
+                  <span class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#F7EBD3]/70 px-2.5 py-1 text-[11px] font-medium text-[#8A6428]"><i class="fa-regular fa-clock text-[10px]"></i>{{ notification.created_at|date:"d M Y, h:i A" }}</span>
+                </span>
+              </a>
+              <form method="post" action="{% url 'public_notification_delete' notification.id %}" onsubmit="return confirm('Delete this notification permanently?');" class="flex md:justify-end">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#F0C8C4] bg-[#FFF6F5] px-4 text-sm font-semibold text-[#B5534A] transition hover:bg-[#FBEAE8] md:w-auto">
+                  <i class="fa-regular fa-trash-can text-xs"></i>
+                  Delete
+                </button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="flex min-h-[24rem] items-center justify-center px-3 py-8 sm:px-6 md:py-12">
+          <div class="relative w-full max-w-sm overflow-hidden rounded-[1.8rem] border border-[#E8DECF] bg-[linear-gradient(180deg,#FFFFFF,#FFF8ED)] px-7 py-10 text-center shadow-[0_20px_46px_rgba(74,56,30,0.10)]">
+            <div class="pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full bg-[#E7C978]/25 blur-2xl"></div>
+            <div class="relative mx-auto flex h-24 w-24 items-center justify-center"><img src="{% static 'images/no-notifications.png' %}" alt="" class="h-full w-full object-contain" loading="lazy"></div>
+            <h2 class="relative mt-5 text-lg font-semibold tracking-tight text-[#2E2418]">No notifications yet</h2>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="inline-flex items-center gap-2 rounded-full border border-[#E7D8C3] bg-white/75 px-4 py-2 font-semibold text-[#7B5A23] shadow-sm transition hover:bg-[#FFF6E8]"><i class="fa-solid fa-arrow-left text-xs"></i>Previous</a>
+        {% endif %}
+        <span class="rounded-full bg-white/55 px-3 py-2 text-[#8B7860]">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="inline-flex items-center gap-2 rounded-full border border-[#E7D8C3] bg-white/75 px-4 py-2 font-semibold text-[#7B5A23] shadow-sm transition hover:bg-[#FFF6E8]">Next<i class="fa-solid fa-arrow-right text-xs"></i></a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+
+
+

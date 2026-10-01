@@ -1,164 +1,170 @@
-{% extends "saloons/dashboard/dashboard.html" %}
+﻿{% extends "saloons/dashboard/dashboard.html" %}
 
 {% block content %}
 <div class="w-full max-w-full overflow-x-hidden px-3 sm:px-4">
 
-  <!-- PAGE TITLE -->
-  <h2 class="text-xl sm:text-2xl font-semibold mb-4">
-    My Salon
-  </h2>
+  <h2 class="mb-4 text-xl font-semibold sm:text-2xl">My Salon</h2>
 
-  <!-- MAIN CARD -->
-  <div class="bg-white rounded-2xl border border-gray-100 mb-6 overflow-hidden">
-
-    <!-- TOP SECTION -->
-    <div class="p-4 flex flex-col md:flex-row gap-6">
-
-      <!-- LEFT : BANNER -->
-      <div class="w-full md:w-[340px] shrink-0">
+  <div class="mb-6 overflow-hidden rounded-2xl border border-gray-100 bg-white">
+    <div class="flex flex-col gap-6 p-4 md:flex-row">
+      <div class="w-full shrink-0 md:w-[340px]">
         <img
           src="{% if saloon.banner_image %}{{ saloon.banner_image.url }}{% else %}https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800{% endif %}"
-          class="w-full h-44 object-cover rounded-xl"
+          class="h-44 w-full rounded-xl object-cover"
           alt="Salon Banner"
         >
       </div>
 
-      <!-- RIGHT : INFO -->
-      <div class="flex-1 min-w-0 flex flex-col justify-between">
-
-        <!-- TOP ROW -->
+      <div class="flex min-w-0 flex-1 flex-col justify-between">
         <div class="flex items-start justify-between gap-3">
-
           <div class="min-w-0">
-            <h1 class="text-lg sm:text-xl font-bold truncate">
-              {{ saloon.name }}
-            </h1>
-
-            <p class="text-sm text-gray-500 mt-1 truncate">
-              ⭐ 4.8 • {{ saloon.profile.city|default:"City" }}
+            <h1 class="truncate text-lg font-bold sm:text-xl">{{ saloon.name }}</h1>
+            <p class="mt-1 truncate text-sm text-gray-500">
+              {{ saloon.profile.city|default:"City" }}
             </p>
-            <div class="flex items-center gap-3">
-            <i class="fa-brands fa-whatsapp text-green-500"></i>
-            <span class="truncate">
-              {{ saloon.whatsapp_number }}
-            </span>
+
+            <div class="mt-4 space-y-3 text-sm text-gray-600">
+              <div class="flex items-center gap-3">
+                <i class="fa-brands fa-whatsapp text-green-500"></i>
+                <span class="truncate">{{ saloon.whatsapp_number }}</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-phone text-blue-500"></i>
+                <span class="truncate">{{ saloon.profile.contact_number|default:"Not added" }}</span>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <i class="fa-solid fa-location-dot mt-0.5 text-gray-400"></i>
+                <span class="break-words">{{ saloon.profile.locality|default:"Address not added yet" }}</span>
+              </div>
+            </div>
+
+            <a
+              href="{{ saloon_public_url }}"
+              target="_blank"
+              rel="noopener"
+              class="mt-4 inline-block text-sm font-semibold text-blue-600"
+              data-public-profile-link
+            >
+              View Public Profile
+            </a>
           </div>
 
-          <div class="flex items-center gap-3">
-            <i class="fa-solid fa-phone text-blue-500"></i>
-            <span class="truncate">
-              {{ saloon.profile.contact_number|default:"Not added" }}
-            </span>
-          </div>
-
-          <div class="flex items-start gap-3">
-            <i class="fa-solid fa-location-dot text-gray-400 mt-0.5"></i>
-            <span class="text-gray-600 break-words">
-              {{ saloon.profile.locality|default:"Address not added yet" }}
-            </span>
-          </div>
-
-          <a
-            href="{% url 'public_saloon' slug=saloon.slug %}"
-            target="_blank"
-            rel="noopener"
-            class="inline-block mt-2 text-blue-600 font-semibold text-sm"
-          >
-            View Public Profile →
-          </a>
-          </div>
-
-          <!-- EDIT BUTTON -->
           <a
             href="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}"
-            class="shrink-0 bg-blue-500 text-white px-4 h-9 rounded-lg text-sm font-semibold flex items-center gap-2"
+            class="flex h-9 shrink-0 items-center gap-2 rounded-lg bg-blue-500 px-4 text-sm font-semibold text-white"
           >
             <i class="fa-solid fa-pencil text-xs"></i>
             Edit
           </a>
-
         </div>
-
-
       </div>
     </div>
 
-  <!-- INNER TABS -->
-  <div id="mysaloon-tabs" class="flex border-t border-gray-100 overflow-x-auto whitespace-nowrap">
+    <div class="border-t border-gray-100 px-4 pb-5 pt-4">
+      <div class="rounded-2xl border border-[#e7dbc7] bg-[#fffcf8] p-4">
+        <div class="mb-3">
+          <h3 class="text-sm font-semibold text-[#2d251d]">Your Salon Link</h3>
+          <p class="mt-1 text-xs text-[#7a6a54]">Set your personal subdomain for sharing and visibility.</p>
+        </div>
 
+        <div class="flex items-stretch gap-2">
+          <div class="flex flex-1 items-center rounded-xl border border-[#dbcfb9] bg-white px-3">
+            <input
+              id="saloonSlugInput"
+              type="text"
+              value="{{ saloon.slug }}"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              class="h-11 w-full bg-transparent text-sm font-semibold text-[#2b241d] outline-none"
+              placeholder="salonname"
+            >
+            <span class="shrink-0 pl-2 text-xs font-medium text-gray-400">.{{ saloon_domain_suffix }}</span>
+          </div>
+          <button
+            type="button"
+            id="saloonSlugCopy"
+            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#dbcfb9] bg-white text-[#6b5a44] transition hover:bg-[#f8f1e6]"
+            aria-label="Copy salon link"
+          >
+            <i class="fa-regular fa-copy"></i>
+          </button>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <p id="saloonSlugStatus" class="text-xs font-semibold text-gray-500">Checking...</p>
+          <div id="saloonSlugSuggestions" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between gap-2">
+          <a
+            href="{{ saloon_public_url }}"
+            target="_blank"
+            rel="noopener"
+            id="saloonPublicUrlPreview"
+            class="truncate text-xs font-medium text-[#8a6a38]"
+            data-public-profile-link
+          >
+            {{ saloon_public_url }}
+          </a>
+          <button
+            type="button"
+            id="saloonSlugSave"
+            class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[#c79a43] px-4 text-xs font-semibold text-white transition hover:bg-[#b98d3a]"
+          >
+            Save link
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mysaloon-tabs" class="flex overflow-x-auto whitespace-nowrap border-t border-gray-100">
       <a
         href="?tab=services#mysaloon-tabs"
-        class="px-4 py-3 text-sm font-medium
-        {% if active_inner_tab == 'services' %}
-          text-blue-600 border-b-2 border-blue-600
-        {% else %}
-          text-gray-500
-        {% endif %}">
+        class="px-4 py-3 text-sm font-medium {% if active_inner_tab == 'services' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-500{% endif %}"
+      >
         Services
       </a>
 
       <a
         href="?tab=gallery#mysaloon-tabs"
-        class="px-4 py-3 text-sm font-medium
-        {% if active_inner_tab == 'gallery' %}
-          text-blue-600 border-b-2 border-blue-600
-        {% else %}
-          text-gray-500
-        {% endif %}">
+        class="px-4 py-3 text-sm font-medium {% if active_inner_tab == 'gallery' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-500{% endif %}"
+      >
         Gallery
       </a>
 
       <a
         href="?tab=about#mysaloon-tabs"
-        class="px-4 py-3 text-sm font-medium
-        {% if active_inner_tab == 'about' %}
-          text-blue-600 border-b-2 border-blue-600
-        {% else %}
-          text-gray-500
-        {% endif %}">
+        class="px-4 py-3 text-sm font-medium {% if active_inner_tab == 'about' %}border-b-2 border-blue-600 text-blue-600{% else %}text-gray-500{% endif %}"
+      >
         About & Reviews
       </a>
-
     </div>
   </div>
 
-  <!-- TAB CONTENT (UNCHANGED) -->
-
   {% if active_inner_tab == "services" %}
-  <div id="mysaloon-services" class="bg-white rounded-2xl border border-gray-100 p-4">
-    <div class="flex items-center justify-between mb-4">
+  <div id="mysaloon-services" class="rounded-2xl border border-gray-100 bg-white p-4">
+    <div class="mb-4 flex items-center justify-between">
       <h3 class="text-lg font-semibold">Services</h3>
 
-      {% if saloon.services.exists %}
-        <a
-          href="{% url 'saloon_dashboard_services' username=saloon.owner.username %}"
-          class="text-sm font-semibold text-blue-600"
-        >
-          Edit Services
-        </a>
-      {% else %}
-        <a
-          href="{% url 'saloon_dashboard_services' username=saloon.owner.username %}"
-          class="text-sm font-semibold text-blue-600"
-        >
-          Add Services
-        </a>
-      {% endif %}
+      <a
+        href="{% url 'saloon_dashboard_services' username=saloon.owner.username %}"
+        class="text-sm font-semibold text-blue-600"
+      >
+        {% if saloon.services.exists %}Edit Services{% else %}Add Services{% endif %}
+      </a>
     </div>
 
     {% if saloon.services.exists %}
       <div class="space-y-4">
         {% for service in saloon.services.all %}
           <div class="flex items-center gap-4 min-w-0">
-            <img
-              src="{{ service.image.url }}"
-              class="w-24 h-16 object-cover rounded-lg shrink-0"
-            >
             <div class="min-w-0">
               <p class="font-semibold truncate">{{ service.name }}</p>
-              <p class="text-sm text-gray-500">
-                ₹ {{ service.offer_price|default:service.price }}
-              </p>
+              <p class="mt-1 text-sm text-gray-500">{{ service.category.name }}</p>
+              <p class="text-sm text-gray-500">Rs. {{ service.offer_price|default:service.price }}</p>
             </div>
           </div>
         {% endfor %}
@@ -167,33 +173,32 @@
       <p class="text-sm text-gray-500">No services added yet.</p>
     {% endif %}
   </div>
-{% endif %}
-
+  {% endif %}
 
   {% if active_inner_tab == "gallery" %}
-  <div id="mysaloon-gallery" class="bg-white rounded-2xl border border-gray-100 p-4">
-    <div class="flex items-center justify-between mb-4">
+  <div id="mysaloon-gallery" class="rounded-2xl border border-gray-100 bg-white p-4">
+    <div class="mb-4 flex items-center justify-between">
       <h3 class="text-lg font-semibold">Gallery</h3>
       <a
         href="{% url 'saloon_gallery_create' username=saloon.owner.username %}"
-        class="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+        class="rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white"
       >
         Upload
       </a>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {% for post in saloon.gallery_posts.all %}
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {% for post in gallery_posts %}
         {% with first_media=post.first_image %}
           <a
             href="{% url 'saloon_gallery_detail' username=saloon.owner.username post_id=post.id %}"
-            class="relative rounded-xl overflow-hidden border border-gray-100"
+            class="relative overflow-hidden rounded-xl border border-gray-100"
           >
             {% if first_media %}
               {% if first_media.media_type == 'image' %}
                 <img
                   src="{{ first_media.file.url }}"
-                  class="w-full h-32 object-cover"
+                  class="h-32 w-full object-cover"
                   alt="Gallery media"
                 >
               {% else %}
@@ -202,9 +207,21 @@
                 </div>
               {% endif %}
             {% else %}
-              <div class="w-full h-32 bg-gray-100"></div>
+              <div class="h-32 w-full bg-gray-100"></div>
             {% endif %}
-            <div class="absolute bottom-2 right-2 bg-black/30 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+            {% if post.service %}
+              <div class="absolute bottom-2 left-2 z-10 max-w-[calc(100%-4.25rem)]">
+                <button type="button" class="block max-w-full rounded-md border border-white/70 bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#2d251d] shadow-[0_8px_20px_rgba(0,0,0,0.16)] backdrop-blur" data-service-info-toggle="mysaloon-grid-{{ post.id }}">
+                  <span class="block truncate">Service / {{ post.service.name }}</span>
+                </button>
+                <div class="hidden absolute bottom-full left-0 mb-2 w-64 max-w-[76vw] rounded-lg border border-[#e8e1d7] bg-white/95 p-3.5 text-left shadow-[0_22px_55px_rgba(24,20,16,0.16)] backdrop-blur" data-service-info-card="mysaloon-grid-{{ post.id }}">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
+                  <p class="mt-1 break-words text-xs font-semibold text-gray-900">{{ post.service.name }}</p>
+                  <p class="mt-2 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ post.service.offer_price|default:post.service.price }}</p>
+                </div>
+              </div>
+            {% endif %}
+            <div class="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/30 px-2 py-1 text-xs text-white">
               <i class="fa-solid fa-eye text-[10px]"></i>
               {{ post.views }}
             </div>
@@ -218,8 +235,8 @@
   {% endif %}
 
   {% if active_inner_tab == "about" %}
-  <div id="mysaloon-about" class="bg-white rounded-2xl border border-gray-100 p-4">
-    <div class="flex items-center justify-between mb-4">
+  <div id="mysaloon-about" class="rounded-2xl border border-gray-100 bg-white p-4">
+    <div class="mb-4 flex items-center justify-between">
       <h3 class="text-lg font-semibold">About</h3>
       <a
         href="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}#about-section"
@@ -227,12 +244,12 @@
       >Edit</a>
     </div>
 
-    <p class="text-sm text-gray-600 leading-relaxed">
+    <p class="text-sm leading-relaxed text-gray-600">
       {{ saloon.profile.about|default:"No description added yet." }}
     </p>
 
     <div class="mt-8 border-t border-gray-100 pt-6">
-      <div class="flex items-center justify-between mb-4">
+      <div class="mb-4 flex items-center justify-between">
         <h3 class="text-lg font-semibold">Reviews</h3>
         <span class="text-sm text-gray-500">{{ saloon.reviews.count }} total</span>
       </div>
@@ -243,7 +260,7 @@
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-sm font-semibold text-gray-900">{{ review.reviewer_name }}</p>
-                <p class="text-xs text-gray-500 mt-1">{{ review.created_at|date:"M d, Y" }}</p>
+                <p class="mt-1 text-xs text-gray-500">{{ review.created_at|date:"M d, Y" }}</p>
               </div>
               <div class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                 <i class="fa-solid fa-star text-[10px]"></i>
@@ -271,5 +288,190 @@
       target.scrollIntoView({ behavior: "instant", block: "start" });
     }
   })();
+
+  (function () {
+    const slugInput = document.getElementById("saloonSlugInput");
+    const statusLabel = document.getElementById("saloonSlugStatus");
+    const suggestionsWrap = document.getElementById("saloonSlugSuggestions");
+    const copyButton = document.getElementById("saloonSlugCopy");
+    const saveButton = document.getElementById("saloonSlugSave");
+    const previewLink = document.getElementById("saloonPublicUrlPreview");
+    const publicLinks = Array.from(document.querySelectorAll("[data-public-profile-link]"));
+    const checkUrl = "{{ saloon_slug_check_url }}";
+    const updateUrl = "{{ saloon_slug_update_url }}";
+
+    if (!slugInput || !statusLabel || !suggestionsWrap || !copyButton || !saveButton || !previewLink) return;
+
+    let timer = null;
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function normalizeSlug(value) {
+      return (value || "")
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9_-]/g, "")
+        .replace(/-{2,}/g, "-")
+        .replace(/_{2,}/g, "_")
+        .replace(/^[-_]+|[-_]+$/g, "")
+        .slice(0, 50);
+    }
+
+    function setStatus(available, text) {
+      statusLabel.classList.remove("text-gray-500", "text-green-600", "text-red-500");
+      if (available === true) {
+        statusLabel.classList.add("text-green-600");
+        statusLabel.innerHTML = '<i class="fa-solid fa-check mr-1"></i>' + text;
+      } else if (available === false) {
+        statusLabel.classList.add("text-red-500");
+        statusLabel.innerHTML = '<i class="fa-solid fa-xmark mr-1"></i>' + text;
+      } else {
+        statusLabel.classList.add("text-gray-500");
+        statusLabel.textContent = text;
+      }
+    }
+
+    function updatePublicUrl(url) {
+      if (!url) return;
+      previewLink.textContent = url;
+      previewLink.href = url;
+      publicLinks.forEach(function (link) {
+        link.href = url;
+      });
+    }
+
+    function renderSuggestions(items) {
+      suggestionsWrap.innerHTML = "";
+      if (!items || !items.length) return;
+
+      items.forEach(function (slug) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "rounded-full border border-[#dfc9a2] bg-[#fff8ec] px-2.5 py-1 text-[11px] font-semibold text-[#8a6a38] transition hover:bg-[#f7ecd8]";
+        button.textContent = slug;
+        button.addEventListener("click", function () {
+          slugInput.value = slug;
+          checkAvailability(slug, true);
+        });
+        suggestionsWrap.appendChild(button);
+      });
+    }
+
+    function checkAvailability(value, immediate) {
+      const slug = normalizeSlug(value);
+      slugInput.value = slug;
+
+      if (!slug) {
+        setStatus(null, "Enter a salon link name.");
+        renderSuggestions([]);
+        return;
+      }
+
+      const run = function () {
+        setStatus(null, "Checking...");
+        fetch(checkUrl + "?slug=" + encodeURIComponent(slug), {
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            slugInput.value = data.slug || slug;
+            setStatus(Boolean(data.available), data.message || (data.available ? "Available" : "This name is already taken"));
+            renderSuggestions(data.suggestions || []);
+            if (data.public_url) updatePublicUrl(data.public_url);
+          })
+          .catch(function () {
+            setStatus(false, "Could not check now. Try again.");
+          });
+      };
+
+      clearTimeout(timer);
+      if (immediate) {
+        run();
+      } else {
+        timer = setTimeout(run, 220);
+      }
+    }
+
+    slugInput.addEventListener("input", function () {
+      checkAvailability(slugInput.value, false);
+    });
+
+    copyButton.addEventListener("click", function () {
+      const url = previewLink.href;
+      if (!url) return;
+      navigator.clipboard.writeText(url).then(function () {
+        if (typeof showToast === "function") showToast("success", "Link copied", "");
+      });
+    });
+
+    saveButton.addEventListener("click", function () {
+      const slug = normalizeSlug(slugInput.value);
+      if (!slug) {
+        setStatus(false, "Enter a valid salon link name.");
+        return;
+      }
+
+      const body = new URLSearchParams();
+      body.append("slug", slug);
+
+      fetch(updateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          "X-CSRFToken": getCsrfToken(),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: body.toString()
+      })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          if (!data.ok) {
+            setStatus(false, data.message || "This name is already taken");
+            renderSuggestions(data.suggestions || []);
+            return;
+          }
+          slugInput.value = data.slug || slug;
+          setStatus(true, "Available");
+          renderSuggestions([]);
+          if (data.public_url) updatePublicUrl(data.public_url);
+          if (typeof showToast === "function") showToast("success", "Salon link updated", "");
+        })
+        .catch(function () {
+          setStatus(false, "Could not save now. Try again.");
+        });
+    });
+
+    checkAvailability(slugInput.value || "{{ saloon.name|default:saloon.owner.username|escapejs }}", true);
+  })();
+</script>
+<script>
+  (function () {
+    function closeServiceCards(exceptId) {
+      document.querySelectorAll("[data-service-info-card]").forEach(function (card) {
+        if (card.getAttribute("data-service-info-card") !== exceptId) card.classList.add("hidden");
+      });
+    }
+    document.querySelectorAll("[data-service-info-toggle]").forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var id = button.getAttribute("data-service-info-toggle");
+        var card = document.querySelector('[data-service-info-card="' + id + '"]');
+        if (!card) return;
+        var willOpen = card.classList.contains("hidden");
+        closeServiceCards(id);
+        card.classList.toggle("hidden", !willOpen);
+      });
+    });
+    document.addEventListener("click", function () { closeServiceCards(); });
+  })();
 </script>
 {% endblock %}
+
+
+
+
+

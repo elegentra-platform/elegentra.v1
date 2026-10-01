@@ -28,7 +28,7 @@
       <div>
         <p class="text-sm text-gray-500">Progress</p>
         <p class="font-medium text-gray-900 mt-1">
-          Step {{ saloon.registration_step }} of 5
+          Step {{ saloon.registration_step }} of 4
         </p>
 
         <!-- Progress Bar -->
@@ -36,13 +36,11 @@
           {% if saloon.registration_step == 1 %}
             <div class="bg-black h-2 w-[0%]"></div>
           {% elif saloon.registration_step == 2 %}
-            <div class="bg-black h-2 w-[20%]"></div>
+            <div class="bg-black h-2 w-[33%]"></div>
           {% elif saloon.registration_step == 3 %}
-            <div class="bg-black h-2 w-[40%]"></div>
-          {% elif saloon.registration_step == 4 %}
-            <div class="bg-black h-2 w-[60%]"></div>
-          {% elif saloon.registration_step == 5 %}
-            <div class="bg-black h-2 w-[80%]"></div>
+            <div class="bg-black h-2 w-[66%]"></div>
+          {% elif saloon.registration_step >= 4 %}
+            <div class="bg-black h-2 w-[100%]"></div>
           {% endif %}
         </div>
       </div>
@@ -82,7 +80,7 @@
             {% else %}
               <span class="w-5 h-5 rounded-full border border-gray-300"></span>
             {% endif %}
-            Public salon profile
+            Services and banner
           </li>
 
           <!-- Step 4 -->
@@ -92,7 +90,7 @@
             {% else %}
               <span class="w-5 h-5 rounded-full border border-gray-300"></span>
             {% endif %}
-            Quick agreement
+            Final submission
           </li>
 
         </ul>

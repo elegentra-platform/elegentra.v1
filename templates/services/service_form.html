@@ -7,8 +7,11 @@
     {% if service %}Edit Service{% else %}Add Service{% endif %}
   </h1>
 
-  <form method="post" enctype="multipart/form-data" class="space-y-4">
+  <form method="post" class="space-y-4">
     {% csrf_token %}
+    {% if return_to %}
+      <input type="hidden" name="return_to" value="{{ return_to }}">
+    {% endif %}
 
     <!-- Service Name -->
     <div>
@@ -64,19 +67,13 @@
       >
     </div>
 
-    <!-- Image -->
-    <div>
-      <label class="block text-sm font-medium mb-1">Image</label>
-      <input type="file" name="image">
-    </div>
-
     <!-- Visibility -->
     <div class="flex items-center gap-2">
       <input
         type="checkbox"
         name="is_visible"
         id="is_visible"
-        {% if service and service.is_visible %}checked{% endif %}
+        {% if not service or service.is_visible %}checked{% endif %}
       >
       <label for="is_visible" class="text-sm">
         Visible to customers
@@ -95,3 +92,5 @@
 
 </div>
 {% endblock %}
+
+

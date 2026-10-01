@@ -1,0 +1,87 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+  <div class="overflow-hidden rounded-[26px] border border-[#eadfce] bg-white shadow-[0_20px_60px_rgba(43,37,31,0.08)]">
+    <div class="grid lg:grid-cols-[0.92fr_1.08fr]">
+      <div class="bg-[#fbf8f2] p-5 sm:p-7 lg:p-8">
+        <div class="inline-flex items-center gap-2 rounded-full border border-[#eadfce] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#8a6834]">
+          <i class="fa-solid fa-link text-[11px]"></i>
+          MyFestivo connection
+        </div>
+        <h1 class="mt-5 text-2xl font-semibold text-[#28231d] sm:text-3xl">Connect to MyFestivo</h1>
+        <p class="mt-3 text-sm leading-6 text-[#6a5d4d]">
+          Verify your Elegentra WhatsApp number, then open MyFestivo with your business profile ready for its import wizard.
+        </p>
+
+        <div class="mt-6 space-y-3 text-sm text-[#4f463b]">
+          <div class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f1e6d5] text-[#9d763a]"><i class="fa-regular fa-circle-check"></i></span>
+            <span>No repeated onboarding</span>
+          </div>
+          <div class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f1e6d5] text-[#9d763a]"><i class="fa-regular fa-id-card"></i></span>
+            <span>Business profile, banner, services, and gallery are included</span>
+          </div>
+          <div class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f1e6d5] text-[#9d763a]"><i class="fa-solid fa-shield-halved"></i></span>
+            <span>OTP verification protects the account connection</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-7 lg:p-8">
+        <div class="mb-6 flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#2e2922] text-white">
+            {% if step == "otp" %}
+              <i class="fa-solid fa-key"></i>
+            {% else %}
+              <i class="fa-brands fa-whatsapp"></i>
+            {% endif %}
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#9a7a49]">Secure handoff</p>
+            <h2 class="text-lg font-semibold text-[#28231d]">
+              {% if step == "otp" %}Enter OTP{% else %}Confirm WhatsApp{% endif %}
+            </h2>
+          </div>
+        </div>
+
+        {% if step == "otp" %}
+          <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <div>
+              <label for="otp" class="mb-2 block text-sm font-medium text-[#40372f]">OTP sent to {{ masked_phone }}</label>
+              <input id="otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="w-full rounded-2xl border border-[#ded3c4] bg-white px-4 py-3 text-base font-semibold tracking-[0.22em] text-[#28231d] outline-none transition focus:border-[#b7893f] focus:ring-4 focus:ring-[#b7893f]/10" placeholder="000000" required>
+              <p class="mt-2 text-xs leading-5 text-[#837565]">After verification, MyFestivo will open with your import review screen.</p>
+            </div>
+            <button type="submit" name="verify_otp" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2e2922] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(46,41,34,0.18)] transition hover:bg-[#171410] sm:w-auto">
+              <i class="fa-solid fa-arrow-right"></i>
+              Verify and continue
+            </button>
+          </form>
+
+          <form method="post" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="phone" value="{{ current_phone }}">
+            <button type="submit" name="send_otp" class="text-sm font-semibold text-[#8a6834] transition hover:text-[#2e2922]">Resend OTP</button>
+          </form>
+        {% else %}
+          <form method="post" class="space-y-5">
+            {% csrf_token %}
+            <div>
+              <label for="phone" class="mb-2 block text-sm font-medium text-[#40372f]">Elegentra WhatsApp number</label>
+              <input id="phone" name="phone" type="tel" value="{{ current_phone }}" class="w-full rounded-2xl border border-[#ded3c4] bg-white px-4 py-3 text-base text-[#28231d] outline-none transition focus:border-[#b7893f] focus:ring-4 focus:ring-[#b7893f]/10" placeholder="+91XXXXXXXXXX" required>
+              <p class="mt-2 text-xs leading-5 text-[#837565]">Use the WhatsApp number already connected with this Elegentra account.</p>
+            </div>
+            <button type="submit" name="send_otp" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2e2922] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(46,41,34,0.18)] transition hover:bg-[#171410] sm:w-auto">
+              <i class="fa-brands fa-whatsapp"></i>
+              Send OTP
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

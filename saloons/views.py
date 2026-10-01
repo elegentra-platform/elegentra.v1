@@ -1,5 +1,6 @@
 import random
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,10 +10,12 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib import messages
 from django.urls import reverse
+from django.db.models import Exists, OuterRef
 from django.views.decorators.http import require_POST
 
 from core.seo import build_absolute_url, build_image_url, build_seo_payload, truncate_text
 from public.models import FavoriteSaloon
+from plans.models import SaloonSubscription
 from .serializers import (
     SaloonOnboardingStepOneSerializer,
     SaloonOnboardingStepTwoSerializer,
@@ -20,6 +23,8 @@ from .serializers import (
 )
 from .models import (
     Saloon,
+    State,
+    District,
     TrustedDevice,
     SaloonProfile,
     GalleryPost,
@@ -28,7 +33,13 @@ from .models import (
     SaloonMapClick,
 )
 from services.models import Service, ServiceCategory, ServiceInterest
-from .utils import send_otp_whatsapp, format_whatsapp_number, build_service_slots
+from .utils import (
+    build_saloon_public_url,
+    build_service_slots,
+    format_whatsapp_number,
+    send_otp_whatsapp,
+    sync_saloon_slug_from_name,
+)
 from django.utils.text import slugify
 from django.db.models import Q, Avg, Count
 
@@ -50,11 +61,38 @@ DAY_KEYS = [
 ]
 
 
+def _location_master_data():
+    states = list(
+        State.objects.filter(is_active=True)
+        .order_by("name")
+        .prefetch_related("districts")
+    )
+    districts_by_state = {
+        str(state.id): [
+            {"id": district.id, "name": district.name}
+            for district in state.districts.filter(is_active=True).order_by("name")
+        ]
+        for state in states
+    }
+    return states, districts_by_state
+
+
 def _format_time_label(value):
     if not value:
         return ""
     return value.strftime("%I:%M %p").lstrip("0")
 
+
+
+def _platform_visible_saloons(queryset):
+    now = timezone.now()
+    live_subscription = SaloonSubscription.objects.filter(saloon=OuterRef("pk")).filter(
+        Q(trial_ends_at__gt=now)
+        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__isnull=True)
+        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__gt=now)
+        | Q(status=SaloonSubscription.STATUS_PAST_DUE, grace_period_ends_at__gt=now)
+    )
+    return queryset.annotate(has_platform_access=Exists(live_subscription)).filter(has_platform_access=True)
 
 def _display_name(saloon, profile=None):
     profile = profile or getattr(saloon, "profile", None)
@@ -63,6 +101,83 @@ def _display_name(saloon, profile=None):
     if saloon.name:
         return saloon.name
     return "Salon"
+
+
+def _clean_location_label(locality="", city=""):
+    locality = (locality or "").strip()
+    city = (city or "").strip()
+
+    if locality and city:
+        locality_parts = [part.strip() for part in locality.split(",") if part.strip()]
+        normalized_city = city.casefold()
+        locality_parts = [part for part in locality_parts if part.casefold() != normalized_city]
+        locality = ", ".join(locality_parts)
+
+        if locality and locality.casefold().endswith(normalized_city):
+            trimmed = locality[: -len(city)].rstrip(" ,")
+            if trimmed:
+                locality = trimmed
+
+    return ", ".join([part for part in [locality, city] if part]) or "Location coming soon"
+
+
+def _clean_locality_name(locality="", city=""):
+    locality = (locality or "").strip()
+    city = (city or "").strip()
+
+    if locality and city:
+        locality_parts = [part.strip() for part in locality.split(",") if part.strip()]
+        normalized_city = city.casefold()
+        locality_parts = [part for part in locality_parts if part.casefold() != normalized_city]
+        locality = ", ".join(locality_parts)
+
+        if locality and locality.casefold().endswith(normalized_city):
+            trimmed = locality[: -len(city)].rstrip(" ,")
+            if trimmed:
+                locality = trimmed
+
+    return locality
+
+
+def _city_place_url(district_name, city_name):
+    district_name = (district_name or "").strip()
+    city_name = (city_name or "").strip()
+    if not city_name:
+        return ""
+    if not district_name:
+        return reverse("public_place_city_legacy", kwargs={"city_slug": slugify(city_name)})
+    return reverse(
+        "public_place_city",
+        kwargs={"district_slug": slugify(district_name), "city_slug": slugify(city_name)},
+    )
+
+
+def _district_place_url(district_name):
+    district_name = (district_name or "").strip()
+    if not district_name:
+        return ""
+    return reverse("public_place_district", kwargs={"district_slug": slugify(district_name)})
+
+
+def _locality_place_url(district_name, city_name, locality_name):
+    district_name = (district_name or "").strip()
+    city_name = (city_name or "").strip()
+    locality_name = (locality_name or "").strip()
+    if not city_name or not locality_name:
+        return ""
+    if not district_name:
+        return reverse(
+            "public_place_locality_legacy",
+            kwargs={"city_slug": slugify(city_name), "locality_slug": slugify(locality_name)},
+        )
+    return reverse(
+        "public_place_locality",
+        kwargs={
+            "district_slug": slugify(district_name),
+            "city_slug": slugify(city_name),
+            "locality_slug": slugify(locality_name),
+        },
+    )
 
 
 def _build_hours_summary(profile):
@@ -111,45 +226,36 @@ def _get_review_summary(saloon):
     }
 
 
-def _saloon_card_payload(saloon):
+def _saloon_card_payload(saloon, request=None):
+    saloon = sync_saloon_slug_from_name(saloon)
     profile = getattr(saloon, "profile", None)
     image_url = ""
     if saloon.banner_image:
         image_url = saloon.banner_image.url
-    else:
-        first_service = saloon.services.filter(
-            is_active=True,
-            is_visible=True,
-            is_deleted=False,
-        ).first()
-        if first_service and first_service.image:
-            image_url = first_service.image.url
-
-    location_parts = []
-    if profile and profile.locality:
-        location_parts.append(profile.locality)
-    if profile and profile.city:
-        location_parts.append(profile.city)
 
     return {
         "name": _display_name(saloon, profile),
         "slug": saloon.slug,
+        "public_url": build_saloon_public_url(saloon.slug, request=request),
         "image": image_url or f"{settings.STATIC_URL}services/images/hero.webp",
-        "location": ", ".join(location_parts) or "Nearby",
+        "location": _clean_location_label(
+            profile.locality if profile else "",
+            profile.city if profile else "",
+        ).replace("Location coming soon", "Nearby"),
         "rating": getattr(saloon, "avg_rating", None),
         "review_count": getattr(saloon, "review_count", 0) or 0,
     }
 
 
-def _related_saloons(saloon, profile):
+def _related_saloons(saloon, profile, request=None):
     if not profile:
         return {"nearby": [], "city": []}
 
     base_queryset = (
-        Saloon.objects.filter(
+        _platform_visible_saloons(Saloon.objects.filter(
             is_active=True,
             approval_status=Saloon.APPROVAL_APPROVED,
-        )
+        ))
         .exclude(id=saloon.id)
         .annotate(avg_rating=Avg("reviews__rating", filter=Q(reviews__is_visible=True)))
         .annotate(review_count=Count("reviews", filter=Q(reviews__is_visible=True)))
@@ -171,8 +277,8 @@ def _related_saloons(saloon, profile):
             city_queryset = city_queryset.exclude(profile__locality__iexact=profile.locality)
 
     return {
-        "nearby": [_saloon_card_payload(item) for item in nearby_queryset.order_by("-updated_at", "-id")[:4]],
-        "city": [_saloon_card_payload(item) for item in city_queryset.order_by("-updated_at", "-id")[:4]],
+        "nearby": [_saloon_card_payload(item, request=request) for item in nearby_queryset.order_by("-updated_at", "-id")[:4]],
+        "city": [_saloon_card_payload(item, request=request) for item in city_queryset.order_by("-updated_at", "-id")[:4]],
     }
 
 
@@ -312,8 +418,21 @@ def _build_review_cards(reviews, current_user=None):
 
 
 def _gallery_posts_with_images(saloon):
-    posts = list(saloon.gallery_posts.prefetch_related("media").all())
+    posts = list(saloon.gallery_posts.filter(is_hidden=False).select_related("service", "service__category").prefetch_related("media").all())
     return [post for post in posts if post.image_media]
+
+
+def _gallery_media_items(saloon):
+    items = []
+    for post in _gallery_posts_with_images(saloon):
+        for media in post.image_media:
+            items.append({
+                "url": media.file.url,
+                "title": post.title or "",
+                "description": post.description or "",
+                "date_label": timezone.localtime(post.created_at).strftime("%b %d, %Y"),
+            })
+    return items
 
 
 def build_service_slots(existing_services, rejection_map):
@@ -328,15 +447,16 @@ def build_service_slots(existing_services, rejection_map):
             slots.append({
                 "name": service["name"],
                 "price": service["price"],
-                "image_url": service["image_url"],
                 "category_id": service.get("category_id"),
-                "rejection": rejection_map.get(f"service_image_{i+1}")
+                "rejection": (
+                    rejection_map.get(f"service_{i+1}")
+                    or rejection_map.get(f"service_image_{i+1}")
+                )
             })
         else:
             slots.append({
                 "name": "",
                 "price": "",
-                "image_url": None,
                 "category_id": None,
                 "rejection": None
             })
@@ -348,25 +468,32 @@ def partner_home(request):
     if request.user.is_authenticated:
         saloon = Saloon.objects.filter(owner=request.user).first()
 
-        if saloon:
-            if saloon.registration_step == 1:
-                return redirect("saloon_onboarding_step_one")
+        if not saloon:
+            return redirect("verify_whatsapp")
 
-            if saloon.registration_step == 2:
-                return redirect("saloon_onboarding_step_two")
+        if not saloon.is_whatsapp_verified:
+            return redirect("verify_whatsapp")
 
-            if saloon.registration_step < 4:
-                return redirect("saloon_onboarding_step_three")
+        if saloon.registration_step <= 1:
+            return redirect("saloon_onboarding_step_one")
 
-            return redirect("saloon_dashboard", username=request.user.username)
+        if saloon.registration_step == 2:
+            return redirect("saloon_onboarding_step_two")
+
+        if saloon.registration_step == 3:
+            return redirect("saloon_onboarding_step_three")
+
+        if saloon.registration_step == 4:
+            return redirect("saloon_onboarding_step_four")
+
+        return redirect("saloon_dashboard", username=request.user.username)
 
     checklist = [
         "Valid ID proof (Aadhaar or PAN)",
         "Salon front and inside photos",
         "Banner image for your salon profile",
-        "Service images for the services you plan to list",
-        "Bank account details for verification",
-        "WhatsApp access for OTP verification",
+        "Your top services with clear pricing",
+        "Your active WhatsApp business number",
     ]
 
     faqs = [
@@ -376,7 +503,7 @@ def partner_home(request):
         },
         {
             "question": "What should I keep ready before starting?",
-            "answer": "Keep your ID proof, salon front and inside photos, a good banner image, service images, bank details, and access to your WhatsApp number for a faster signup.",
+            "answer": "Keep your ID proof, salon front and inside photos, a good banner image, your service names with prices, and your active WhatsApp number ready for a faster signup.",
         },
         {
             "question": "Do I need to complete everything in one go?",
@@ -396,7 +523,7 @@ def partner_home(request):
         request,
         title="Elegentra Salon Registration | Register Your Salon, Spa, or Beauty Business",
         description=(
-            "Register your salon on Elegentra with a premium partner profile, business verification, service images, gallery setup, "
+            "Register your salon on Elegentra with a premium partner profile, business verification, service setup, gallery setup, "
             "and customer-ready contact details for salon discovery."
         ),
         canonical_url=build_absolute_url(request, reverse("partner_home")),
@@ -408,6 +535,84 @@ def partner_home(request):
         {
             "checklist": checklist,
             "partner_faqs": faqs,
+            "seo": seo,
+        },
+    )
+
+
+def partner_pricing(request):
+    pricing_highlights = [
+        "Personal premium salon website",
+        "Visibility on Elegentra",
+        "Google-friendly public pages",
+        "Services, gallery, reviews, and WhatsApp lead flow",
+    ]
+
+    pricing_points = [
+        {
+            "title": "Premium website",
+            "description": "Give your salon a clean, premium online presence that feels far beyond a basic listing.",
+        },
+        {
+            "title": "Elegentra visibility",
+            "description": "Be discoverable by nearby customers browsing salons, services, and local beauty businesses.",
+        },
+        {
+            "title": "SEO-friendly profile",
+            "description": "Your public pages are built to be easier for Google and local search traffic to understand.",
+        },
+        {
+            "title": "Direct WhatsApp enquiries",
+            "description": "Turn visitors into conversations with a simple lead flow that feels fast and familiar.",
+        },
+        {
+            "title": "Brand trust signals",
+            "description": "Show reviews, verified presentation, services, gallery posts, and salon details in one place.",
+        },
+        {
+            "title": "Early partner access",
+            "description": "Launch with introductory access reserved for a limited first group of partner salons.",
+        },
+    ]
+
+    pricing_faqs = [
+        {
+            "question": "Is this a salon management software subscription?",
+            "answer": "No. Elegentra pricing is for your premium salon website, online visibility, and discovery presence rather than payroll, billing, or internal management software.",
+        },
+        {
+            "question": "What is included in the ₹999 plan?",
+            "answer": "It includes your salon website experience on Elegentra, customer-facing service presentation, gallery and reviews, SEO-friendly public pages, and direct WhatsApp enquiry flow.",
+        },
+        {
+            "question": "What does early partner access mean?",
+            "answer": "It means selected salons can join during the introductory launch phase before standard rollout, while keeping the premium monthly plan positioning intact.",
+        },
+        {
+            "question": "Do customers contact the salon directly?",
+            "answer": "Yes. Elegentra is designed so interested visitors can move into direct WhatsApp conversation with the salon.",
+        },
+    ]
+
+    pricing_path = "/saloons/partner/pricing/"
+
+    seo = build_seo_payload(
+        request,
+        title="Elegentra Pricing | Premium Salon Website + Visibility",
+        description=(
+            "Explore Elegentra pricing for salons. Get a premium personal website, customer visibility, "
+            "SEO-friendly salon pages, and direct WhatsApp enquiries."
+        ),
+        canonical_url=build_absolute_url(request, pricing_path),
+    )
+
+    return render(
+        request,
+        "saloons/partner_pricing.html",
+        {
+            "pricing_highlights": pricing_highlights,
+            "pricing_points": pricing_points,
+            "pricing_faqs": pricing_faqs,
             "seo": seo,
         },
     )
@@ -510,6 +715,14 @@ def verify_whatsapp(request):
                 "is_existing_saloon": is_existing_saloon,
             },
         )
+
+    # Fresh partner flows should not inherit OTP session state from an older account/session.
+    if not saloon and request.method == "GET":
+        if otp or phone:
+            for key in ["vendor_otp", "vendor_phone", "otp_attempts", "otp_locked_until"]:
+                request.session.pop(key, None)
+            otp = None
+            phone = None
 
     # Existing salons must always verify against their already stored WhatsApp number.
     if is_existing_saloon:
@@ -621,7 +834,7 @@ def verify_whatsapp(request):
         trusted = TrustedDevice.objects.create(user=request.user)
 
         if is_new_vendor:
-            redirect_to = redirect("partner_home")
+            redirect_to = redirect("saloon_onboarding_step_one")
         else:
             redirect_to = redirect("saloon_dashboard", username=request.user.username)
 
@@ -644,6 +857,36 @@ def verify_whatsapp(request):
     return render_verify("phone")
 
 
+@login_required
+@require_POST
+def resolve_map_location(request):
+    raw_link = (request.POST.get("google_map_link") or "").strip()
+    if not raw_link:
+        return JsonResponse({"ok": False, "message": "Map link is required."}, status=400)
+
+    expanded_link = SaloonProfile.expand_google_map_link(raw_link)
+    coordinates = SaloonProfile.extract_coordinates_from_map_link(expanded_link)
+    if not coordinates:
+        return JsonResponse(
+            {
+                "ok": False,
+                "expanded_link": expanded_link,
+                "message": "We could not read coordinates from this map link.",
+            },
+            status=400,
+        )
+
+    latitude, longitude = coordinates
+    return JsonResponse(
+        {
+            "ok": True,
+            "expanded_link": expanded_link,
+            "latitude": str(latitude),
+            "longitude": str(longitude),
+        }
+    )
+
+
 # ============================
 # STEP 1 – NO ADMIN SUBMIT
 # ============================
@@ -651,6 +894,7 @@ def verify_whatsapp(request):
 def saloon_onboarding_step_one(request):
     saloon = Saloon.objects.filter(owner=request.user).first()
     whatsapp_verified = request.session.get("whatsapp_verified", False)
+    states, districts_by_state = _location_master_data()
 
     # Allow proceeding if WhatsApp verified in session, even if Saloon object not created
     if not saloon and not whatsapp_verified:
@@ -663,6 +907,8 @@ def saloon_onboarding_step_one(request):
         "saloon_types": SaloonProfile.CATEGORY_CHOICES,
         "is_resubmission": False,
         "rejection_map": {},
+        "states": states,
+        "districts_by_state": districts_by_state,
     }
 
     if request.method == "POST":
@@ -679,8 +925,30 @@ def saloon_onboarding_step_one(request):
 
             return redirect("saloon_onboarding_step_two")
 
-        context["data"] = request.POST
-        context["rejection_map"] = serializer.errors
+        context["data"] = {
+            "saloon_name": request.POST.get("saloon_name", ""),
+            "saloon_type": request.POST.get("saloon_type", ""),
+            "owner_full_name": request.POST.get("owner_full_name", ""),
+            "contact_number": request.POST.get("contact_number", ""),
+            "state_id": request.POST.get("state_id", ""),
+            "district_id": request.POST.get("district_id", ""),
+            "area_locality": request.POST.get("area_locality", ""),
+            "city": request.POST.get("city", ""),
+            "latitude": request.POST.get("latitude", ""),
+            "longitude": request.POST.get("longitude", ""),
+            "google_map_link": request.POST.get("google_map_link", ""),
+            "opening_time": request.POST.get("opening_time", ""),
+            "closing_time": request.POST.get("closing_time", ""),
+            "operating_days": request.POST.getlist("operating_days"),
+        }
+        normalized_errors = {}
+        for field, error_list in serializer.errors.items():
+            if isinstance(error_list, (list, tuple)) and error_list:
+                normalized_errors[field] = str(error_list[0])
+            else:
+                normalized_errors[field] = str(error_list)
+
+        context["rejection_map"] = normalized_errors
         context["is_resubmission"] = True
 
     else:
@@ -689,6 +957,8 @@ def saloon_onboarding_step_one(request):
             "saloon_type": profile.category if profile else "",
             "owner_full_name": profile.owner_full_name if profile else "",
             "contact_number": profile.contact_number if profile else "",
+            "state_id": str(profile.state_id) if profile and profile.state_id else (str(states[0].id) if len(states) == 1 else ""),
+            "district_id": str(profile.district_id) if profile and profile.district_id else "",
             "area_locality": profile.locality if profile else "",
             "city": profile.city if profile else "",
             "latitude": profile.latitude if profile and profile.latitude is not None else "",
@@ -757,7 +1027,15 @@ def saloon_onboarding_step_two(request):
             return redirect("saloon_onboarding_step_three")
 
 
-        rejection_map = {**rejection_map, **serializer.errors}
+        normalized_errors = {}
+        for field, error_list in serializer.errors.items():
+            if isinstance(error_list, (list, tuple)) and error_list:
+                normalized_errors[field] = str(error_list[0])
+            else:
+                normalized_errors[field] = str(error_list)
+
+        rejection_map = {**rejection_map, **normalized_errors}
+        existing_images["owner_id_number"] = request.POST.get("owner_id_number", "")
 
     return render(
         request,
@@ -801,7 +1079,6 @@ def saloon_onboarding_step_three(request):
         return [{
             "name": s.name,
             "price": s.price,
-            "image_url": s.image.url if s.image else None,
             "category_id": s.category_id,
         } for s in qs]
 
@@ -809,20 +1086,25 @@ def saloon_onboarding_step_three(request):
         banner = request.FILES.get("banner_image")
         services = []
 
-        existing_services = list(existing_services_qs)
-
         for i in range(1, 4):
             name = request.POST.get(f"service_name_{i}", "").strip()
             price = request.POST.get(f"service_price_{i}", "").strip()
             category_id = request.POST.get(f"service_category_{i}")
             new_category = request.POST.get(f"service_new_category_{i}", "").strip()
-            image = request.FILES.get(f"service_image_{i}")
 
-            old_image = None
-            if i <= len(existing_services):
-                old_image = existing_services[i - 1].image
+            if name or price or category_id or new_category:
+                slot_errors = []
+                if not name:
+                    slot_errors.append("Service name is required.")
+                if not price:
+                    slot_errors.append("Price is required.")
+                if not category_id and not new_category:
+                    slot_errors.append("Category is required.")
 
-            if name or price or image or old_image:
+                if slot_errors:
+                    rejection_map[f"service_{i}"] = " ".join(slot_errors)
+                    continue
+
                 if new_category:
                     category, _ = ServiceCategory.objects.get_or_create(
                         name=new_category,
@@ -835,14 +1117,9 @@ def saloon_onboarding_step_three(request):
                     )
                     category_id = category.id
 
-                if not category_id:
-                    rejection_map[f"service_category_{i}"] = "Category is required"
-                    continue
-
                 services.append({
                     "name": name,
                     "price": price,
-                    "image": image or old_image,
                     "category_id": int(category_id),
                 })
 
@@ -875,7 +1152,6 @@ def saloon_onboarding_step_three(request):
                 saloon=saloon,
                 name=s["name"],
                 price=s["price"],
-                image=s["image"],
                 category_id=s["category_id"],
                 is_active=False,
                 is_visible=True,
@@ -920,11 +1196,24 @@ def saloon_onboarding_step_four(request):
 
 def public_saloon(request, slug):
     saloon = get_object_or_404(
-        Saloon,
+        _platform_visible_saloons(Saloon.objects.filter(
+            is_active=True,
+            approval_status=Saloon.APPROVAL_APPROVED,
+        )),
         slug=slug,
-        is_active=True,
-        approval_status=Saloon.APPROVAL_APPROVED,
     )
+
+    saloon = sync_saloon_slug_from_name(saloon)
+
+    canonical_url = build_saloon_public_url(saloon.slug, request=request)
+    canonical_parts = urlsplit(canonical_url)
+    canonical_host = (canonical_parts.netloc or "").lower()
+    canonical_path = canonical_parts.path or "/"
+    request_host = (request.get_host() or "").lower()
+    request_path = request.path or "/"
+    if canonical_host and (request_host != canonical_host or request_path != canonical_path):
+        return redirect(canonical_url)
+
     profile = getattr(saloon, "profile", None)
     SaloonProfileView.objects.create(saloon=saloon)
     map_url = profile.get_google_maps_url() if profile else ""
@@ -936,12 +1225,21 @@ def public_saloon(request, slug):
     display_name = _display_name(saloon, profile)
     whatsapp_template = profile.get_whatsapp_prefill_template() if profile else ""
     whatsapp_number = "".join(ch for ch in saloon.whatsapp_number if ch.isdigit())
-    gallery_posts = _gallery_posts_with_images(saloon)[:6]
+    gallery_posts = _gallery_posts_with_images(saloon)
+    gallery_items = _gallery_media_items(saloon)
     review_summary = _get_review_summary(saloon)
     reviews = saloon.reviews.filter(is_visible=True)[:8]
     review_cards = _build_review_cards(reviews, request.user)
     hours_summary = _build_hours_summary(profile)
-    related_saloons = _related_saloons(saloon, profile)
+    related_saloons = _related_saloons(saloon, profile, request=request)
+    district_name = profile.district.name if profile and profile.district else ""
+    city_name = profile.city if profile and profile.city else ""
+    locality_name = _clean_locality_name(
+        profile.locality if profile else "",
+        city_name,
+    )
+    location_label = ", ".join([part for part in [locality_name, city_name, district_name] if part]) or "Location coming soon"
+    city_place_url = _city_place_url(district_name, city_name)
     is_favorited = bool(
         request.user.is_authenticated
         and FavoriteSaloon.objects.filter(user=request.user, saloon=saloon).exists()
@@ -958,10 +1256,19 @@ def public_saloon(request, slug):
             "whatsapp_template": whatsapp_template,
             "public_whatsapp_number": whatsapp_number,
             "gallery_posts": gallery_posts,
+            "gallery_items": gallery_items,
+            "gallery_image_total": len(gallery_items),
             "reviews": reviews,
             "review_cards": review_cards,
             "review_summary": review_summary,
             "hours_summary": hours_summary,
+            "location_label": location_label,
+            "district_name": district_name,
+            "city_name": city_name,
+            "locality_name": locality_name,
+            "city_place_url": city_place_url,
+            "district_place_url": _district_place_url(district_name) if district_name else "",
+            "public_profile_url": build_saloon_public_url(saloon.slug, request=request),
             "is_favorited": is_favorited,
             "related_nearby_saloons": related_saloons["nearby"],
             "related_city_saloons": related_saloons["city"],
@@ -1140,7 +1447,7 @@ def public_gallery_detail(request, slug, post_id):
     else:
         display_name = "Salon"
 
-    post = get_object_or_404(GalleryPost, id=post_id, saloon=saloon)
+    post = get_object_or_404(GalleryPost.objects.select_related("service", "service__category"), id=post_id, saloon=saloon)
     if not post.image_media:
         return redirect("public_saloon", slug=saloon.slug)
 
@@ -1169,3 +1476,4 @@ def public_gallery_detail(request, slug, post_id):
             "back_url": reverse("public_saloon", kwargs={"slug": saloon.slug}) + "#gallery",
         },
     )
+

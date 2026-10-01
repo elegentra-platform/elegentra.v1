@@ -1,8 +1,12 @@
+import decimal
+
 from rest_framework import serializers
 from .models import (
     Saloon,
     SaloonProfile,
     SaloonVerification,
+    State,
+    District,
 )
 
 # =========================
@@ -18,6 +22,8 @@ class SaloonOnboardingStepOneSerializer(serializers.Serializer):
         choices=SaloonProfile.CATEGORY_CHOICES
     )
 
+    state_id = serializers.PrimaryKeyRelatedField(queryset=State.objects.filter(is_active=True), source="state")
+    district_id = serializers.PrimaryKeyRelatedField(queryset=District.objects.filter(is_active=True), source="district")
     area_locality = serializers.CharField(max_length=255)
     city = serializers.CharField(max_length=100)
 
@@ -35,12 +41,56 @@ class SaloonOnboardingStepOneSerializer(serializers.Serializer):
         allow_empty=True,
     )
 
+    # HTML forms submit blank optional fields as "" (empty string), not as a
+    # missing key. DRF only treats "" as empty for CharField-style fields, so
+    # these numeric/time fields would otherwise fail parsing ("" is not a
+    # valid decimal/time) even though they are required=False.
+    EMPTY_TO_NULL_FIELDS = ("latitude", "longitude", "opening_time", "closing_time")
+
+    def to_internal_value(self, data):
+        if hasattr(data, "copy"):
+            data = data.copy()
+        for field_name in self.EMPTY_TO_NULL_FIELDS:
+            if data.get(field_name, None) == "":
+                data[field_name] = None
+
+        # People commonly paste Google Maps share links without the
+        # "https://" scheme (e.g. copied from a phone share sheet as
+        # "maps.app.goo.gl/xyz"). URLField requires a scheme, so add one
+        # instead of rejecting an otherwise-valid link.
+        map_link = data.get("google_map_link", None)
+        if map_link and not map_link.lower().startswith(("http://", "https://")):
+            data["google_map_link"] = f"https://{map_link}"
+
+        # Google Maps URLs commonly encode coordinates with 7+ decimal
+        # digits, but the field only stores 6 (~11cm precision, plenty for
+        # a salon pin). Round instead of letting DecimalField reject it —
+        # DecimalField's own `rounding` option only affects values already
+        # within precision, it does not relax the max_decimal_places check.
+        for field_name in ("latitude", "longitude"):
+            value = data.get(field_name, None)
+            if value not in (None, ""):
+                try:
+                    data[field_name] = str(
+                        decimal.Decimal(str(value)).quantize(
+                            decimal.Decimal("0.000001"), rounding=decimal.ROUND_HALF_UP
+                        )
+                    )
+                except decimal.InvalidOperation:
+                    pass  # let DecimalField raise its normal "invalid" error
+
+        return super().to_internal_value(data)
+
     def validate(self, attrs):
         latitude = attrs.get("latitude")
         longitude = attrs.get("longitude")
+        state = attrs.get("state")
+        district = attrs.get("district")
 
         if (latitude is None) ^ (longitude is None):
             raise serializers.ValidationError("Please set both latitude and longitude for the salon location.")
+        if state and district and district.state_id != state.id:
+            raise serializers.ValidationError({"district_id": "Please choose a district from the selected state."})
 
         return attrs
 
@@ -58,6 +108,8 @@ class SaloonOnboardingStepOneSerializer(serializers.Serializer):
         profile.owner_full_name = self.validated_data["owner_full_name"]
         profile.contact_number = self.validated_data["contact_number"]
         profile.category = self.validated_data["saloon_type"]
+        profile.state = self.validated_data["state"]
+        profile.district = self.validated_data["district"]
         profile.city = self.validated_data["city"]
         profile.locality = self.validated_data["area_locality"]
         profile.latitude = self.validated_data.get("latitude")
@@ -85,6 +137,7 @@ class SaloonOnboardingStepTwoSerializer(serializers.Serializer):
     def validate(self, data):
         request = self.context["request"]
         saloon = self.context["saloon"]
+        verification = getattr(saloon, "verification", None)
 
         rejected_fields = set(
             saloon.rejection_reasons.values_list("field_key", flat=True)
@@ -93,21 +146,42 @@ class SaloonOnboardingStepTwoSerializer(serializers.Serializer):
         owner_id = request.FILES.get("owner_id_proof")
         inside = request.FILES.getlist("inside_images")
         outside = request.FILES.getlist("outside_images")
+        errors = {}
+
+        existing_owner_id = bool(verification and verification.owner_id_proof)
+        existing_inside = bool(
+            verification and any(
+                getattr(verification, f"inside_image_{i}")
+                for i in range(1, 4)
+            )
+        )
+        existing_outside = bool(
+            verification and any(
+                getattr(verification, f"outside_image_{i}")
+                for i in range(1, 4)
+            )
+        )
+
+        if not owner_id and not existing_owner_id:
+            errors["owner_id_proof"] = "Owner ID proof is required"
+
+        if not inside and not existing_inside:
+            errors["inside_images"] = "Upload at least one inside image"
+
+        if not outside and not existing_outside:
+            errors["outside_images"] = "Upload at least one outside image"
 
         if "owner_id_proof" in rejected_fields and not owner_id:
-            raise serializers.ValidationError({
-                "owner_id_proof": "Please reupload corrected ID proof"
-            })
+            errors["owner_id_proof"] = "Please reupload corrected ID proof"
 
         if any(k.startswith("inside_image") for k in rejected_fields) and not inside:
-            raise serializers.ValidationError({
-                "inside_images": "Please reupload corrected inside images"
-            })
+            errors["inside_images"] = "Please reupload corrected inside images"
 
         if any(k.startswith("outside_image") for k in rejected_fields) and not outside:
-            raise serializers.ValidationError({
-                "outside_images": "Please reupload corrected outside images"
-            })
+            errors["outside_images"] = "Please reupload corrected outside images"
+
+        if errors:
+            raise serializers.ValidationError(errors)
 
         data["_files"] = {
             "owner_id": owner_id,

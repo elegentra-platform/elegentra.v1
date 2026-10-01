@@ -18,10 +18,15 @@ SITE_URL = os.getenv("SITE_URL", "").strip().rstrip("/")
 # ==================================================
 # CORE
 # ==================================================
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-^0!eqod@s9@aib6in6psfu1*0e*fr0&_2vyu+$l1)a9b+c1@-@")
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-local-development-only")
+CROSS_PLATFORM_CONNECT_SECRET = os.getenv("CROSS_PLATFORM_CONNECT_SECRET", "local-elegentra-myfestivo-experiment")
+MYFESTIVO_CONNECT_URL = os.getenv("MYFESTIVO_CONNECT_URL", "http://localhost:8000/elegentra/connect/").strip()
+DEBUG = os.getenv("DJANGO_DEBUG", os.getenv("DEBUG", "True")).lower() == "true"
 
-default_hosts = {"localhost", "127.0.0.1", ".trycloudflare.com", ".up.railway.app"}
+default_hosts = {"localhost", "127.0.0.1", ".localhost", ".trycloudflare.com", ".up.railway.app"}
+ELEGENTRA_ROOT_DOMAIN = os.getenv("ELEGENTRA_ROOT_DOMAIN", "elegentra.com").strip() or "elegentra.com"
+default_hosts.add(ELEGENTRA_ROOT_DOMAIN)
+default_hosts.add(f".{ELEGENTRA_ROOT_DOMAIN}")
 railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
 if railway_domain:
     default_hosts.add(railway_domain)
@@ -37,6 +42,8 @@ ALLOWED_HOSTS = sorted(default_hosts | extra_hosts)
 csrf_trusted_origins = {
     "https://*.trycloudflare.com",
     "https://*.up.railway.app",
+    f"https://{ELEGENTRA_ROOT_DOMAIN}",
+    f"https://*.{ELEGENTRA_ROOT_DOMAIN}",
 }
 if railway_domain:
     csrf_trusted_origins.add(f"https://{railway_domain}")
@@ -119,6 +126,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.google_oauth_enabled',
+                'accounts.context_processors.user_notifications',
             ],
         },
     },
@@ -148,7 +156,10 @@ AUTHENTICATION_BACKENDS = [
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https" if not DEBUG else "http"
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.getenv(
+    "ACCOUNT_DEFAULT_HTTP_PROTOCOL",
+    "https" if not DEBUG else "http",
+).strip().lower()
 
 # ==================================================
 # DJANGO-ALLAUTH
@@ -224,18 +235,41 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 if find_spec("whitenoise"):
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
+    STORAGES["staticfiles"] = {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     }
 
 MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
+
+USE_R2 = os.getenv("USE_R2", "False").lower() == "true"
+if USE_R2:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+    AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "").strip()
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "auto").strip() or "auto"
+    AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path").strip() or "path"
+    AWS_QUERYSTRING_AUTH = os.getenv("AWS_QUERYSTRING_AUTH", "True").lower() == "true"
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {
+        "CacheControl": "max-age=86400",
+    }
+
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    }
 
 # ==================================================
 # DEFAULT PK
@@ -251,7 +285,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", 'zevralabs@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", 'zeohikxcjcqyheyp')
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", f'Elegentra <{EMAIL_HOST_USER}>')
 
 
@@ -260,3 +294,4 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+

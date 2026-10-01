@@ -8,6 +8,11 @@
   <meta name="description" content="{% if seo and seo.description %}{{ seo.description }}{% else %}Discover salons, spas, and beauty professionals near you on Elegentra.{% endif %}">
   <meta name="robots" content="{% if seo and seo.robots %}{{ seo.robots }}{% else %}index,follow{% endif %}">
   {% if seo and seo.canonical_url %}<link rel="canonical" href="{{ seo.canonical_url }}">{% endif %}
+  <link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=20260930">
+  <link rel="shortcut icon" href="/favicon.ico?v=20260930" sizes="any">
+  <link rel="apple-touch-icon" sizes="256x256" href="/favicon.png?v=20260930">
+  <link rel="manifest" href="{% url 'site_webmanifest' %}">
+  <meta name="theme-color" content="#f7f0ea">
 
   <meta property="og:site_name" content="{% if seo and seo.site_name %}{{ seo.site_name }}{% else %}Elegentra{% endif %}">
   <meta property="og:title" content="{% if seo and seo.title %}{{ seo.title }}{% else %}ELEGENTRA{% endif %}">
@@ -27,141 +32,10 @@
 
   <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <style>
-    @font-face {
-      font-family: "Bauserif";
-      src: url("{% static 'fonts/bauserif.ttf' %}") format("truetype");
-      font-weight: 400;
-      font-style: normal;
-    }
-
-    .media-skeleton {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(247, 240, 232, 0.95), rgba(241, 231, 216, 0.95));
-    }
-
-    .media-skeleton__placeholder {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(242, 232, 217, 0.88)),
-        linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.58) 50%, rgba(255,255,255,0) 100%);
-      background-size: auto, 220px 100%;
-      background-repeat: no-repeat;
-      background-position: 0 0, -220px 0;
-      animation: mediaSkeletonShimmer 1.5s ease-in-out infinite;
-      transition: opacity 0.35s ease;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .media-skeleton__placeholder::before {
-      content: "";
-      position: absolute;
-      left: 1rem;
-      right: 32%;
-      bottom: 1.15rem;
-      height: 0.85rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.52);
-      box-shadow: 0 1.05rem 0 0 rgba(255, 255, 255, 0.34);
-    }
-
-    .media-skeleton__placeholder::after {
-      content: "";
-      position: absolute;
-      right: 1rem;
-      bottom: 1rem;
-      width: 4.5rem;
-      height: 4.5rem;
-      border-radius: 1rem;
-      background: rgba(255, 255, 255, 0.34);
-    }
-
-    .media-skeleton[data-skeleton-type="banner"] .media-skeleton__placeholder::before {
-      left: 1.25rem;
-      right: 45%;
-      bottom: 1.4rem;
-      height: 1rem;
-      box-shadow:
-        0 1.3rem 0 0 rgba(255, 255, 255, 0.32),
-        0 2.35rem 0 0 rgba(255, 255, 255, 0.22);
-    }
-
-    .media-skeleton[data-skeleton-type="banner"] .media-skeleton__placeholder::after {
-      width: 4rem;
-      height: 1.85rem;
-      bottom: 1.25rem;
-      border-radius: 999px;
-    }
-
-    .media-skeleton[data-skeleton-type="card"] .media-skeleton__placeholder::before {
-      left: 0.85rem;
-      right: 42%;
-      bottom: 0.95rem;
-      height: 0.7rem;
-      box-shadow:
-        0 0.95rem 0 0 rgba(255, 255, 255, 0.28),
-        0 1.75rem 0 0 rgba(255, 255, 255, 0.18);
-    }
-
-    .media-skeleton[data-skeleton-type="card"] .media-skeleton__placeholder::after {
-      width: 3.75rem;
-      height: 3.75rem;
-      right: 0.85rem;
-      bottom: 0.85rem;
-      border-radius: 0.9rem;
-    }
-
-    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder::before,
-    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder::after,
-    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder::before,
-    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder::after {
-      display: none;
-    }
-
-    .media-skeleton[data-skeleton-type="avatar"] .media-skeleton__placeholder,
-    .media-skeleton[data-skeleton-type="pill-icon"] .media-skeleton__placeholder {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(242, 232, 217, 0.92)),
-        linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.52) 50%, rgba(255,255,255,0) 100%);
-      background-size: auto, 160px 100%;
-      background-repeat: no-repeat;
-      background-position: 0 0, -160px 0;
-    }
-
-    .media-skeleton[data-skeleton-ready="true"] .media-skeleton__placeholder {
-      opacity: 0;
-    }
-
-    [data-skeleton-image] {
-      opacity: 0;
-      transition: opacity 0.45s ease;
-    }
-
-    [data-skeleton-image][data-loaded="true"] {
-      opacity: 1;
-    }
-
-    @keyframes mediaSkeletonShimmer {
-      0% {
-        background-position: 0 0, -220px 0;
-      }
-      100% {
-        background-position: 0 0, calc(100% + 220px) 0;
-      }
-    }
-  </style>
 </head>
 
 <body
-  class="min-h-screen relative bg-[#FEFAF7]"
-  style="background:
-    radial-gradient(900px 600px at 0% 0%, rgba(239, 230, 217, 0.9) 0%, rgba(239, 230, 217, 0) 62%),
-    radial-gradient(900px 700px at 100% 100%, rgba(239, 230, 217, 0.75) 0%, rgba(239, 230, 217, 0) 62%),
-    linear-gradient(135deg, #F7F0EA 0%, #FBF7F6 100%);"
+  class="relative min-h-screen bg-[#FEFAF7] [background:radial-gradient(900px_600px_at_0%_0%,rgba(239,230,217,0.9)_0%,rgba(239,230,217,0)_62%),radial-gradient(900px_700px_at_100%_100%,rgba(239,230,217,0.75)_0%,rgba(239,230,217,0)_62%),linear-gradient(135deg,#F7F0EA_0%,#FBF7F6_100%)]"
 >
   <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
     <div class="absolute -top-28 -left-28 h-[520px] w-[520px] rounded-full bg-[#EFE6D9]/70 blur-3xl"></div>
@@ -193,15 +67,13 @@
 
   {% block page_header %}
   <header
-    class="sticky top-0 z-40 border-b border-[#EEE6DA]/80 shadow-[0_1px_0_rgba(0,0,0,0.03)]"
-    style="background-color: rgba(247, 240, 234, 0.97); backdrop-filter: blur(6px);"
+    class="sticky top-0 z-40 border-b border-[#EEE6DA]/80 bg-[rgba(247,240,234,0.97)] shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur-[6px]"
   >
     <div class="mx-auto max-w-6xl px-4 py-4">
       <div class="flex items-center justify-between gap-4 md:gap-6">
-        <a href="{% url 'public_home' %}" class="inline-flex h-11 shrink-0 items-center leading-none text-[#4F3F2E] md:h-12" aria-label="ELEGENTRA home">
+        <a href="{{ public_home_url }}" class="inline-flex h-11 shrink-0 items-center leading-none text-[#4F3F2E] md:h-12" aria-label="ELEGENTRA home">
           <span
-            class="block text-[1.74rem] tracking-[0.02em] md:text-[2.22rem]"
-            style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(97,72,39,0.14);"
+            class="block font-bauserif text-[1.74rem] tracking-[0.02em] [text-shadow:0_1px_0_rgba(255,255,255,0.55),0_2px_10px_rgba(97,72,39,0.14)] md:text-[2.22rem]"
           >
             Elegentra
           </span>
@@ -212,9 +84,56 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <a href="#" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/55 text-gray-700 shadow-sm" aria-label="Notifications">
-            <i class="fa-regular fa-bell"></i>
-          </a>
+          <details id="notification-menu" class="group relative">
+            <summary class="relative flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-[#E4D7C4] bg-[#FFFDF9] text-[#5F503F] shadow-[0_10px_24px_rgba(74,56,30,0.12)] transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#D8B86D]/35 group-open:border-[#CFA75C] group-open:bg-white" aria-label="Notifications">
+              <i class="fa-regular fa-bell text-[15px]"></i>
+              {% if unread_notifications_count %}
+                <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B58C4E] px-1 text-[10px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(181,140,78,0.28)] ring-2 ring-[#F7F0EA]">{{ unread_notifications_count|default:0 }}</span>
+              {% endif %}
+            </summary>
+            <div class="overflow-hidden" style="position:fixed; top:4.85rem; right:1rem; z-index:90; width:min(22rem, calc(100vw - 2rem)); max-width:22rem; border-radius:1.45rem; background:linear-gradient(180deg,#FFFDF9 0%,#FFF8EE 54%,#F8EDDC 100%); border:1px solid #D9C6AA; box-shadow:0 30px 80px rgba(48,35,18,0.24),0 8px 22px rgba(181,140,78,0.10),inset 0 1px 0 rgba(255,255,255,0.78);">
+              <div style="position:absolute; right:1.1rem; top:-0.42rem; width:0.85rem; height:0.85rem; transform:rotate(45deg); background:#FFFDF9; border-left:1px solid #D9C6AA; border-top:1px solid #D9C6AA;"></div>
+              <div class="flex items-center justify-between gap-4 px-5 py-4" style="position:relative; background:radial-gradient(circle at 12% 18%,rgba(218,184,112,0.20),transparent 34%),linear-gradient(180deg,#FFFDF9,#FFF3E2); border-bottom:1px solid #E6D8C2;">
+                <div class="min-w-0">
+                  <p class="text-[15px] font-semibold leading-5 text-[#2E2418]">Notifications</p>
+                </div>
+                <a href="{% if user.is_authenticated %}{% url 'public_notifications' %}{% else %}{% url 'account_login' %}{% endif %}" class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-semibold leading-none text-[#6E4F1B] transition hover:-translate-y-0.5" style="background:#FFFFFF; border:1px solid #E4D1B0; box-shadow:0 10px 22px rgba(74,56,30,0.10), inset 0 1px 0 rgba(255,255,255,0.8);">
+                  View all
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+              </div>
+              <div class="max-h-[22rem] overflow-y-auto p-2.5" style="background:linear-gradient(180deg,#FFF9EF,#FBF0E0);">
+                {% if user.is_authenticated and recent_notifications %}
+                  {% for notification in recent_notifications %}
+                    <a href="{{ notification.url|default:'#' }}" class="group/notice block rounded-[1.15rem] px-3 py-3 transition focus:outline-none" style="background:rgba(255,255,255,0.92); border:1px solid transparent; box-shadow:0 8px 20px rgba(74,56,30,0.05);">
+                      <span class="flex items-start gap-3">
+                        <span class="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#F4E4C2] text-[#875F24] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] transition group-hover/notice:bg-[#EFD8A8]">
+                          <i class="fa-regular fa-bell text-sm"></i>
+                          {% if not notification.is_read %}<span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#B58C4E] ring-2 ring-[#F4E4C2]"></span>{% endif %}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate text-sm font-semibold text-[#2E2418]">{{ notification.title }}</span>
+                          {% if notification.message %}<span class="mt-0.5 line-clamp-2 block text-xs leading-5 text-[#6E5C45]">{{ notification.message }}</span>{% endif %}
+                          <span class="mt-1.5 inline-flex items-center gap-1.5 text-[11px] text-[#9A7B47]"><i class="fa-regular fa-clock text-[10px]"></i>{{ notification.created_at|date:"d M Y, h:i A" }}</span>
+                        </span>
+                      </span>
+                    </a>
+                  {% endfor %}
+                {% elif user.is_authenticated %}
+                  <div class="mx-1.5 my-1.5 px-6 py-8 text-center" style="border-radius:1.35rem; background:linear-gradient(180deg,#FFFFFF,#FFF8ED); border:1px solid #E8D8BC; box-shadow:0 14px 30px rgba(74,56,30,0.08), inset 0 1px 0 rgba(255,255,255,0.8);">
+                    <div class="mx-auto flex h-20 w-20 items-center justify-center"><img src="{% static 'images/no-notifications.png' %}" alt="" class="h-full w-full object-contain" loading="lazy"></div>
+                    <p class="mt-4 text-[15px] font-semibold leading-5 text-[#2E2418]">No notifications yet</p>
+                  </div>
+                {% else %}
+                  <div class="mx-1.5 my-1.5 px-6 py-8 text-center" style="border-radius:1.35rem; background:linear-gradient(180deg,#FFFFFF,#FFF8ED); border:1px solid #E8D8BC; box-shadow:0 14px 30px rgba(74,56,30,0.08), inset 0 1px 0 rgba(255,255,255,0.8);">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-[1.2rem] text-[#875F24]" style="background:linear-gradient(135deg,#F7E7C6,#E0BF76); box-shadow:0 12px 28px rgba(181,140,78,0.22), inset 0 1px 0 rgba(255,255,255,0.65);"><i class="fa-regular fa-user text-lg"></i></div>
+                    <p class="mt-3 text-sm font-semibold text-[#2E2418]">Login to view notifications</p>
+                    <a href="{% url 'account_login' %}" class="mt-4 inline-flex rounded-full bg-[#B58C4E] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#A77D3E]">Login</a>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </details>
 
           {% if not public_has_saloon %}
             <details id="partner-menu" class="relative hidden md:block">
@@ -298,8 +217,8 @@
     <div class="overflow-hidden rounded-[2rem] border border-[#E8DECF] bg-[linear-gradient(180deg,rgba(255,250,244,0.95),rgba(247,239,229,0.92))] shadow-[0_18px_50px_rgba(74,56,30,0.08)]">
       <div class="grid gap-8 px-6 py-8 md:grid-cols-[1.3fr_0.9fr_0.9fr] md:px-8">
         <div>
-          <a href="{% url 'public_home' %}" class="inline-flex items-center text-[#4F3F2E]" aria-label="ELEGENTRA home">
-            <span class="text-[1.9rem] tracking-[0.02em]" style="font-family: 'Bauserif', serif;">Elegentra</span>
+          <a href="{{ public_home_url }}" class="inline-flex items-center text-[#4F3F2E]" aria-label="ELEGENTRA home">
+            <span class="font-bauserif text-[1.9rem] tracking-[0.02em]">Elegentra</span>
           </a>
           <p class="mt-3 max-w-md text-sm leading-7 text-[#6E5C45]">
             Discover salons, spas, and beauty services with a cleaner, calmer way to browse nearby places.
@@ -309,9 +228,9 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9A7B47]">Explore</p>
           <div class="mt-4 flex flex-col gap-3 text-sm text-[#5F503F]">
-            <a href="{% url 'public_home' %}" class="transition hover:text-[#B58C4E]">Home</a>
-            <a href="{% url 'public_search' %}" class="transition hover:text-[#B58C4E]">Search</a>
-            <a href="{% url 'public_faq' %}" class="transition hover:text-[#B58C4E]">FAQ</a>
+            <a href="{{ public_home_url }}" class="transition hover:text-[#B58C4E]">Home</a>
+            <a href="{{ public_search_url }}" class="transition hover:text-[#B58C4E]">Search</a>
+            <a href="{{ public_faq_url }}" class="transition hover:text-[#B58C4E]">FAQ</a>
             <a href="{% url 'partner_home' %}" target="_blank" rel="noopener noreferrer" class="transition hover:text-[#B58C4E]">For Partners</a>
           </div>
         </div>
@@ -319,8 +238,9 @@
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[#9A7B47]">Account</p>
           <div class="mt-4 flex flex-col gap-3 text-sm text-[#5F503F]">
-            <a href="{% url 'public_account' %}" class="transition hover:text-[#B58C4E]">Account</a>
-            <a href="{% url 'public_settings' %}" class="transition hover:text-[#B58C4E]">Settings</a>
+            <a href="{{ public_account_url }}" class="transition hover:text-[#B58C4E]">Account</a>
+            <a href="{{ public_settings_url }}" class="transition hover:text-[#B58C4E]">Settings</a>
+            <a href="{% url 'public_contact_support' %}" class="transition hover:text-[#B58C4E]">Contact Support</a>
             {% if user.is_authenticated %}
               <a href="{% url 'account_logout' %}" class="transition hover:text-[#B58C4E]">Logout</a>
             {% else %}
@@ -329,30 +249,37 @@
           </div>
         </div>
       </div>
-      <div class="border-t border-[#E8DECF] px-6 py-4 text-xs text-[#8B7860] md:px-8">
-        Copyright {% now "Y" %} Elegentra. Crafted for beauty discovery.
+      <div class="flex flex-col gap-3 border-t border-[#E8DECF] px-6 py-4 text-xs text-[#8B7860] md:flex-row md:items-center md:justify-between md:px-8">
+        <p>Copyright {% now "Y" %} Elegentra. Crafted for beauty discovery.</p>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <a href="{% url 'public_privacy_policy' %}" class="transition hover:text-[#B58C4E]">Privacy Policy</a>
+          <span class="text-[#C7B79F]">&bull;</span>
+          <a href="{% url 'public_terms_and_conditions' %}" class="transition hover:text-[#B58C4E]">Terms</a>
+          <span class="text-[#C7B79F]">&bull;</span>
+          <a href="{% url 'public_cancellation_refund_policy' %}" class="transition hover:text-[#B58C4E]">Cancellation & Refund</a>
+        </div>
       </div>
     </div>
   </footer>
   {% endblock %}
 
   {% block page_nav %}
-  <nav class="group fixed bottom-0 left-0 z-40 flex w-full items-center justify-around gap-10 rounded-t-3xl rounded-b-none border-t border-[#EEE4D8] bg-[#FCF9F5] px-8 py-4 shadow-lg md:bottom-auto md:top-1/2 md:left-[-6px] md:h-[400px] md:w-[68px] md:-translate-y-1/2 md:flex-col md:justify-evenly md:gap-0 md:overflow-hidden md:rounded-r-[34px] md:rounded-l-none md:border md:border-l-0 md:border-[#B58C4E]/45 md:bg-[#FCF9F5]/96 md:px-2 md:py-4 md:transition-[width,box-shadow] md:duration-300 md:hover:w-[88px] md:shadow-[0_18px_44px_rgba(74,56,30,0.14),0_8px_20px_rgba(181,140,78,0.10)] md:hover:shadow-[0_22px_55px_rgba(74,56,30,0.18),0_10px_28px_rgba(181,140,78,0.14)]">
-    <a href="{% url 'public_home' %}" data-geo-link class="{% if active_nav == 'home' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-solid fa-house text-[0.98rem] md:transition md:duration-300"></i>
-      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Home</span>
+  <nav class="group fixed bottom-0 left-0 z-40 flex w-full items-center justify-around gap-8 rounded-t-[1.75rem] rounded-b-none border-t border-[#eadfce] bg-[rgba(252,249,245,0.9)] px-6 py-4 shadow-[0_-10px_30px_rgba(74,56,30,0.10)] backdrop-blur-xl md:bottom-auto md:top-1/2 md:left-[-6px] md:h-[400px] md:w-[72px] md:-translate-y-1/2 md:flex-col md:justify-evenly md:gap-0 md:overflow-hidden md:rounded-r-[34px] md:rounded-l-none md:border md:border-l-0 md:border-[#B58C4E]/45 md:bg-[#FCF9F5]/96 md:px-2 md:py-4 md:transition-[width,box-shadow] md:duration-300 md:hover:w-[88px] md:shadow-[0_18px_44px_rgba(74,56,30,0.14),0_8px_20px_rgba(181,140,78,0.10)] md:hover:shadow-[0_22px_55px_rgba(74,56,30,0.18),0_10px_28px_rgba(181,140,78,0.14)]">
+    <a href="{{ public_home_url }}" data-geo-link class="{% if active_nav == 'home' %}text-[#B58C4E]{% else %}text-[#8a7b66]{% endif %} flex flex-col items-center justify-center gap-1.5 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-house text-[1.08rem] md:transition md:duration-300"></i>
+      <span class="text-[11px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Home</span>
     </a>
-    <a href="{% url 'public_search' %}" data-geo-link class="{% if active_nav == 'search' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-solid fa-magnifying-glass text-[0.98rem] md:transition md:duration-300"></i>
-      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Search</span>
+    <a href="{{ public_search_url }}" data-geo-link class="{% if active_nav == 'search' %}text-[#B58C4E]{% else %}text-[#8a7b66]{% endif %} flex flex-col items-center justify-center gap-1.5 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-solid fa-magnifying-glass text-[1.08rem] md:transition md:duration-300"></i>
+      <span class="text-[11px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Search</span>
     </a>
-    <a href="{% url 'public_favorites' %}" data-geo-link class="{% if active_nav == 'favorites' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-regular fa-heart text-[0.98rem] md:transition md:duration-300"></i>
-      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Favourites</span>
+    <a href="{{ public_favorites_url }}" data-geo-link class="{% if active_nav == 'favorites' %}text-[#B58C4E]{% else %}text-[#8a7b66]{% endif %} flex flex-col items-center justify-center gap-1.5 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-heart text-[1.08rem] md:transition md:duration-300"></i>
+      <span class="text-[11px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Favourites</span>
     </a>
-    <a href="{% url 'public_account' %}" data-geo-link class="{% if active_nav == 'account' %}text-[#B58C4E]{% else %}text-gray-600{% endif %} flex flex-col items-center justify-center gap-1 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
-      <i class="fa-regular fa-user text-[0.98rem] md:transition md:duration-300"></i>
-      <span class="text-[10px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Account</span>
+    <a href="{{ public_account_url }}" data-geo-link class="{% if active_nav == 'account' %}text-[#B58C4E]{% else %}text-[#8a7b66]{% endif %} flex flex-col items-center justify-center gap-1.5 text-xs md:min-h-[76px] md:w-full md:px-1 md:transition md:duration-300 md:hover:text-[#B58C4E]">
+      <i class="fa-regular fa-user text-[1.08rem] md:transition md:duration-300"></i>
+      <span class="text-[11px] leading-none md:max-h-0 md:overflow-hidden md:opacity-0 md:transition-all md:duration-300 md:group-hover:max-h-4 md:group-hover:opacity-100">Account</span>
     </a>
   </nav>
   {% endblock %}
@@ -521,6 +448,8 @@
       function requestLocation() {
         if (!navigator.geolocation) return;
 
+        // Avoid repeated custom prompt loops in the same visit once user starts the flow.
+        window.sessionStorage.setItem(promptDismissKey, "1");
         closeLocationPrompt();
 
         navigator.geolocation.getCurrentPosition(function (position) {
@@ -533,7 +462,9 @@
           closeLocationPrompt();
           syncCurrentUrl(lat, lng);
         }, function () {
-          openLocationPrompt();
+          // Do not reopen the custom modal immediately; this caused a "double ask"
+          // feel on some mobile browsers (permission -> system accuracy -> modal again).
+          closeLocationPrompt();
         }, {
           enableHighAccuracy: true,
           timeout: 10000,
@@ -587,6 +518,23 @@
       }
     })();
 
+
+    (function () {
+      const notificationMenu = document.getElementById("notification-menu");
+      if (!notificationMenu) return;
+
+      document.addEventListener("click", function (event) {
+        if (!notificationMenu.open) return;
+        if (notificationMenu.contains(event.target)) return;
+        notificationMenu.open = false;
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          notificationMenu.open = false;
+        }
+      });
+    })();
     (function () {
       const stack = document.getElementById("toast-stack");
       if (!stack) return;
@@ -628,7 +576,12 @@
         if (wrapper) wrapper.dataset.skeletonReady = "true";
       }
 
-      document.querySelectorAll("[data-skeleton-image]").forEach(function (media) {
+      // Auto-apply image loading treatment globally, unless explicitly opted out.
+      document.querySelectorAll("img:not([data-skeleton-image]):not([data-no-auto-skeleton])").forEach(function (img) {
+        img.dataset.autoSkeleton = "true";
+      });
+
+      document.querySelectorAll("[data-skeleton-image], img[data-auto-skeleton='true']").forEach(function (media) {
         if ((media.tagName === "IMG" && media.complete) || media.dataset.loaded === "true") {
           markLoaded(media);
           return;
@@ -644,3 +597,11 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+

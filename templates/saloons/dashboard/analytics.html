@@ -1,0 +1,53 @@
+﻿{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+  <div class="rounded-[1.75rem] border border-[#E8DECF] bg-white px-5 py-5 shadow-sm md:px-6">
+    <h1 class="mt-1 text-2xl font-semibold tracking-tight text-[#1F1F1F] md:text-3xl">Analytics</h1>
+  </div>
+
+  {% if subscription_locked %}
+    <div class="rounded-2xl border border-[#ead7a8] bg-[#fff8e8] px-4 py-3 text-sm font-medium text-[#7a5a20]">
+      Analytics are shown only up to {{ subscription_access_until|date:"d M Y" }}.
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="rounded-2xl bg-white p-5"><p class="text-2xl font-semibold">{{ profile_view_total }}</p><p class="text-sm text-gray-500">Profile views</p></div>
+    <div class="rounded-2xl bg-white p-5"><p class="text-2xl font-semibold">{{ map_click_total }}</p><p class="text-sm text-gray-500">Map views</p></div>
+    <div class="rounded-2xl bg-white p-5"><p class="text-2xl font-semibold">{{ interest_total }}</p><p class="text-sm text-gray-500">Service interests</p></div>
+    <div class="rounded-2xl bg-white p-5"><p class="text-2xl font-semibold">{{ gallery_views_total }}</p><p class="text-sm text-gray-500">Gallery views</p></div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl bg-white p-4 sm:p-6">
+      <div class="mb-4 flex items-center justify-between"><h2 class="font-medium">Interest by service</h2><span class="rounded-full bg-[#F7F2E8] px-3 py-1 text-xs font-medium text-[#9A7131]">{{ interest_total }} total</span></div>
+      <div class="relative h-[320px]"><canvas id="analyticsInterestChart"></canvas></div>
+    </div>
+    <div class="rounded-2xl bg-white p-4 sm:p-6">
+      <h2 class="mb-4 font-medium">Visibility by month</h2>
+      <div class="relative h-[320px]"><canvas id="analyticsVisibilityChart"></canvas></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ interest_chart.labels|json_script:"analytics-interest-labels" }}
+{{ interest_chart.values|json_script:"analytics-interest-values" }}
+{{ activity_chart.labels|json_script:"analytics-activity-labels" }}
+{{ activity_chart.views|json_script:"analytics-activity-views" }}
+{{ activity_chart.maps|json_script:"analytics-activity-maps" }}
+<script>
+window.addEventListener("load", () => {
+  const labels = JSON.parse(document.getElementById("analytics-interest-labels").textContent);
+  const values = JSON.parse(document.getElementById("analytics-interest-values").textContent);
+  const months = JSON.parse(document.getElementById("analytics-activity-labels").textContent);
+  const views = JSON.parse(document.getElementById("analytics-activity-views").textContent);
+  const maps = JSON.parse(document.getElementById("analytics-activity-maps").textContent);
+  new Chart(document.getElementById("analyticsInterestChart"), {type:"doughnut", data:{labels, datasets:[{data:values, backgroundColor:["#4F6BED","#22C55E","#FACC15","#A5B4FC","#F97316","#14B8A6"], borderWidth:0}]}, options:{responsive:true, maintainAspectRatio:false, cutout:"70%", plugins:{legend:{position:"bottom"}}}});
+  new Chart(document.getElementById("analyticsVisibilityChart"), {data:{labels:months, datasets:[{type:"bar", label:"Views", data:views, backgroundColor:"#CBD5E1", borderRadius:6},{type:"line", label:"Map", data:maps, borderColor:"#22C55E", tension:0.4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom"}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:true, ticks:{precision:0}}}}});
+});
+</script>
+{% endblock %}
+

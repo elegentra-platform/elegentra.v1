@@ -1,43 +1,129 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Staff Panel{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="256x256" href="{% static 'images/favicon.png' %}">
+  <link rel="apple-touch-icon" sizes="256x256" href="{% static 'images/favicon.png' %}">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#F7F0EA">  <link rel="stylesheet" href="{% static 'css/output.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root { --staff-bg: #f4f7fb; --staff-sidebar: #eef3f8; --staff-border: #d8e0ea; --staff-active: #0f172a; --staff-active-text: #ffffff; }
+  .staff-shell { min-height: 100vh; }
+  .staff-nav-link { display: flex; align-items: center; gap: 2px; border-radius: 10px; padding: 9px 12px; color: #334155; text-decoration: none; }
+  .staff-nav-link:hover { background: rgba(255,255,255,.78); }
+  .staff-nav-link.is-active { background: var(--staff-active); color: var(--staff-active-text); box-shadow: 0 10px 24px rgba(15, 23, 42, .14); font-weight: 700; }
+  .staff-nav-divider { margin: 14px 0; border-top: 1px solid var(--staff-border); }
+  .staff-mobile-topbar, .staff-drawer-shell, .staff-bottom-nav { display: none; }
+  .staff-table { width: 100%; border-collapse: collapse; }
+  .staff-table th { background: #f8fafc; color: #64748b; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; text-align: left; padding: 12px 16px; }
+  .staff-table td { border-top: 1px solid #eef2f7; padding: 14px 16px; vertical-align: top; }
+  .staff-mobile-label { display: none; }
+  @media (min-width: 768px) { .staff-shell { display: grid; grid-template-columns: 240px minmax(0, 1fr); } }
+  @media (max-width: 767px) {
+    .staff-sidebar { display: none; }
+    .staff-main { padding: 72px 12px 92px !important; }
+    .staff-mobile-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; height: 56px; border-bottom: 1px solid var(--staff-border); background: rgba(244,247,251,.94); padding: 0 12px; backdrop-filter: blur(14px); }
+    .staff-menu-btn { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--staff-border); border-radius: 12px; background: #fff; color: #0f172a; }
+    .staff-drawer-shell { position: fixed; inset: 0; z-index: 80; display: block; pointer-events: none; }
+    .staff-drawer-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.38); opacity: 0; transition: opacity .22s ease; }
+    .staff-drawer { position: absolute; top: 0; bottom: 0; left: 0; width: min(84vw, 310px); overflow-y: auto; border-right: 1px solid var(--staff-border); background: var(--staff-sidebar); padding: 16px; transform: translateX(-102%); transition: transform .24s ease; box-shadow: 20px 0 50px rgba(15,23,42,.22); }
+    .staff-drawer-shell.is-open { pointer-events: auto; }
+    .staff-drawer-shell.is-open .staff-drawer-backdrop { opacity: 1; }
+    .staff-drawer-shell.is-open .staff-drawer { transform: translateX(0); }    .staff-bottom-nav {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      z-index: 55;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid rgba(216, 224, 234, .95);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+      backdrop-filter: blur(16px);
+    }
+    .staff-bottom-nav a {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 54px;
+      border-radius: 13px;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .staff-bottom-nav a i { font-size: 16px; }
+    .staff-bottom-nav a.is-active { background: #0f172a; color: #fff; }
+    .staff-table, .staff-table tbody, .staff-table tr, .staff-table td { display: block; width: 100%; }
+    .staff-table thead { display: none; }
+    .staff-table tr { border-top: 1px solid #eef2f7; padding: 12px 14px; }
+    .staff-table td { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; border: 0; padding: 7px 0; }
+    .staff-mobile-label { display: block; color: #64748b; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  }
+</style>
 </head>
-<body class="min-h-screen bg-[#f8f4ee] text-slate-900">
-  <div class="min-h-screen md:grid md:grid-cols-[240px_1fr]">
-    <aside class="border-r border-[#eadfcf] bg-[#f6efe5] p-4">
-      <h1 class="text-lg font-semibold">Staff Panel</h1>
-      <p class="mt-1 text-xs text-slate-600">Ops and approvals</p>
-      <nav class="mt-6 space-y-2 text-sm">
-        <a href="{% url 'staffpanel:dashboard' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'dashboard' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
-          <i class="fa-solid fa-gauge mr-2"></i> Dashboard
-        </a>
-        <a href="{% url 'staffpanel:saloon_queue' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'saloons' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
-          <i class="fa-solid fa-shop mr-2"></i> Vendor Approvals
-        </a>
-        <a href="{% url 'staffpanel:category_queue' %}" class="block rounded-lg px-3 py-2 {% if active_tab == 'categories' %}bg-white shadow-sm font-medium{% else %}hover:bg-white/70{% endif %}">
-          <i class="fa-solid fa-list-check mr-2"></i> Service Categories
-        </a>
-      </nav>
+<body class="min-h-screen text-slate-900" style="background: var(--staff-bg);">
+  <header class="staff-mobile-topbar">
+    <div><p class="text-sm font-semibold">Elegentra Ops</p><p class="text-[11px] text-slate-500">{% if is_staff_super_admin %}Super Admin{% elif is_staff_admin %}Admin{% else %}Staff{% endif %}</p></div>
+    <button type="button" class="staff-menu-btn" data-staff-menu-open aria-label="Open navigation"><i class="fa-solid fa-bars"></i></button>
+  </header>
+
+  <div class="staff-drawer-shell" data-staff-drawer aria-hidden="true">
+    <div class="staff-drawer-backdrop" data-staff-menu-close></div>
+    <aside class="staff-drawer">
+      <div class="flex items-center justify-between gap-3">
+        <div><h1 class="text-lg font-semibold">Elegentra Ops</h1><p class="mt-1 text-xs text-slate-500">{% if is_staff_super_admin %}Super Admin{% elif is_staff_admin %}Admin{% else %}Staff{% endif %} panel</p></div>
+        <button type="button" class="staff-menu-btn" data-staff-menu-close aria-label="Close navigation"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      {% include "staffpanel/nav_links.html" %}
+    </aside>
+  </div>
+
+  <div class="staff-shell min-h-screen md:grid md:grid-cols-[240px_1fr]">
+    <aside class="staff-sidebar border-r p-4" style="border-color: var(--staff-border); background: var(--staff-sidebar);">
+      <h1 class="text-lg font-semibold">Elegentra Ops</h1>
+      <p class="mt-1 text-xs text-slate-500">{% if is_staff_super_admin %}Super Admin{% elif is_staff_admin %}Admin{% else %}Staff{% endif %} panel</p>
+      {% include "staffpanel/nav_links.html" %}
     </aside>
 
-    <main class="p-4 md:p-6">
-      {% if messages %}
-        <div class="mb-4 space-y-2">
-          {% for message in messages %}
-            <div class="rounded-lg px-4 py-2 text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-              {{ message }}
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
+    <main class="staff-main p-4 md:p-6">
+      {% if messages %}<div class="mb-4 space-y-2">{% for message in messages %}<div class="rounded-lg px-4 py-2 text-sm {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <nav class="staff-bottom-nav" aria-label="Primary staff navigation">
+    <a href="{% url 'staffpanel:dashboard' %}" class="{% if active_tab == 'dashboard' %}is-active{% endif %}"><i class="fa-solid fa-gauge"></i><span>Home</span></a>
+    <a href="{% url 'staffpanel:saloon_queue' %}" class="{% if active_tab == 'saloons' %}is-active{% endif %}"><i class="fa-solid fa-shop"></i><span>Queue</span></a>
+    <a href="{% url 'staffpanel:saloon_list' %}" class="{% if active_tab == 'all_saloons' %}is-active{% endif %}"><i class="fa-solid fa-store"></i><span>Vendors</span></a>
+    <a href="{% url 'staffpanel:category_queue' %}" class="{% if active_tab == 'categories' %}is-active{% endif %}"><i class="fa-solid fa-list-check"></i><span>Services</span></a>
+  </nav>
+<script>
+  (function () {
+    const shell = document.querySelector('[data-staff-drawer]');
+    const openBtn = document.querySelector('[data-staff-menu-open]');
+    const closeBtns = document.querySelectorAll('[data-staff-menu-close]');
+    if (!shell || !openBtn) return;
+    function openMenu() { shell.classList.add('is-open'); shell.setAttribute('aria-hidden', 'false'); }
+    function closeMenu() { shell.classList.remove('is-open'); shell.setAttribute('aria-hidden', 'true'); }
+    openBtn.addEventListener('click', openMenu);
+    closeBtns.forEach(btn => btn.addEventListener('click', closeMenu));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
+  })();
+</script>
 </body>
 </html>
+
+

@@ -96,14 +96,13 @@
           <div class="relative block overflow-hidden rounded-[24px] border border-white/65 bg-white/45 shadow-sm">
             <div id="featured-track" class="flex transition-transform duration-700 ease-out">
               {% for featured in popular_saloons %}
-                <a href="{% url 'public_saloon' slug=featured.slug %}" class="relative min-w-full overflow-hidden">
-                  <div class="media-skeleton h-[250px] w-full lg:h-[300px]" data-skeleton-type="banner">
+                <a href="{{ featured.public_url }}" class="relative min-w-full overflow-hidden">
+                  <div class="media-skeleton h-[250px] w-full lg:h-[300px]" data-skeleton-type="banner" data-skeleton-clean="true">
                     <div class="media-skeleton__placeholder"></div>
                     <img
                       src="{{ featured.image }}"
                       alt="{{ featured.name }}"
-                      class="h-[250px] lg:h-[300px] w-full object-cover"
-                      style="filter: brightness(0.84);"
+                      class="h-[250px] w-full object-cover brightness-[0.84] lg:h-[300px]"
                       data-skeleton-image
                     />
                   </div>
@@ -123,14 +122,13 @@
                 </a>
               {% endfor %}
               {% with first_featured=popular_saloons.0 %}
-                <a href="{% url 'public_saloon' slug=first_featured.slug %}" class="relative min-w-full overflow-hidden" aria-hidden="true">
-                  <div class="media-skeleton h-[250px] w-full lg:h-[300px]" data-skeleton-type="banner">
+                <a href="{{ first_featured.public_url }}" class="relative min-w-full overflow-hidden" aria-hidden="true">
+                  <div class="media-skeleton h-[250px] w-full lg:h-[300px]" data-skeleton-type="banner" data-skeleton-clean="true">
                     <div class="media-skeleton__placeholder"></div>
                     <img
                       src="{{ first_featured.image }}"
                       alt="{{ first_featured.name }}"
-                      class="h-[250px] lg:h-[300px] w-full object-cover"
-                      style="filter: brightness(0.84);"
+                      class="h-[250px] w-full object-cover brightness-[0.84] lg:h-[300px]"
                       data-skeleton-image
                     />
                   </div>
@@ -176,9 +174,9 @@
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {% for salon in popular_saloons %}
             <div class="group rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm transition hover:bg-white/75">
-              <div class="relative media-skeleton w-full h-28 lg:h-36 rounded-xl" data-skeleton-type="card">
+              <div class="relative media-skeleton w-full h-28 lg:h-36 rounded-xl" data-skeleton-type="card" data-skeleton-clean="true">
                 <div class="media-skeleton__placeholder"></div>
-                <a href="{% url 'public_saloon' slug=salon.slug %}" class="block">
+                <a href="{{ salon.public_url }}" class="block">
                   <img
                     src="{{ salon.image }}"
                     class="w-full h-28 lg:h-36 rounded-xl object-cover"
@@ -197,7 +195,7 @@
                   <i class="{% if salon.is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart text-xs"></i>
                 </button>
               </div>
-              <a href="{% url 'public_saloon' slug=salon.slug %}" class="mt-2 block min-w-0">
+              <a href="{{ salon.public_url }}" class="mt-2 block min-w-0">
                 <p class="truncate text-sm lg:text-[15px] font-semibold text-gray-900">{{ salon.name }}</p>
                 <p class="text-[11px] text-gray-600">{{ salon.distance }}</p>
                 <div class="mt-1 text-[11px] text-gray-700">
@@ -207,26 +205,66 @@
             </div>
           {% endfor %}
         </div>
-      </div>
+        </div>
+
+        {% if popular_places %}
+          <div class="mt-6 lg:mt-7">
+            <div class="mb-3 flex items-center justify-between">
+              <h2 class="text-lg lg:text-xl font-semibold text-gray-900">Browse by city</h2>
+            </div>
+            <div class="flex flex-wrap gap-2.5">
+              {% for place in popular_places %}
+                <a href="{{ place.url }}" class="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-white">
+                  <span>{{ place.name }}{% if place.district_name %}, {{ place.district_name }}{% endif %}</span>
+                  <span class="rounded-full bg-[#F4E7CC] px-2 py-0.5 text-[11px] font-semibold text-[#7B6131]">{{ place.count }}</span>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
 
     </section>
   </div>
 
   <script>
     (function () {
-      const hasCoords = "{{ user_lat|default:'' }}" && "{{ user_lng|default:'' }}";
-      const params = new URLSearchParams(window.location.search);
-
-      if (!hasCoords && navigator.geolocation && !params.get("lat") && !params.get("lng")) {
-        navigator.geolocation.getCurrentPosition(function (position) {
-          const lat = position.coords.latitude.toFixed(6);
-          const lng = position.coords.longitude.toFixed(6);
-          const nextParams = new URLSearchParams(window.location.search);
-          nextParams.set("lat", lat);
-          nextParams.set("lng", lng);
-          window.location.replace(window.location.pathname + "?" + nextParams.toString());
-        });
+      function markReady(img) {
+        if (!img) return;
+        img.dataset.loaded = "true";
+        const wrapper = img.closest(".media-skeleton");
+        if (wrapper) wrapper.dataset.skeletonReady = "true";
       }
+
+      const featuredImages = Array.from(document.querySelectorAll("#featured-track [data-skeleton-image]"));
+      featuredImages.forEach((img) => {
+        if (img.complete) {
+          markReady(img);
+          return;
+        }
+
+        img.addEventListener("load", function () { markReady(img); }, { once: true });
+        img.addEventListener("error", function () { markReady(img); }, { once: true });
+      });
+
+      // Soft fallback: if load events are missed, only reveal once the browser marks image complete.
+      let safetyChecks = 0;
+      const safetyTimer = window.setInterval(function () {
+        safetyChecks += 1;
+        let allDone = true;
+
+        featuredImages.forEach(function (img) {
+          if (img.dataset.loaded === "true") return;
+          if (img.complete) {
+            markReady(img);
+            return;
+          }
+          allDone = false;
+        });
+
+        if (allDone || safetyChecks >= 40) {
+          window.clearInterval(safetyTimer);
+        }
+      }, 200);
 
       const carousel = document.getElementById("featured-carousel");
       if (!carousel) return;

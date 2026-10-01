@@ -1,0 +1,60 @@
+{% extends "staffpanel/base.html" %}
+{% block title %}Staff Details{% endblock %}
+{% block content %}
+<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <a href="{% url 'staffpanel:staff_management' %}" class="text-sm font-semibold text-slate-500 hover:text-slate-950"><i class="fa-solid fa-arrow-left mr-2"></i>Staff Management</a>
+    <h2 class="mt-3 text-2xl font-semibold tracking-tight">{{ profile.user.get_full_name|default:profile.user.email }}</h2>
+    <p class="mt-1 break-all text-sm text-slate-500">{{ profile.user.email }}</p>
+  </div>
+  <span class="inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold {% if profile.status == 'active' %}bg-emerald-100 text-emerald-700{% elif profile.status == 'pending' %}bg-amber-100 text-amber-700{% elif profile.status == 'blocked' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ profile.get_status_display }}</span>
+</div>
+
+<div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+  <section class="space-y-5">
+    <div class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Secret invite code</p>
+          <p class="mt-2 font-mono text-xl font-bold tracking-wider text-slate-950">{{ profile.invite_code_display|default:"Code not generated" }}</p>
+          <p class="mt-2 text-sm text-slate-500">Share this code only with the staff member. Once they enter it, their access becomes active.</p>
+        </div>
+        <form method="post" action="{% url 'staffpanel:staff_action' profile.id 'reset-code' %}">{% csrf_token %}
+          <button class="w-full rounded-xl border border-[#d8e0ea] px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-950 hover:text-slate-950 sm:w-auto">Reset Code</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+        <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Profile</p>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Role</dt><dd class="font-semibold">{{ profile.get_role_display }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Created by</dt><dd class="text-right font-semibold">{{ profile.created_by.get_full_name|default:profile.created_by.email|default:"-" }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Created</dt><dd class="font-semibold">{{ profile.created_at|date:"d M Y" }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Updated</dt><dd class="font-semibold">{{ profile.updated_at|date:"d M Y" }}</dd></div>
+        </dl>
+      </div>
+
+      <div class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+        <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Activity</p>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Last login</dt><dd class="text-right font-semibold">{% if profile.user.last_login %}{{ profile.user.last_login|date:"d M Y, h:i A" }}{% else %}-{% endif %}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Code verified</dt><dd class="text-right font-semibold">{% if profile.last_code_login_at %}{{ profile.last_code_login_at|date:"d M Y, h:i A" }}{% else %}-{% endif %}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-slate-500">Invite created</dt><dd class="text-right font-semibold">{% if profile.invite_code_created_at %}{{ profile.invite_code_created_at|date:"d M Y" }}{% else %}-{% endif %}</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+    <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">Access controls</p>
+    <div class="mt-4 space-y-3">
+      <form method="post" action="{% url 'staffpanel:staff_action' profile.id 'activate' %}">{% csrf_token %}<button class="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5">Activate</button></form>
+      <form method="post" action="{% url 'staffpanel:staff_action' profile.id 'suspend' %}">{% csrf_token %}<button class="w-full rounded-xl border border-[#d8e0ea] px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-950">Suspend</button></form>
+      <form method="post" action="{% url 'staffpanel:staff_action' profile.id 'block' %}">{% csrf_token %}<button class="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100">Block</button></form>
+      <form method="post" action="{% url 'staffpanel:staff_action' profile.id 'remove' %}" onsubmit="return confirm('Remove staff access for this user? The normal user account will stay.');">{% csrf_token %}<button class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-500 transition hover:border-red-200 hover:text-red-700">Remove staff access</button></form>
+    </div>
+  </aside>
+</div>
+{% endblock %}

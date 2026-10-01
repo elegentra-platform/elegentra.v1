@@ -1,0 +1,24 @@
+{% extends "saloons/dashboard/dashboard.html" %}
+
+{% block content %}
+<div class="flex min-h-[70vh] items-center justify-center px-3 py-10">
+  <div class="w-full max-w-xl overflow-hidden rounded-[32px] border border-[#eadcc5] bg-gradient-to-br from-[#fffaf1] via-white to-[#f7ecda] shadow-[0_24px_70px_rgba(74,56,30,0.12)]">
+    <div class="px-6 py-8 text-center sm:px-10 sm:py-10">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#f4e4c2] text-[#8a6428] shadow-inner">
+        <i class="fa-solid fa-lock text-2xl"></i>
+      </div>
+      <p class="mt-6 text-xs font-semibold uppercase tracking-[0.24em] text-[#9a7131]">Access paused</p>
+      <h1 class="mt-3 text-2xl font-semibold text-[#2d251d] sm:text-3xl">{{ subscription_lock_title }}</h1>
+      <p class="mx-auto mt-3 max-w-md text-sm leading-7 text-[#6d5b43]">{{ subscription_lock_message }}</p>
+      <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+        <a href="{% url 'saloon_dashboard_subscription' user.username %}" class="inline-flex items-center justify-center rounded-2xl bg-[#c79a43] px-6 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(199,154,67,0.25)] transition hover:bg-[#b88c38]">
+          Subscribe now
+        </a>
+        <a href="{% url 'saloon_dashboard' user.username %}" class="inline-flex items-center justify-center rounded-2xl border border-[#e5d7c0] bg-white px-6 py-3 text-sm font-semibold text-[#6d5b43] transition hover:bg-[#fff8ee]">
+          Back to overview
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -40,7 +40,7 @@
         <div class="grid grid-cols-2 gap-3 favorite-grid">
           {% for item in favorite_cards %}
             <article class="overflow-hidden rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm md:rounded-[1.5rem] md:border-[#ECE2D4] md:bg-white md:p-0 md:shadow-[0_16px_32px_rgba(74,56,30,0.06)]">
-              <a href="{% url 'public_saloon' slug=item.slug %}" class="block">
+              <a href="{{ item.public_url }}" class="block">
                 <div class="media-skeleton h-28 w-full rounded-xl bg-[#F2E9DE] md:h-44 md:rounded-none" data-skeleton-type="card">
                   <div class="media-skeleton__placeholder"></div>
                   <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
@@ -49,7 +49,7 @@
               <div class="mt-2 min-w-0 px-0 pb-0 md:mt-0 md:p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div class="min-w-0">
-                    <a href="{% url 'public_saloon' slug=item.slug %}" class="block">
+                    <a href="{{ item.public_url }}" class="block">
                       <h2 class="truncate text-sm font-semibold text-gray-900 md:text-[1.08rem] md:font-medium md:text-[#181818]">{{ item.name }}</h2>
                     </a>
                     <p class="text-[11px] text-gray-600 md:mt-2 md:text-sm md:text-[#6B5A45]">{{ item.location }}</p>
@@ -73,7 +73,7 @@
                 </div>
                 <div class="mt-4 hidden md:block">
                   <a
-                    href="{% url 'public_saloon' slug=item.slug %}"
+                    href="{{ item.public_url }}"
                     class="inline-flex h-10 items-center justify-center rounded-full border border-[#D8C29A] px-4 text-sm font-medium text-[#7A6238] transition hover:bg-[#FBF5EC]"
                   >
                     View salon

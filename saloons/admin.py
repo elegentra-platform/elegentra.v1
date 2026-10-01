@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from .models import (
+    State,
+    District,
     Saloon,
     SaloonProfile,
     SaloonVerification,
@@ -19,6 +21,7 @@ class SaloonProfileInline(admin.StackedInline):
     model = SaloonProfile
     extra = 0
     can_delete = False
+    autocomplete_fields = ("state", "district")
 
 
 class SaloonVerificationInline(admin.StackedInline):
@@ -40,7 +43,6 @@ class ServiceInline(admin.TabularInline):
         "category",
         "price",
         "offer_price",
-        "image",
         "is_active",
         "is_visible",
     )
@@ -62,12 +64,14 @@ class ManageApprovalAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "owner",
+        "is_verified",
         "approval_status",
         "registration_step",
         "is_active",
     )
 
     list_filter = (
+        "is_verified",
         "approval_status",
         "registration_step",
         "is_active",
@@ -93,6 +97,7 @@ class ManageApprovalAdmin(admin.ModelAdmin):
                 "name",
                 "slug",
                 "whatsapp_number",
+                "is_verified",
             )
         }),
         ("Approval Control", {
@@ -193,12 +198,28 @@ class ServiceAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+    exclude = ("image",)
 
     def has_add_permission(self, request):
         return True
 
     def has_delete_permission(self, request, obj=None):
         return True
+
+
+@admin.register(State)
+class StateAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "is_active")
+    search_fields = ("name", "slug")
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(District)
+class DistrictAdmin(admin.ModelAdmin):
+    list_display = ("name", "state", "slug", "is_active")
+    list_filter = ("state", "is_active")
+    search_fields = ("name", "slug", "state__name")
+    autocomplete_fields = ("state",)
 
 
 # ==================================================

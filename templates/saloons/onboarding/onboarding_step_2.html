@@ -25,7 +25,7 @@
              class="h-32 rounded-lg border mb-3">
       {% endif %}
 
-      <input type="file" name="owner_id_proof">
+      <input type="file" name="owner_id_proof" {% if not existing_images.owner_id_proof %}required{% endif %}>
 
       <input
         type="text"
@@ -33,7 +33,14 @@
         value="{{ existing_images.owner_id_number }}"
         placeholder="Enter ID number"
         class="w-full mt-4 rounded-xl border px-4 py-3"
+        required
       >
+
+      {% if rejection_map.owner_id_number %}
+        <p class="text-sm text-red-600 mt-2">
+          {{ rejection_map.owner_id_number }}
+        </p>
+      {% endif %}
 
       {% if rejection_map.owner_id_proof %}
         <p class="text-sm text-red-600 mt-2">
@@ -52,7 +59,7 @@
         {% endfor %}
       </div>
 
-      <input type="file" name="inside_images" multiple>
+      <input type="file" name="inside_images" multiple {% if not existing_images.inside_images %}required{% endif %}>
 
       {% if rejection_map.inside_images %}
         <p class="text-sm text-red-600 mt-2">
@@ -71,7 +78,7 @@
         {% endfor %}
       </div>
 
-      <input type="file" name="outside_images" multiple>
+      <input type="file" name="outside_images" multiple {% if not existing_images.outside_images %}required{% endif %}>
 
       {% if rejection_map.outside_images %}
         <p class="text-sm text-red-600 mt-2">

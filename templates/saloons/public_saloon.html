@@ -1,312 +1,164 @@
 {% extends "base.html" %}
 
 {% block title %}{{ seo.title|default:display_name }}{% endblock %}
+{% block main_class %}max-w-none px-0 pb-28 md:pb-24{% endblock %}
 {% block extra_head %}
   {{ block.super }}
   <style>
-    @media (min-width: 768px) {
-      .public-saloon-stage {
-        padding-top: 1.25rem;
-        padding-bottom: 2rem;
-      }
-
-      .public-saloon-shell {
-        overflow: visible;
-        border: 1px solid rgba(223, 209, 190, 0.85);
-        border-radius: 2.25rem;
-        background:
-          radial-gradient(120% 120% at 0% 0%, rgba(244, 230, 204, 0.2), rgba(244, 230, 204, 0) 48%),
-          linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(253, 249, 243, 0.98));
-        box-shadow: 0 26px 80px rgba(74, 56, 30, 0.09);
-      }
-
-      .public-saloon-surface {
-        position: relative;
-        z-index: 2;
-        margin: -3.5rem 1.25rem 0;
-        border: 1px solid rgba(237, 227, 211, 0.95);
-        border-radius: 1.75rem;
-        background:
-          linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(255, 250, 244, 0.94));
-        box-shadow: 0 18px 42px rgba(74, 56, 30, 0.08);
-        backdrop-filter: blur(16px);
-      }
-
-      .public-saloon-tabs {
-        margin: 1.1rem 1.25rem 0;
-        border: 1px solid rgba(237, 227, 211, 0.9);
-        border-radius: 1.25rem;
-        background: rgba(255, 251, 246, 0.9);
-        box-shadow: 0 10px 28px rgba(74, 56, 30, 0.04);
-      }
-
-      .public-saloon-content {
-        background: transparent;
-      }
-
-      .public-saloon-service-card {
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 16px 36px rgba(74, 56, 30, 0.06);
-        transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-      }
-
-      .public-saloon-service-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(214, 192, 157, 0.95);
-        box-shadow: 0 22px 42px rgba(74, 56, 30, 0.09);
-      }
-
-      .public-saloon-meta-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.55rem;
-        min-height: 2.6rem;
-        border: 1px solid rgba(231, 219, 201, 0.95);
-        border-radius: 999px;
-        background: rgba(255, 252, 247, 0.86);
-        padding: 0.72rem 1rem;
-        color: #5f5345;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-      }
-
-      .public-saloon-tab-button {
-        border-radius: 999px;
-        border: 1px solid transparent;
-        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-      }
-
-      .public-saloon-tab-button.is-active {
-        border-color: rgba(224, 204, 168, 0.98);
-        background: linear-gradient(180deg, rgba(255, 249, 238, 1), rgba(248, 236, 213, 0.92));
-        color: #5f431b;
-        box-shadow: 0 8px 20px rgba(181, 140, 78, 0.1);
-      }
-
-      .public-saloon-gallery-card {
-        border: 1px solid rgba(240, 231, 218, 0.95);
-        background: rgba(255, 255, 255, 0.82);
-        box-shadow: 0 18px 36px rgba(74, 56, 30, 0.06);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .public-saloon-gallery-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 24px 44px rgba(74, 56, 30, 0.1);
-      }
-
-      .public-saloon-section-card {
-        border: 1px solid rgba(240, 231, 218, 0.98);
-        border-radius: 1.5rem;
-        background: rgba(255, 255, 255, 0.84);
-        box-shadow: 0 16px 34px rgba(74, 56, 30, 0.05);
-      }
-
-      .public-saloon-review-card {
-        border: 1px solid rgba(240, 231, 218, 0.98);
-        border-radius: 1.35rem;
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 10px 24px rgba(74, 56, 30, 0.04);
-      }
+    .public-tabs-dock {
+      position: relative;
+      width: 100%;
+      z-index: 39;
     }
 
-    @keyframes favoritePop {
-      0% { transform: scale(1); }
-      40% { transform: scale(1.18); }
-      100% { transform: scale(1); }
+    .public-tabs-dock.is-fixed {
+      position: fixed;
+      top: var(--public-tabs-top, 80px);
+      left: var(--public-tabs-left, 0px);
+      width: var(--public-tabs-width, 100%);
+      right: auto;
+      z-index: 39;
     }
 
-    .favorite-toggle.is-active {
-      color: #c87070;
-      border-color: #efcaca;
-      background: #fff4f4;
+    .public-tabs-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 0.75rem;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 0 0.35rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
-    .favorite-toggle.favorite-pop {
-      animation: favoritePop 220ms ease-out;
+    .public-tabs-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .public-tab {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent !important;
+      -webkit-tap-highlight-color: transparent;
+      border: 0;
+      outline: none;
+      color: #8a7b66;
+      padding: 1.05rem 1rem 0.95rem;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1;
+      border-bottom: 2px solid transparent;
+      position: relative;
+      transition: color 180ms ease;
+    }
+
+    .public-tab:focus,
+    .public-tab:focus-visible,
+    .public-tab:active {
+      background: transparent !important;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .public-tab.is-active {
+      color: #3d2f1f;
+    }
+
+    .public-tab.is-active::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -1px;
+      width: clamp(72px, 14vw, 132px);
+      height: 3px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #d4b06a 0%, #c79c54 55%, #b98c44 100%);
+      box-shadow: 0 1px 0 rgba(255, 245, 226, 0.55);
+    }
+
+    .public-tabs-shell {
+      margin: 0 auto;
+      max-width: 100%;
+      border: 1px solid #eadfce;
+      border-radius: 1.45rem;
+      background: #ffffff;
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+      box-shadow: 0 1px 0 rgba(74, 56, 30, 0.05);
+    }
+
+    .verified-badge {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.55rem;
+      line-height: 1;
+      vertical-align: middle;
+      overflow: visible;
+      transform: none;
+      isolation: isolate;
+    }
+
+    .verified-badge svg {
+      display: block;
+    }
+
+    @media (max-width: 767px) {
+      .public-tabs-dock.is-fixed {
+        left: 0 !important;
+        width: 100vw !important;
+        top: calc(var(--public-tabs-top, 80px) - 1px);
+      }
+
+      .public-tabs-shell {
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
     }
   </style>
 {% endblock %}
-{% block page_header %}
-  <header
-    class="sticky top-0 z-40 hidden border-b border-[#EEE6DA]/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] md:block"
-    style="background-color: rgba(247, 240, 234, 0.97); backdrop-filter: blur(6px);"
-  >
-    <div class="mx-auto max-w-6xl px-4 py-4">
-      <div class="flex items-center justify-between gap-4 md:gap-6">
-        <a href="{% url 'public_home' %}" class="inline-flex h-11 shrink-0 items-center leading-none text-[#4F3F2E] md:h-12" aria-label="ELEGENTRA home">
-          <span
-            class="block text-[1.74rem] tracking-[0.02em] md:text-[2.22rem]"
-            style="font-family: 'Bauserif', serif; text-shadow: 0 1px 0 rgba(255,255,255,0.55), 0 2px 10px rgba(97,72,39,0.14);"
-          >
-            Elegentra
-          </span>
-        </a>
-
-        <div class="hidden flex-1 justify-center md:flex md:px-3">
-          {% block search_bar %}{% endblock %}
-        </div>
-
-        <div class="flex items-center gap-3">
-          <a href="#" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/55 text-gray-700 shadow-sm" aria-label="Notifications">
-            <i class="fa-regular fa-bell"></i>
-          </a>
-
-          {% if not public_has_saloon %}
-            <details id="partner-menu" class="relative hidden md:block">
-              <summary class="flex h-10 min-w-[42px] cursor-pointer list-none items-center justify-center rounded-full border border-[#e7dccd] bg-white/70 px-3 text-[#6f5223] shadow-sm transition hover:bg-[#fff6e8]">
-                <i class="fa-solid fa-ellipsis text-sm"></i>
-              </summary>
-              <div class="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,rgba(255,249,238,0.98),rgba(249,241,229,0.96))] p-2 shadow-[0_20px_45px_rgba(74,56,30,0.14)]">
-                <div class="rounded-2xl border border-white/70 bg-white/40 p-2">
-                  <div class="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#9a7b47]">Partner</div>
-                  <a href="{% url 'partner_home' %}" target="_blank" rel="noopener noreferrer" class="flex items-start gap-3 rounded-2xl px-3 py-3 text-sm text-[#5d431d] transition hover:bg-[#f6ecdc]">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f5e7c9] text-[#8a6428] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-                      <i class="fa-solid fa-store"></i>
-                    </span>
-                    <span class="block">
-                      <span class="block font-semibold">Register your salon</span>
-                      <span class="mt-0.5 block text-xs text-[#8b7353]">Create your partner profile and start onboarding</span>
-                    </span>
-                  </a>
-                </div>
-              </div>
-            </details>
-          {% endif %}
-
-          {% if not user.is_authenticated %}
-            <a href="{% url 'account_login' %}" class="group relative inline-flex items-center justify-center overflow-hidden rounded-full p-[1.5px] focus:outline-none focus:ring-2 focus:ring-[#E4B95D]/45">
-              <span class="pointer-events-none absolute inset-[-55%] animate-[spin_3.5s_linear_infinite] bg-[conic-gradient(from_0deg,_#8B682A_0deg,_#F4DC97_75deg,_#B58C4E_150deg,_#FFF3CA_230deg,_#8B682A_360deg)]"></span>
-              <span class="pointer-events-none absolute inset-[1.5px] rounded-full bg-[#FFF9EF]/95"></span>
-              <span class="pointer-events-none absolute -inset-[2px] rounded-full opacity-0 transition duration-300 group-hover:opacity-100 shadow-[0_0_10px_rgba(255,241,200,0.8),0_0_22px_rgba(245,215,132,0.75),0_0_38px_rgba(214,154,58,0.45)]"></span>
-              <span class="relative rounded-full px-4 py-1.5 text-sm font-semibold text-[#7B5A23] transition-colors duration-300 group-hover:text-[#6C4D1A]">
-                Login
-              </span>
-            </a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </header>
-{% endblock %}
 
 {% block content %}
-<section class="-mx-4 bg-white md:bg-transparent md:px-4 md:py-6 public-saloon-stage">
-  <div class="public-saloon-shell mx-auto w-full max-w-6xl bg-white">
-  <div class="media-skeleton h-44 w-full bg-[#F3ECE4] sm:h-60 md:h-[19rem] md:rounded-t-[2.25rem]" data-skeleton-type="banner">
-    <div class="media-skeleton__placeholder"></div>
-    {% if saloon.banner_image %}
-      <img
-        src="{{ saloon.banner_image.url }}"
-        alt="{{ saloon.name }}"
-        class="h-full w-full object-cover"
-        data-skeleton-image
-      >
-    {% else %}
-      <div class="h-full w-full bg-gradient-to-br from-[#eddabd] via-[#f8f2ea] to-[#e9dcc4]"></div>
-    {% endif %}
-  </div>
+<section id="publicSaloonPage" class="page-shell-loading relative overflow-x-hidden bg-[#f5efe8]">
+  <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(232,217,194,0.55),_transparent_58%)]"></div>
 
-  <div class="public-saloon-surface border-b border-[#EFE4D6] bg-white px-5 py-5 sm:px-8 sm:py-6 md:px-8 md:py-7">
-    <div class="md:hidden">
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex min-w-0 flex-wrap items-end gap-x-2 gap-y-2">
-          <h1 class="min-w-0 text-[1.75rem] font-normal leading-none tracking-tight text-[#151515]">
-            {{ display_name }}
-          </h1>
-          <div class="flex items-center gap-1.5 pb-0.5 text-[#C5A24B]">
-            <i class="fa-solid fa-star text-[0.56rem]"></i>
-            <span class="text-[0.8rem] font-normal leading-none text-[#4A4A4A]">
-              {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
-            </span>
+  <div class="relative mx-auto max-w-6xl px-0 md:px-4 md:py-6">
+    <div class="premium-reveal overflow-hidden bg-[#120f0b] md:rounded-[2rem] md:shadow-[0_34px_80px_rgba(55,37,15,0.18)]">
+      <div class="relative h-[65vh] min-h-[400px] md:h-[58vh] md:min-h-[430px]">
+        {% if saloon.banner_image %}
+          <div class="media-skeleton h-full w-full" data-skeleton-type="banner">
+            <div class="media-skeleton__placeholder"></div>
+            <img
+              src="{{ saloon.banner_image.url }}"
+              alt="{{ display_name }}"
+              class="h-full w-full object-cover"
+              data-skeleton-image
+            >
           </div>
-        </div>
-        <button
-          type="button"
-          class="favorite-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E7DAC8] bg-white text-[#8B7761] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition {% if is_favorited %}is-active{% endif %}"
-          data-favorite-toggle
-          data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=saloon.slug %}"
-          data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}"
-          aria-label="{% if is_favorited %}Remove from favourites{% else %}Save to favourites{% endif %}"
-        >
-          <i class="{% if is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart"></i>
-        </button>
-      </div>
-
-      <div class="mt-3 space-y-2">
-        <p class="flex items-center gap-2 text-[1rem] text-[#3E3E3E]">
-          <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
-          <span>{% if profile.locality %}{{ profile.locality }}{% if profile.city %}, {% endif %}{% endif %}{{ profile.city|default:"Location coming soon" }}</span>
-        </p>
-        {% if hours_summary.label %}
-          <p class="flex items-center gap-2 text-[0.95rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
-            <i class="fa-regular fa-clock text-[#7A6238]"></i>
-            <span>{{ hours_summary.label }}</span>
-          </p>
+        {% else %}
+          <div class="h-full w-full bg-[linear-gradient(135deg,#3c2d1f_0%,#9b7a4a_55%,#ead9bf_100%)]"></div>
         {% endif %}
-      </div>
 
-      {% if public_whatsapp_number or map_url %}
-        <div class="mt-4 flex items-center justify-between gap-3">
-          {% if public_whatsapp_number %}
-            <a
-              href="tel:{{ saloon.whatsapp_number }}"
-              class="inline-flex h-10 shrink-0 items-center justify-center rounded-[0.9rem] border border-[#D8C29A] bg-white px-4 text-sm font-medium text-[#7A6238] shadow-[0_6px_16px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
-            >
-              <i class="fa-solid fa-phone mr-2 text-[0.78rem]"></i>
-              Call
-            </a>
-          {% else %}
-            <span></span>
-          {% endif %}
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent md:bg-[linear-gradient(180deg,rgba(7,6,4,0.2)_0%,rgba(7,6,4,0.34)_34%,rgba(7,6,4,0.78)_100%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(215,179,107,0.18),_transparent_32%)]"></div>
 
-          {% if map_url %}
-            <a
-              href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
-              {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
-              {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
-              class="inline-flex h-10 shrink-0 items-center justify-center rounded-[0.9rem] border border-[#B89247] bg-[#D2AE63] px-4 text-sm font-medium text-white shadow-[0_6px_16px_rgba(181,140,78,0.15)] transition hover:bg-[#C59F53]"
-            >
-              View Map
-            </a>
-          {% endif %}
-        </div>
-      {% endif %}
-    </div>
-
-    <div class="hidden md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-8">
-      <div class="min-w-0">
-        <p class="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-[#9B7A46]">Salon profile</p>
-        <div class="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
-          <h1 class="text-[1.95rem] font-medium leading-none tracking-[-0.02em] text-[#151515] lg:text-[2.3rem]">
-            {{ display_name }}
-          </h1>
-          <div class="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#FFF6E4] px-3 py-1.5 text-[#C5A24B]">
-            <i class="fa-solid fa-star text-[0.65rem]"></i>
-            <span class="text-[0.84rem] font-medium leading-none text-[#5A4B3B]">
-              {% if review_summary.total %}{{ review_summary.average }} ({{ review_summary.total }}){% else %}New{% endif %}
-            </span>
-          </div>
-        </div>
-
-        <div class="mt-5 flex flex-wrap items-center gap-3 text-[#4B4B4B]">
-          <p class="public-saloon-meta-pill text-[0.92rem]">
-            <i class="fa-solid fa-location-dot text-[#7A6238]"></i>
-            <span>{% if profile.locality %}{{ profile.locality }}{% if profile.city %}, {% endif %}{% endif %}{{ profile.city|default:"Location coming soon" }}</span>
-          </p>
-          {% if hours_summary.label %}
-            <p class="public-saloon-meta-pill text-[0.92rem] {% if hours_summary.is_open %}text-[#2F7D32]{% else %}text-[#6A5A43]{% endif %}">
-              <i class="fa-regular fa-clock text-[#7A6238]"></i>
-              <span>{{ hours_summary.label }}</span>
-            </p>
-          {% endif %}
-        </div>
-      </div>
-
-      {% if public_whatsapp_number or map_url %}
-        <div class="flex items-center gap-3 md:pt-8">
+        <div class="absolute right-4 top-4 z-10 flex items-center gap-2 sm:right-5 sm:top-5">
           <button
             type="button"
-            class="favorite-toggle inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#E7DAC8] bg-white text-[#8B7761] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition hover:bg-[#FBF5EC] {% if is_favorited %}is-active{% endif %}"
+            class="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+            data-share-button
+            data-share-url="{{ public_profile_url }}"
+            aria-label="Share salon profile"
+          >
+            <i class="fa-solid fa-share-nodes text-[13px]"></i>
+          </button>
+          <button
+            type="button"
+            class="favorite-toggle inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 {% if is_favorited %}is-active border-[#f0c7c7] bg-[rgba(255,244,244,0.24)] text-[#ffd9d9]{% endif %}"
             data-favorite-toggle
             data-toggle-url="{% url 'public_saloon_favorite_toggle' slug=saloon.slug %}"
             data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}"
@@ -314,592 +166,599 @@
           >
             <i class="{% if is_favorited %}fa-solid{% else %}fa-regular{% endif %} fa-heart"></i>
           </button>
+        </div>
+
+        <div class="absolute bottom-0 left-0 z-10 w-full px-4 pb-5 md:hidden">
+          <div class="mb-0.5 flex flex-wrap items-center gap-2">
+            <h1 class="text-[1.95rem] font-semibold leading-tight tracking-tight text-white">
+              {{ display_name }}
+            </h1>
+            {% if saloon.is_verified %}
+              <span class="verified-badge h-5 w-5 self-center" title="Verified on Elegentra" aria-label="Verified on Elegentra">
+                <svg viewBox="0 0 100 100" class="h-full w-full drop-shadow-[0_6px_12px_rgba(180,143,82,0.34)]" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="verifiedGoldMobile" cx="34%" cy="26%" r="76%">
+                      <stop offset="0%" stop-color="#fff8de" />
+                      <stop offset="44%" stop-color="#e7c27e" />
+                      <stop offset="100%" stop-color="#bf9553" />
+                    </radialGradient>
+                    <linearGradient id="verifiedSweepMobile" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform="rotate(-18 0.5 0.5)">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                      <stop offset="28%" stop-color="#ffffff" stop-opacity="0" />
+                      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.86" />
+                      <stop offset="72%" stop-color="#ffffff" stop-opacity="0" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                      <animateTransform attributeName="gradientTransform" type="translate" values="-1.2 0;-1.2 0;1.2 0;1.2 0" keyTimes="0;0.714;0.905;1" dur="4.2s" repeatCount="indefinite" additive="sum" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M50 6C55 6 59 10 64 11C69 12 74 10 78 13C82 16 83 21 86 25C89 29 94 31 95 36C96 41 93 46 94 50C95 55 99 59 98 64C97 69 92 72 89 76C86 80 86 86 82 89C78 92 72 90 67 91C62 92 57 96 52 96C47 96 43 92 38 91C33 90 27 92 23 89C19 86 19 80 16 76C13 72 8 69 7 64C6 59 10 55 11 50C12 46 9 41 10 36C11 31 16 29 19 25C22 21 23 16 27 13C31 10 36 12 41 11C45 10 46 6 50 6Z" fill="url(#verifiedGoldMobile)"/>
+                  <path d="M50 6C55 6 59 10 64 11C69 12 74 10 78 13C82 16 83 21 86 25C89 29 94 31 95 36C96 41 93 46 94 50C95 55 99 59 98 64C97 69 92 72 89 76C86 80 86 86 82 89C78 92 72 90 67 91C62 92 57 96 52 96C47 96 43 92 38 91C33 90 27 92 23 89C19 86 19 80 16 76C13 72 8 69 7 64C6 59 10 55 11 50C12 46 9 41 10 36C11 31 16 29 19 25C22 21 23 16 27 13C31 10 36 12 41 11C45 10 46 6 50 6Z" fill="url(#verifiedSweepMobile)" opacity="0.82"/>
+                  <path d="M34 51L46 63L69 39" fill="none" stroke="#fffef8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            {% endif %}
+          </div>
+          <p class="mb-1 text-[0.95rem] text-white/80">{{ location_label }}</p>
+          <p class="mb-[1.15rem] flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white">
+            <span class="inline-flex items-center">
+              <i class="fa-solid fa-star mr-1 text-[11px] text-[#f5cf7a]"></i>
+              {% if review_summary.total %}{{ review_summary.average }} rating{% else %}New listing{% endif %}
+            </span>
+            {% if hours_summary.label %}
+              <span class="text-white/45">&bull;</span>
+              {% if hours_summary.is_open %}
+                <span class="font-medium text-emerald-200">Open now</span>
+                <span class="text-white/45">&bull;</span>
+                <span class="text-white/92">Closes {{ hours_summary.close_time }}</span>
+              {% elif hours_summary.open_time %}
+                <span class="font-semibold text-red-300">Closed now</span>
+                <span class="text-white/45">&bull;</span>
+                <span class="text-white/92">Opens {{ hours_summary.open_time }}</span>
+              {% else %}
+                <span class="font-semibold text-red-300">{{ hours_summary.label }}</span>
+              {% endif %}
+            {% endif %}
+          </p>
+
           {% if public_whatsapp_number %}
             <a
-              href="tel:{{ saloon.whatsapp_number }}"
-              class="inline-flex h-11 items-center justify-center rounded-full border border-[#D8C29A] bg-white px-5 text-[0.9rem] font-medium text-[#7A6238] shadow-[0_8px_18px_rgba(181,140,78,0.08)] transition hover:bg-[#FBF5EC]"
+              href="#"
+              id="primaryWhatsappButton"
+              target="_blank"
+              rel="noopener"
+              class="hero-cta-shine relative isolate mb-3 inline-flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 text-sm font-semibold text-[#24180a] transition-all duration-200 hover:brightness-[1.03] active:scale-95"
             >
-              <i class="fa-solid fa-phone mr-2 text-[0.8rem]"></i>
-              Call Now
+              <i class="fa-brands fa-whatsapp relative z-[1] text-[15px] text-[#7c5714]"></i>
+              <span class="relative z-[1]">Chat on WhatsApp</span>
             </a>
           {% endif %}
-          {% if map_url %}
+
+          <div class="flex gap-3">
             <a
-              href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
-              {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
-              {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
-              class="inline-flex h-11 items-center justify-center rounded-full border border-[#B89247] bg-[#D2AE63] px-5 text-[0.9rem] font-medium text-white shadow-[0_8px_18px_rgba(181,140,78,0.16)] transition hover:bg-[#C59F53]"
+              href="tel:{% if profile.contact_number %}{{ profile.contact_number }}{% else %}{{ saloon.whatsapp_number }}{% endif %}"
+              class="inline-flex min-h-[50px] w-1/2 items-center justify-center rounded-full border border-white/80 bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
             >
-              View Map
+              <i class="fa-solid fa-phone mr-2 text-sm"></i>
+              Call
             </a>
-          {% endif %}
+
+            {% if map_url %}
+              <a
+                href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
+                {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
+                {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+                class="inline-flex min-h-[50px] w-1/2 items-center justify-center rounded-full border border-white/80 bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
+              >
+                <i class="fa-solid fa-location-dot mr-2 text-sm"></i>
+                View Map
+              </a>
+            {% else %}
+              <span class="inline-flex min-h-[50px] w-1/2"></span>
+            {% endif %}
+          </div>
         </div>
-      {% endif %}
-    </div>
-  </div>
 
-  <div class="public-saloon-tabs border-b border-[#EFE4D6] bg-white">
-    <div class="grid grid-cols-3 gap-2 p-2 md:p-2.5">
-      <button
-        type="button"
-        class="public-tab public-saloon-tab-button is-active border-b-2 border-[#C5A24B] px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F] sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
-        data-target="services"
-      >
-        Services
-      </button>
-      <button
-        type="button"
-        class="public-tab public-saloon-tab-button border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
-        data-target="gallery"
-      >
-        Gallery
-      </button>
-      <button
-        type="button"
-        class="public-tab public-saloon-tab-button border-b-2 border-transparent px-2 py-4 text-center text-[0.82rem] font-normal text-[#1F1F1F]/78 sm:text-[0.95rem] md:border-b-0 md:px-4 md:py-3.5 md:text-[0.94rem]"
-        data-target="about"
-      >
-        About & Reviews
-      </button>
-    </div>
-  </div>
+        <div class="absolute inset-x-0 bottom-0 z-10 hidden md:block">
+          <div class="mx-auto max-w-6xl px-4 pb-6 pt-14 sm:px-5 md:px-8 md:pb-10">
+            <p class="text-sm font-medium tracking-[0.18em] text-white/70">{{ location_label }}</p>
 
-  <div class="public-saloon-content bg-white px-5 py-6 sm:px-8 md:px-8 md:py-6">
-    <div id="public-tab-services" class="public-tab-panel block">
-      {% if services %}
-        <div class="space-y-5 pb-32 md:space-y-4 md:pb-36">
-          {% for service in services %}
-            <div class="space-y-3">
-              <article class="public-saloon-service-card flex items-center gap-4 md:rounded-[1.4rem] md:border md:border-[#F0E7DA] md:px-5 md:py-4">
-                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-[0.95rem] bg-[#F1E7DA] md:h-24 md:w-24 md:rounded-[1.1rem]">
-                  {% if service.image %}
-                    <div class="media-skeleton h-full w-full" data-skeleton-type="card">
-                      <div class="media-skeleton__placeholder"></div>
-                      <img
-                        src="{{ service.image.url }}"
-                        alt="{{ service.name }}"
-                        class="h-full w-full object-cover"
-                        data-skeleton-image
-                      >
-                    </div>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <h1 class="text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl md:text-5xl">
+                {{ display_name }}
+              </h1>
+              {% if saloon.is_verified %}
+                <span class="verified-badge h-6 w-6 self-center" title="Verified on Elegentra" aria-label="Verified on Elegentra">
+                  <svg viewBox="0 0 100 100" class="h-full w-full drop-shadow-[0_7px_14px_rgba(180,143,82,0.36)]" aria-hidden="true">
+                    <defs>
+                      <radialGradient id="verifiedGoldDesktop" cx="34%" cy="26%" r="76%">
+                        <stop offset="0%" stop-color="#fff8de" />
+                        <stop offset="44%" stop-color="#e7c27e" />
+                        <stop offset="100%" stop-color="#bf9553" />
+                      </radialGradient>
+                      <linearGradient id="verifiedSweepDesktop" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform="rotate(-18 0.5 0.5)">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                        <stop offset="28%" stop-color="#ffffff" stop-opacity="0" />
+                        <stop offset="50%" stop-color="#ffffff" stop-opacity="0.86" />
+                        <stop offset="72%" stop-color="#ffffff" stop-opacity="0" />
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                        <animateTransform attributeName="gradientTransform" type="translate" values="-1.2 0;-1.2 0;1.2 0;1.2 0" keyTimes="0;0.714;0.905;1" dur="4.2s" repeatCount="indefinite" additive="sum" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M50 6C55 6 59 10 64 11C69 12 74 10 78 13C82 16 83 21 86 25C89 29 94 31 95 36C96 41 93 46 94 50C95 55 99 59 98 64C97 69 92 72 89 76C86 80 86 86 82 89C78 92 72 90 67 91C62 92 57 96 52 96C47 96 43 92 38 91C33 90 27 92 23 89C19 86 19 80 16 76C13 72 8 69 7 64C6 59 10 55 11 50C12 46 9 41 10 36C11 31 16 29 19 25C22 21 23 16 27 13C31 10 36 12 41 11C45 10 46 6 50 6Z" fill="url(#verifiedGoldDesktop)"/>
+                    <path d="M50 6C55 6 59 10 64 11C69 12 74 10 78 13C82 16 83 21 86 25C89 29 94 31 95 36C96 41 93 46 94 50C95 55 99 59 98 64C97 69 92 72 89 76C86 80 86 86 82 89C78 92 72 90 67 91C62 92 57 96 52 96C47 96 43 92 38 91C33 90 27 92 23 89C19 86 19 80 16 76C13 72 8 69 7 64C6 59 10 55 11 50C12 46 9 41 10 36C11 31 16 29 19 25C22 21 23 16 27 13C31 10 36 12 41 11C45 10 46 6 50 6Z" fill="url(#verifiedSweepDesktop)" opacity="0.82"/>
+                    <path d="M34 51L46 63L69 39" fill="none" stroke="#fffef8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              {% endif %}
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-2.5 text-sm">
+              <span class="inline-flex items-center gap-2 rounded-full border-2 border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-md">
+                <i class="fa-solid fa-star text-[11px] text-[#f5cf7a]"></i>
+                {% if review_summary.total %}{{ review_summary.average }} rating{% else %}New listing{% endif %}
+              </span>
+              {% if saloon.is_verified %}
+                <span class="inline-flex items-center gap-2 rounded-full border-2 border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-md">
+                  <i class="fa-solid fa-shield-halved text-[11px] text-[#f5cf7a]"></i>
+                  Trusted by Elegentra
+                </span>
+              {% endif %}
+              {% if review_summary.total >= 3 %}
+                <span class="inline-flex items-center gap-2 rounded-full border-2 border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-md">
+                  <i class="fa-solid fa-fire text-[11px] text-[#f5cf7a]"></i>
+                  Popular
+                </span>
+              {% endif %}
+              {% if hours_summary.label %}
+                <span class="inline-flex items-center gap-2 rounded-full border-2 border-white/30 bg-white/10 px-3 py-1.5 text-white/90 backdrop-blur-md">
+                  <i class="fa-regular fa-clock text-[11px] text-[#f5cf7a]"></i>
+                  {% if hours_summary.is_open %}
+                    <span class="font-medium text-emerald-200">Open now</span>
+                    <span class="text-white/45">&bull;</span>
+                    <span class="text-white">Closes {{ hours_summary.close_time }}</span>
+                  {% elif hours_summary.open_time %}
+                    <span class="font-semibold text-red-300">Closed now</span>
+                    <span class="text-white/45">&bull;</span>
+                    <span class="text-white">Opens {{ hours_summary.open_time }}</span>
                   {% else %}
-                    <div class="h-full w-full bg-gradient-to-br from-[#eddabd] via-[#f8f2ea] to-[#e9dcc4]"></div>
+                    <span class="font-semibold text-red-300">{{ hours_summary.label }}</span>
                   {% endif %}
-                </div>
+                </span>
+              {% endif %}
+            </div>
 
-                <div class="flex min-w-0 flex-1 items-center justify-between gap-4">
-                  <div class="min-w-0">
-                    <h2 class="text-[1.1rem] font-normal leading-tight text-[#181818] md:text-[1.04rem]">{{ service.name }}</h2>
-                    <p class="mt-1 text-[1rem] text-[#242424] md:text-[0.9rem] md:text-[#756650]">Beauty service</p>
-                    <p class="mt-2 text-[1rem] font-semibold text-[#242424] md:text-[0.98rem]">
-                      {% if service.offer_price %}
-                        Rs. {{ service.offer_price }}
-                      {% else %}
-                        Rs. {{ service.price }}
-                      {% endif %}
+            <div class="mt-6 flex flex-wrap gap-3">
+              {% if public_whatsapp_number %}
+                <a
+                  href="#"
+                  id="primaryWhatsappButtonDesktop"
+                  target="_blank"
+                  rel="noopener"
+                  class="hero-cta-shine relative isolate inline-flex min-h-[52px] items-center justify-center gap-2 overflow-hidden rounded-full px-6 text-sm font-semibold text-[#24180a] transition-all duration-200 hover:brightness-[1.03] active:scale-95"
+                >
+                  <i class="fa-brands fa-whatsapp relative z-[1] text-[15px] text-[#7c5714]"></i>
+                  <span class="relative z-[1]">Chat on WhatsApp</span>
+                </a>
+              {% endif %}
+
+              <a
+                href="tel:{% if profile.contact_number %}{{ profile.contact_number }}{% else %}{{ saloon.whatsapp_number }}{% endif %}"
+                class="inline-flex min-h-[52px] items-center justify-center rounded-full border-2 border-white/90 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
+              >
+                <i class="fa-solid fa-phone mr-2 text-sm"></i>
+                Call
+              </a>
+
+              {% if map_url %}
+                <a
+                  href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
+                  {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
+                  {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+                  class="inline-flex min-h-[52px] items-center justify-center rounded-full border-2 border-white/90 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
+                >
+                  <i class="fa-solid fa-location-dot mr-2 text-sm"></i>
+                  View Map
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="publicTabsScope" class="mx-auto max-w-6xl px-0 py-7 sm:px-5 md:px-6 md:py-8">
+      <div id="publicTabsAnchor" class="relative">
+        <div id="publicTabsSticky" class="public-tabs-dock">
+          <div class="public-tabs-shell">
+            <div class="public-tabs-row">
+              <button
+                type="button"
+                class="public-tab is-active"
+                data-target="services"
+              >
+                Services
+              </button>
+              <button
+                type="button"
+                class="public-tab"
+                data-target="gallery"
+              >
+                Gallery
+              </button>
+              <button
+                type="button"
+                class="public-tab"
+                data-target="about"
+              >
+                About &amp; Reviews
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-7 pb-24 md:mt-8 md:pb-28">
+        <div id="public-tab-services" class="public-tab-panel block">
+          {% if services %}
+            <div class="grid gap-3.5 md:gap-4">
+              {% for service in services %}
+                <article
+                  class="service-card rounded-[1.4rem] border border-[#eadfce] bg-white p-4 shadow-[0_16px_34px_rgba(74,56,30,0.06)] transition duration-300 md:p-5"
+                  data-service-card="{{ service.id }}"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="text-base font-semibold text-[#1f1a15] md:text-lg">{{ service.name }}</p>
+                      <p class="mt-1.5 text-sm text-[#8a7b66]">{{ service.category.name }}</p>
+                    </div>
+                    <p class="shrink-0 text-sm font-medium text-[#7b6a54]">
+                      Rs. {% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    class="service-toggle hidden h-10 shrink-0 items-center justify-center rounded-full border border-[#B89247] bg-[#D2AE63] px-4 text-xs font-medium text-white transition hover:bg-[#C59F53] md:inline-flex md:h-10 md:min-w-[9.5rem] md:px-5 md:text-[0.82rem]"
-                    data-service-id="{{ service.id }}"
-                    data-service-name="{{ service.name|escape }}"
-                    data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
-                    data-interest-url="{% url 'public_service_interest' slug=saloon.slug %}"
-                  >
-                    Check Availability
-                  </button>
-                </div>
-              </article>
-
-              <div class="md:hidden">
-                <button
-                  type="button"
-                  class="service-toggle inline-flex h-10 w-full items-center justify-center rounded-[0.95rem] border border-[#B89247] bg-[#D2AE63] px-4 text-sm font-medium text-white transition hover:bg-[#C59F53]"
-                  data-service-id="{{ service.id }}"
-                  data-service-name="{{ service.name|escape }}"
-                  data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
-                  data-interest-url="{% url 'public_service_interest' slug=saloon.slug %}"
-                >
-                  Check Availability
-                </button>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="py-10 text-center text-[#7A7A7A]">
-          Services will appear here soon.
-        </div>
-      {% endif %}
-    </div>
-
-    <div id="public-tab-gallery" class="public-tab-panel hidden">
-      {% if gallery_posts %}
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-          {% for post in gallery_posts %}
-            {% with media=post.first_image %}
-              <a
-                href="{% url 'public_gallery_detail' slug=saloon.slug post_id=post.id %}"
-                class="gallery-post-trigger public-saloon-gallery-card block overflow-hidden rounded-[1.3rem] bg-[#F1E7DA] text-left"
-              >
-                {% if media %}
-                  <div class="media-skeleton h-36 w-full sm:h-48" data-skeleton-type="card">
-                    <div class="media-skeleton__placeholder"></div>
-                    <img src="{{ media.file.url }}" alt="{{ post.title|default:display_name }}" class="h-36 w-full object-cover sm:h-48" data-skeleton-image>
+                  <div class="mt-4 flex items-center justify-end">
+                    <button
+                      type="button"
+                      class="service-toggle inline-flex min-h-[40px] items-center justify-center rounded-full border border-[#d4b782] px-4 text-[13px] font-semibold text-[#8c6a2c] transition-all duration-200 hover:bg-[#fbf4e8] active:scale-95"
+                      data-service-id="{{ service.id }}"
+                      data-service-name="{{ service.name|escape }}"
+                      data-service-price="{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}"
+                      data-interest-url="{% url 'public_service_interest' slug=saloon.slug %}"
+                    >
+                      Choose
+                    </button>
                   </div>
-                {% else %}
-                  <div class="h-36 w-full bg-[#EFE4D5] sm:h-48"></div>
-                {% endif %}
-              </a>
-            {% endwith %}
-          {% endfor %}
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="rounded-[1.5rem] border border-dashed border-[#d8c8af] bg-white/70 px-6 py-10 text-center text-[#8a7b66]">
+              Services will appear here soon.
+            </div>
+          {% endif %}
         </div>
-      {% else %}
-        <div class="py-10 text-center text-[#7A7A7A]">
-          Gallery coming soon.
-        </div>
-      {% endif %}
-    </div>
 
-    <div id="public-tab-about" class="public-tab-panel hidden">
-      <div class="space-y-5 pb-20 md:grid md:grid-cols-[minmax(0,0.88fr)_minmax(320px,0.72fr)] md:gap-6 md:space-y-0">
-        <div class="public-saloon-section-card md:p-6">
-          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl md:text-[1.35rem]">About</h3>
-          <p class="mt-4 text-sm leading-8 text-[#5A5A5A] sm:text-base md:text-[0.95rem] md:leading-7">
-            {{ profile.about|default:"This salon has not added an about section yet." }}
-          </p>
+        <div id="public-tab-gallery" class="public-tab-panel hidden">
+          {% if gallery_posts %}
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+              {% for post in gallery_posts|slice:":6" %}
+                {% with media=post.first_image %}
+                  <a
+                    href="{% url 'public_gallery_detail' slug=saloon.slug post_id=post.id %}"
+                    class="group relative block overflow-hidden rounded-[1.1rem] bg-[#eadfce] shadow-[0_14px_30px_rgba(74,56,30,0.06)]"
+                  >
+                    {% if media %}
+                      <div class="media-skeleton aspect-square w-full" data-skeleton-type="card">
+                        <div class="media-skeleton__placeholder"></div>
+                        <img
+                          src="{{ media.file.url }}"
+                          alt="{{ post.title|default:display_name }}"
+                          class="aspect-square w-full object-cover transition duration-500 group-hover:scale-105"
+                          data-skeleton-image
+                        >
+                      </div>
+                    {% else %}
+                      <div class="aspect-square w-full bg-[#eadfce]"></div>
+                    {% endif %}
+
+                    <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.42)_100%)]"></div>
+
+                    {% if post.image_media|length > 1 %}
+                      <div class="absolute right-2.5 top-2.5 rounded-full bg-black/40 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                        <i class="fa-regular fa-clone mr-1"></i>{{ post.image_media|length }}
+                      </div>
+                    {% endif %}
+
+                    {% if post.service %}
+                      <div class="absolute bottom-2.5 left-2.5 z-10 max-w-[calc(100%-1.25rem)]">
+                        <button type="button" class="block max-w-full rounded-md border border-white/70 bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#2d251d] shadow-[0_8px_20px_rgba(0,0,0,0.16)] backdrop-blur" data-service-info-toggle="public-grid-{{ post.id }}">
+                          <span class="block truncate">Service / {{ post.service.name }}</span>
+                        </button>
+                        <div class="hidden absolute bottom-full left-0 mb-2 w-64 max-w-[76vw] rounded-lg border border-[#e8e1d7] bg-white/95 p-3.5 text-left shadow-[0_22px_55px_rgba(24,20,16,0.16)] backdrop-blur" data-service-info-card="public-grid-{{ post.id }}">
+                          <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
+                          <p class="mt-1 break-words text-xs font-semibold text-gray-900">{{ post.service.name }}</p>
+                          <p class="mt-2 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ post.service.offer_price|default:post.service.price }}</p>
+                        </div>
+                      </div>
+                    {% endif %}
+
+                    {% if forloop.last and gallery_image_total > 6 %}
+                      <div class="absolute inset-0 flex items-center justify-center bg-black/36 text-lg font-semibold text-white backdrop-blur-[2px]">
+                        +{{ gallery_image_total|add:"-6" }} photos
+                      </div>
+                    {% endif %}
+                  </a>
+                {% endwith %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="rounded-[1.5rem] border border-dashed border-[#d8c8af] bg-white/70 px-6 py-10 text-center text-[#8a7b66]">
+              Gallery coming soon.
+            </div>
+          {% endif %}
         </div>
-        <div>
-          <h3 class="text-2xl font-normal text-[#1F1F1F] sm:text-3xl md:text-[1.35rem]">Reviews</h3>
-            <div class="mt-4 md:hidden">
-              <button
-                type="button"
-                id="mobileReviewToggle"
-              class="flex w-full items-center justify-between rounded-[1.15rem] border border-[#EFE4D6] bg-[#FFF9F2] px-4 py-3 text-left"
-            >
+
+        <div id="public-tab-about" class="public-tab-panel hidden">
+          <div class="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <section class="rounded-[1.5rem] border border-[#eadfce] bg-white p-6 shadow-[0_16px_34px_rgba(74,56,30,0.06)]">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#b08746]">About</p>
+              <div class="mt-4 space-y-4 text-[15px] leading-8 text-[#564a3d]">
+                <p class="whitespace-pre-line">{{ profile.about|default:"This salon has not added an about section yet." }}</p>
+              </div>
+            </section>
+
+            <section class="rounded-[1.5rem] border border-[#eadfce] bg-white p-6 shadow-[0_16px_34px_rgba(74,56,30,0.06)]">
+              <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <p class="text-sm font-semibold text-[#1F1F1F]">Write a review</p>
-                  <p class="mt-1 text-xs text-[#7A7A7A]">
-                    {% if review_summary.total %}Share your experience with this salon{% else %}Be the first to share your experience{% endif %}
-                  </p>
+                  <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#b08746]">Reviews</p>
+                  <div class="mt-3 flex items-end gap-3">
+                    <span class="text-4xl font-semibold tracking-[-0.04em] text-[#1f1a15]">
+                      {% if review_summary.total %}{{ review_summary.average }}{% else %}New{% endif %}
+                    </span>
+                    <span class="pb-1 text-sm text-[#7b6a54]">{{ review_summary.total }} reviews</span>
+                  </div>
                 </div>
-              <i id="mobileReviewChevron" class="fa-solid fa-chevron-down text-sm text-[#8A6A38] transition-transform"></i>
-            </button>
+                <div class="inline-flex items-center gap-2 rounded-full bg-[#fbf3e6] px-4 py-2 text-sm font-medium text-[#7b642f]">
+                  <i class="fa-solid fa-star text-[12px]"></i>
+                  Customer rating
+                </div>
+              </div>
 
-              <div id="mobileReviewPanel" class="hidden">
-                <div class="mt-3 rounded-[1.4rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4">
-                  <form method="post" action="{% url 'public_saloon_add_review' slug=saloon.slug %}" class="space-y-3" id="reviewFormMobile" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}" data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about">
-                    {% csrf_token %}
+
+              <details class="review-compose group mt-6 overflow-hidden rounded-[1.45rem] border border-[#E4D2B6] bg-[linear-gradient(135deg,#fffdf9,#fff4e3)] shadow-[0_16px_34px_rgba(74,56,30,0.08)]">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-[#fff6e8] sm:px-5">
+                  <span class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#F7E7C6,#D9B46B)] text-[#5F3F12] shadow-[0_10px_22px_rgba(181,140,78,0.20),inset_0_1px_0_rgba(255,255,255,0.55)]">
+                      <i class="fa-solid fa-star-half-stroke text-sm"></i>
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-sm font-semibold text-[#2e2418]">Write a review</span>
+                      <span class="mt-0.5 block text-xs leading-5 text-[#7b6a54]">Rate this salon and share your experience.</span>
+                    </span>
+                  </span>
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#DFC89F] bg-white text-[#8a6a38] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition group-open:rotate-180 group-open:bg-[#2E2418] group-open:text-white"><i class="fa-solid fa-chevron-down text-xs"></i></span>
+                </summary>
+
+                <form
+                  method="post"
+                  action="{% url 'public_saloon_add_review' slug=saloon.slug %}"
+                  class="space-y-4 border-t border-[#eadfce] px-4 pb-5 pt-4 sm:px-5"
+                  id="reviewForm"
+                  data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+                  data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about"
+                >
+                  {% csrf_token %}
                   <div>
-                    <p class="mb-2 text-sm font-medium text-[#5A5A5A]">Your rating</p>
-                    <input type="hidden" name="rating" id="reviewRatingInputMobile" required>
-                    <div class="flex items-center gap-2" id="reviewStarPickerMobile">
-                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button-mobile text-[#D8CFC1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                    <p class="mb-2 text-sm font-medium text-[#5a4d40]">Your rating</p>
+                    <input type="hidden" name="rating" id="reviewRatingInput" required>
+                    <div class="flex items-center gap-2" id="reviewStarPicker">
+                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
                     </div>
                   </div>
+
                   <textarea
                     name="review_text"
                     rows="4"
-                    id="reviewTextInputMobile"
-                    class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]"
-                    placeholder="Write your experience with this salon"
+                    id="reviewTextInput"
+                    class="w-full rounded-xl border border-[#e7dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f1a15] outline-none transition focus:border-[#c79c54]"
+                    placeholder="Share your experience with this salon"
                     required
                   ></textarea>
+
                   <button
                     type="submit"
-                    class="inline-flex h-11 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]"
-                    >
-                      Submit Review
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+                    class="inline-flex min-h-[46px] w-full items-center justify-center rounded-full bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a57f39] sm:w-auto"
+                  >
+                    Submit Review
+                  </button>
+                </form>
+              </details>
+            </section>
+          </div>
 
-            <div class="mt-4 space-y-3 md:hidden">
-              {% for review in review_cards %}
-                <article class="rounded-[1.2rem] border border-[#EFE4D6] bg-white px-4 py-4">
-                  <div class="flex items-start justify-between gap-3">
+          <div class="mt-5 space-y-4">
+            {% for review in review_cards %}
+              <article class="rounded-[1.35rem] border border-[#eadfce] bg-white p-5 shadow-[0_14px_30px_rgba(74,56,30,0.05)]">
+                <div class="flex items-start justify-between gap-3">
                   <div class="flex items-start gap-3">
-                    <div class="h-10 w-10 overflow-hidden rounded-full border border-[#E7DAC8] bg-[#F3ECE4]">
+                    <div class="h-11 w-11 overflow-hidden rounded-full border border-[#e7dac8] bg-[#f3ece4]">
                       {% if review.avatar_url %}
-                        <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
-                          <div class="media-skeleton__placeholder"></div>
-                          <img src="{{ review.avatar_url }}" alt="{{ review.display_name }}" class="h-full w-full object-cover" data-skeleton-image>
-                        </div>
+                        <img src="{{ review.avatar_url }}" alt="{{ review.display_name }}" class="h-full w-full object-cover">
                       {% else %}
-                        <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-[#7A6238]">
+                        <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-[#7a6238]">
                           {{ review.initial }}
                         </div>
                       {% endif %}
                     </div>
                     <div>
-                      <p class="text-sm font-semibold text-[#1F1F1F]">{{ review.display_name }}</p>
-                      <p class="mt-1 text-xs text-[#777777]">{{ review.date_label }}</p>
+                      <p class="text-sm font-semibold text-[#1f1a15]">{{ review.display_name }}</p>
+                      <p class="mt-1 text-xs text-[#8a7b66]">{{ review.date_label }}</p>
                     </div>
                   </div>
-                  <div class="inline-flex items-center gap-1 rounded-full bg-[#FFF4DE] px-2.5 py-1 text-xs font-semibold text-[#8A6A38]">
+                  <div class="inline-flex items-center gap-1 rounded-full bg-[#fff4de] px-2.5 py-1 text-xs font-semibold text-[#8a6a38]">
                     <i class="fa-solid fa-star text-[10px]"></i>
                     {{ review.rating }}
                   </div>
                 </div>
+
                 {% if review.edited %}
-                  <p class="mt-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#A47A38]">Edited</p>
+                  <p class="mt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b08746]">Edited</p>
                 {% endif %}
-                <p class="mt-3 whitespace-pre-line text-sm leading-6 text-[#575757]">{{ review.review_text }}</p>
+
+                <p class="mt-3 whitespace-pre-line text-sm leading-7 text-[#575757]">{{ review.review_text }}</p>
+
                 {% if user.is_authenticated and review.can_edit %}
-                  <div class="mt-3 flex items-center gap-4">
-                    <button type="button" class="review-edit-toggle text-xs font-semibold text-[#8A6A38]" data-review-edit-toggle="m{{ review.id }}">Edit</button>
+                  <div class="mt-4 flex items-center gap-4">
+                    <button type="button" class="review-edit-toggle text-xs font-semibold text-[#8a6a38]" data-review-edit-toggle="{{ review.id }}">Edit</button>
                     <form method="post" action="{% url 'public_saloon_delete_review' slug=saloon.slug review_id=review.id %}">
                       {% csrf_token %}
                       <button type="submit" class="text-xs font-semibold text-red-600">Delete</button>
                     </form>
                   </div>
-                  <form method="post" action="{% url 'public_saloon_edit_review' slug=saloon.slug review_id=review.id %}" class="mt-3 hidden space-y-3" id="review-edit-m{{ review.id }}">
+
+                  <form method="post" action="{% url 'public_saloon_edit_review' slug=saloon.slug review_id=review.id %}" class="mt-4 hidden space-y-3" id="review-edit-{{ review.id }}">
                     {% csrf_token %}
-                    <input type="hidden" name="rating" id="reviewEditRatingInput-m{{ review.id }}" value="{{ review.rating }}" required>
+                    <input type="hidden" name="rating" id="reviewEditRatingInput-{{ review.id }}" value="{{ review.rating }}" required>
                     <div class="flex items-center gap-2">
-                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="1"><i class="fa-solid fa-star text-lg"></i></button>
-                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="2"><i class="fa-solid fa-star text-lg"></i></button>
-                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="3"><i class="fa-solid fa-star text-lg"></i></button>
-                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="4"><i class="fa-solid fa-star text-lg"></i></button>
-                      <button type="button" class="review-edit-star text-[#C5A24B]" data-target="m{{ review.id }}" data-value="5"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#c5a24b]" data-target="{{ review.id }}" data-value="1"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#c5a24b]" data-target="{{ review.id }}" data-value="2"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#c5a24b]" data-target="{{ review.id }}" data-value="3"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#c5a24b]" data-target="{{ review.id }}" data-value="4"><i class="fa-solid fa-star text-lg"></i></button>
+                      <button type="button" class="review-edit-star text-[#c5a24b]" data-target="{{ review.id }}" data-value="5"><i class="fa-solid fa-star text-lg"></i></button>
                     </div>
-                    <textarea name="review_text" rows="3" class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]" required>{{ review.review_text }}</textarea>
+                    <textarea name="review_text" rows="3" class="w-full rounded-xl border border-[#e7dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f1a15]" required>{{ review.review_text }}</textarea>
                     <div class="flex items-center gap-3">
-                      <button type="submit" class="inline-flex h-10 items-center justify-center rounded-[0.9rem] bg-[#B89247] px-4 text-sm font-semibold text-white">Save</button>
-                      <button type="button" class="review-edit-toggle text-sm font-semibold text-[#6A6A6A]" data-review-edit-toggle="m{{ review.id }}">Cancel</button>
+                      <button type="submit" class="inline-flex min-h-[42px] items-center justify-center rounded-full bg-[#b89247] px-4 text-sm font-semibold text-white">Save</button>
+                      <button type="button" class="review-edit-toggle text-sm font-semibold text-[#6a6a6a]" data-review-edit-toggle="{{ review.id }}">Cancel</button>
                     </div>
                   </form>
                 {% endif %}
               </article>
             {% empty %}
-              <p class="text-sm leading-7 text-[#5A5A5A]">No reviews yet. Be the first customer to share feedback.</p>
+              <div class="rounded-[1.35rem] border border-dashed border-[#d8c8af] bg-white/70 px-6 py-10 text-center text-[#8a7b66]">
+                No reviews yet. Be the first customer to share feedback.
+              </div>
             {% endfor %}
           </div>
-
-          <div class="mt-4 hidden rounded-[1.5rem] border border-[#EFE4D6] bg-[#FFF9F2] p-4 sm:p-5 md:block public-saloon-section-card">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#A47A38]">Customer Rating</p>
-                <div class="mt-2 flex items-center gap-2 text-[#C5A24B]">
-                  <i class="fa-solid fa-star text-xs"></i>
-                  <span class="text-lg font-semibold text-[#1F1F1F]">
-                    {% if review_summary.total %}{{ review_summary.average }}{% else %}New{% endif %}
-                  </span>
-                  <span class="text-sm text-[#6C6C6C]">({{ review_summary.total }} reviews)</span>
-                </div>
-              </div>
-            </div>
-
-            <form method="post" action="{% url 'public_saloon_add_review' slug=saloon.slug %}" class="mt-5 space-y-3" id="reviewForm" data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}" data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about">
-              {% csrf_token %}
-              <div>
-                <p class="mb-2 text-sm font-medium text-[#5A5A5A]">Your rating</p>
-                <input type="hidden" name="rating" id="reviewRatingInput" required>
-                <div class="flex items-center gap-2" id="reviewStarPicker">
-                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
-                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                  <button type="button" class="review-star-button text-[#D8CFC1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                </div>
-              </div>
-              <textarea
-                name="review_text"
-                rows="4"
-                id="reviewTextInput"
-                class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]"
-                placeholder="Write your experience with this salon"
-                required
-              ></textarea>
-              <button
-                type="submit"
-                class="inline-flex h-11 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]"
-              >
-                Submit Review
-                </button>
-              </form>
-            </div>
-
-            <div class="mt-5 hidden space-y-3 md:block">
-              {% for review in review_cards %}
-                <article class="public-saloon-review-card px-4 py-4">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-start gap-3">
-                      <div class="h-10 w-10 overflow-hidden rounded-full border border-[#E7DAC8] bg-[#F3ECE4]">
-                        {% if review.avatar_url %}
-                          <div class="media-skeleton h-full w-full rounded-full" data-skeleton-type="avatar">
-                            <div class="media-skeleton__placeholder"></div>
-                            <img
-                              src="{{ review.avatar_url }}"
-                              alt="{{ review.display_name }}"
-                              class="h-full w-full object-cover"
-                              data-skeleton-image
-                            >
-                          </div>
-                        {% else %}
-                          <div class="flex h-full w-full items-center justify-center text-xs font-semibold text-[#7A6238]">
-                            {{ review.initial }}
-                          </div>
-                        {% endif %}
-                      </div>
-                      <div>
-                        <p class="text-sm font-semibold text-[#1F1F1F]">{{ review.display_name }}</p>
-                        <p class="mt-1 text-xs text-[#777777]">{{ review.date_label }}</p>
-                      </div>
-                    </div>
-                    <div class="inline-flex items-center gap-1 rounded-full bg-[#FFF4DE] px-2.5 py-1 text-xs font-semibold text-[#8A6A38]">
-                      <i class="fa-solid fa-star text-[10px]"></i>
-                      {{ review.rating }}
-                    </div>
-                  </div>
-                  {% if review.edited %}
-                    <p class="mt-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#A47A38]">Edited</p>
-                  {% endif %}
-                  <p class="mt-3 whitespace-pre-line text-sm leading-6 text-[#575757]">{{ review.review_text }}</p>
-                  {% if user.is_authenticated and review.can_edit %}
-                    <div class="mt-3 flex items-center gap-4">
-                      <button type="button" class="review-edit-toggle text-xs font-semibold text-[#8A6A38]" data-review-edit-toggle="d{{ review.id }}">Edit</button>
-                      <form method="post" action="{% url 'public_saloon_delete_review' slug=saloon.slug review_id=review.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="text-xs font-semibold text-red-600">Delete</button>
-                      </form>
-                    </div>
-                    <form method="post" action="{% url 'public_saloon_edit_review' slug=saloon.slug review_id=review.id %}" class="mt-3 hidden space-y-3" id="review-edit-d{{ review.id }}">
-                      {% csrf_token %}
-                      <input type="hidden" name="rating" id="reviewEditRatingInput-d{{ review.id }}" value="{{ review.rating }}" required>
-                      <div class="flex items-center gap-2">
-                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="1"><i class="fa-solid fa-star text-lg"></i></button>
-                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="2"><i class="fa-solid fa-star text-lg"></i></button>
-                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="3"><i class="fa-solid fa-star text-lg"></i></button>
-                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="4"><i class="fa-solid fa-star text-lg"></i></button>
-                        <button type="button" class="review-edit-star text-[#C5A24B]" data-target="d{{ review.id }}" data-value="5"><i class="fa-solid fa-star text-lg"></i></button>
-                      </div>
-                      <textarea name="review_text" rows="3" class="w-full rounded-xl border border-[#E7DAC8] bg-white px-4 py-3 text-sm text-[#1F1F1F]" required>{{ review.review_text }}</textarea>
-                      <div class="flex items-center gap-3">
-                        <button type="submit" class="inline-flex h-10 items-center justify-center rounded-[0.9rem] bg-[#B89247] px-4 text-sm font-semibold text-white">Save</button>
-                        <button type="button" class="review-edit-toggle text-sm font-semibold text-[#6A6A6A]" data-review-edit-toggle="d{{ review.id }}">Cancel</button>
-                      </div>
-                    </form>
-                  {% endif %}
-                </article>
-              {% empty %}
-                <p class="text-sm leading-7 text-[#5A5A5A] sm:text-base">
-                  No reviews yet. Be the first customer to share feedback.
-                </p>
-              {% endfor %}
-            </div>
-          </div>
         </div>
       </div>
     </div>
-
-    <div
-      id="inquiryCart"
-      class="pointer-events-none fixed inset-x-0 bottom-20 z-40 mx-auto w-full max-w-4xl px-4 opacity-0 transition duration-300 md:bottom-6"
-    >
-      <div class="mx-auto max-w-2xl rounded-[1.45rem] border border-[#E3CEAA] bg-[#FFF9EF] p-3 shadow-[0_16px_36px_rgba(93,72,42,0.14)]">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              id="inquirySummaryToggle"
-              class="flex flex-1 items-center justify-between rounded-[1rem] border border-[#E9D8B8] bg-white px-4 py-3 text-left"
-            >
-              <div>
-                <p class="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A47A38]">Selected</p>
-                <p class="mt-1 text-sm font-semibold text-[#1E1E1E]"><span id="selectedCount">0</span> services added</p>
-              </div>
-              <i id="inquiryChevron" class="fa-solid fa-chevron-up text-[#A47A38] transition-transform"></i>
-            </button>
-
-            <a
-              href="#"
-              id="confirmInquiryButton"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex h-11 shrink-0 items-center justify-center rounded-[1rem] bg-[#B89247] px-4 text-sm font-semibold text-white transition hover:bg-[#A88038]"
-            >
-              Send
-            </a>
-          </div>
-
-          <div id="inquirySummaryPanel" class="hidden">
-            <div class="rounded-[1rem] border border-[#E8DAC1] bg-white px-4 py-3">
-              <div id="selectedServicesList" class="space-y-2 text-sm text-[#5A5A5A]"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="h-20 bg-white md:hidden"></div>
   </div>
 </section>
 
-<div id="galleryModal" class="pointer-events-none fixed inset-0 z-50 hidden bg-white opacity-0 transition">
-  <div id="galleryModalScroller" class="h-screen overflow-y-auto">
-    <div class="mx-auto min-h-screen w-full max-w-6xl bg-white">
-      <div class="sticky top-0 z-20 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 lg:px-6">
-        <button type="button" id="galleryBackButton" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <i class="fa-solid fa-arrow-left"></i>
-          Back
-        </button>
-        <span class="text-sm font-semibold text-gray-900">Gallery</span>
-        <div class="w-12"></div>
-      </div>
-
-      <div class="hidden lg:block">
-        <div class="p-6">
-          <div class="grid grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] gap-6">
-            <div>
-              <div class="overflow-hidden border border-gray-100 relative">
-                <div id="galleryDesktopOverlay" class="absolute top-3 right-3 z-10 hidden rounded-full bg-black/30 px-2 py-1 text-xs text-white"></div>
-                <div id="galleryDesktopMedia" class="bg-gray-50"></div>
-                <button type="button" id="galleryMediaPrev" class="absolute left-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow">
-                  <i class="fa-solid fa-chevron-left text-xs"></i>
-                </button>
-                <button type="button" id="galleryMediaNext" class="absolute right-3 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow">
-                  <i class="fa-solid fa-chevron-right text-xs"></i>
-                </button>
-              </div>
-              <div id="galleryDots" class="mt-2 flex items-center justify-center gap-1"></div>
-            </div>
-
-            <div class="border border-gray-100 p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-2">
-                  <div class="h-8 w-8 overflow-hidden rounded-full border border-gray-200">
-                    {% if saloon.banner_image %}
-                      <img src="{{ saloon.banner_image.url }}" alt="{{ display_name }}" class="h-full w-full object-cover">
-                    {% else %}
-                      <div class="h-full w-full bg-[#EFE4D5]"></div>
-                    {% endif %}
-                  </div>
-                  <div>
-                    <p class="text-sm font-semibold text-gray-900">{{ display_name }}</p>
-                    <p id="galleryDesktopDate" class="text-xs text-gray-500"></p>
-                  </div>
-                </div>
-                <button type="button" id="galleryModalCloseDesktop" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200">
-                  <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-              </div>
-
-              <div class="mt-4">
-                <p id="galleryDesktopTitle" class="text-sm font-semibold text-gray-900"></p>
-                <p id="galleryDesktopDescription" class="mt-2 whitespace-pre-line text-sm text-gray-700"></p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="lg:hidden">
-        <div class="divide-y divide-gray-200 pb-20" id="galleryMobileFeed"></div>
-        <div class="border-t border-gray-200 px-4 py-3">
-          <button type="button" id="galleryModalCloseMobile" class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-gray-200 text-sm font-semibold text-gray-700">
-            Close
-          </button>
-        </div>
-      </div>
-</div>
-</div>
+<div
+  id="selectionBar"
+  class="pointer-events-none fixed inset-x-0 bottom-24 z-40 px-4 opacity-0 transition duration-300 md:bottom-6"
+>
+  <div class="mx-auto max-w-3xl rounded-full border border-[#e3d1b2] bg-[rgba(255,249,239,0.96)] p-2 shadow-[0_20px_45px_rgba(74,56,30,0.18)] backdrop-blur-md">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-full bg-white px-4 py-3">
+      <p class="text-sm font-semibold text-[#2a2118]">
+        <span id="selectedCount">0</span> <span id="selectedCountLabel">services selected</span>
+      </p>
+      {% if public_whatsapp_number %}
+        <a
+          href="#"
+          id="confirmInquiryButton"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a57f39]"
+        >
+          Chat with Salon
+        </a>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 {% if related_nearby_saloons or related_city_saloons %}
-  <section class="border-t border-[#EFE4D6] bg-[#FFFDF9] px-5 py-8 sm:px-8 md:px-10">
-    {% if related_nearby_saloons %}
-      <div>
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="text-2xl font-semibold text-[#1F1F1F]">More salons near {% if profile.locality %}{{ profile.locality }}{% else %}this area{% endif %}</h2>
-            <p class="mt-1 text-sm text-[#6A6A6A]">Keep exploring similar beauty businesses nearby on Elegentra.</p>
+  <section class="border-t border-[#e8dccf] bg-[#fffaf4]">
+    <div class="mx-auto max-w-6xl px-4 py-10 sm:px-5 md:px-6">
+      {% if related_nearby_saloons %}
+        <div>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-semibold text-[#1f1a15]">More salons near {% if profile.locality %}{{ profile.locality }}{% else %}this area{% endif %}</h2>
+              <p class="mt-1 text-sm text-[#7b6a54]">Keep exploring premium beauty spots nearby.</p>
+            </div>
+            {% if profile.locality or profile.city %}
+              <a href="{% url 'public_search' %}?q={% if profile.locality %}{{ profile.locality|urlencode }}{% else %}{{ profile.city|urlencode }}{% endif %}" class="text-sm font-semibold text-[#8a6a38]">
+                View all
+              </a>
+            {% endif %}
           </div>
-          {% if profile.locality or profile.city %}
-            <a href="{% url 'public_search' %}?q={% if profile.locality %}{{ profile.locality|urlencode }}{% else %}{{ profile.city|urlencode }}{% endif %}" class="text-sm font-semibold text-[#8A6A38]">
-              View all
-            </a>
-          {% endif %}
-        </div>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {% for item in related_nearby_saloons %}
-            <a href="{% url 'public_saloon' slug=item.slug %}" class="overflow-hidden rounded-[1.25rem] border border-[#EFE4D6] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div class="media-skeleton h-36 w-full" data-skeleton-type="card">
-                <div class="media-skeleton__placeholder"></div>
-                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
-              </div>
-              <div class="px-4 py-3">
-                <p class="truncate text-base font-semibold text-[#1F1F1F]">{{ item.name }}</p>
-                <p class="mt-1 text-sm text-[#6A6A6A]">{{ item.location }}</p>
-                <p class="mt-2 text-xs font-medium text-[#8A6A38]">
-                  {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
-                </p>
-              </div>
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
 
-    {% if related_city_saloons %}
-      <div class="{% if related_nearby_saloons %}mt-8{% endif %}">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="text-2xl font-semibold text-[#1F1F1F]">More salons in {{ profile.city }}</h2>
-            <p class="mt-1 text-sm text-[#6A6A6A]">Discover other salons, spas, and beauty businesses in the same city.</p>
+          <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {% for item in related_nearby_saloons %}
+              <a href="{{ item.public_url }}" class="overflow-hidden rounded-[1.4rem] border border-[#eadfce] bg-white shadow-[0_14px_30px_rgba(74,56,30,0.06)] transition hover:-translate-y-1 hover:shadow-[0_20px_38px_rgba(74,56,30,0.09)]">
+                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-40 w-full object-cover">
+                <div class="px-4 py-4">
+                  <p class="truncate text-base font-semibold text-[#1f1a15]">{{ item.name }}</p>
+                  <p class="mt-1 text-sm text-[#7b6a54]">{{ item.location }}</p>
+                  <p class="mt-3 text-xs font-medium text-[#8a6a38]">
+                    {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
+                  </p>
+                </div>
+              </a>
+            {% endfor %}
           </div>
-          {% if profile.city %}
-            <a href="{% url 'public_search' %}?q={{ profile.city|urlencode }}" class="text-sm font-semibold text-[#8A6A38]">
-              Explore city
-            </a>
-          {% endif %}
         </div>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {% for item in related_city_saloons %}
-            <a href="{% url 'public_saloon' slug=item.slug %}" class="overflow-hidden rounded-[1.25rem] border border-[#EFE4D6] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div class="media-skeleton h-36 w-full" data-skeleton-type="card">
-                <div class="media-skeleton__placeholder"></div>
-                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-full w-full object-cover" data-skeleton-image>
-              </div>
-              <div class="px-4 py-3">
-                <p class="truncate text-base font-semibold text-[#1F1F1F]">{{ item.name }}</p>
-                <p class="mt-1 text-sm text-[#6A6A6A]">{{ item.location }}</p>
-                <p class="mt-2 text-xs font-medium text-[#8A6A38]">
-                  {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
-                </p>
-              </div>
-            </a>
-          {% endfor %}
+      {% endif %}
+
+      {% if related_city_saloons %}
+        <div class="{% if related_nearby_saloons %}mt-10{% endif %}">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-semibold text-[#1f1a15]">More salons in {{ profile.city }}</h2>
+              <p class="mt-1 text-sm text-[#7b6a54]">Discover other salons and beauty businesses in the same city.</p>
+            </div>
+            {% if profile.city %}
+              <a href="{% url 'public_search' %}?q={{ profile.city|urlencode }}" class="text-sm font-semibold text-[#8a6a38]">
+                Explore city
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {% for item in related_city_saloons %}
+              <a href="{{ item.public_url }}" class="overflow-hidden rounded-[1.4rem] border border-[#eadfce] bg-white shadow-[0_14px_30px_rgba(74,56,30,0.06)] transition hover:-translate-y-1 hover:shadow-[0_20px_38px_rgba(74,56,30,0.09)]">
+                <img src="{{ item.image }}" alt="{{ item.name }}" class="h-40 w-full object-cover">
+                <div class="px-4 py-4">
+                  <p class="truncate text-base font-semibold text-[#1f1a15]">{{ item.name }}</p>
+                  <p class="mt-1 text-sm text-[#7b6a54]">{{ item.location }}</p>
+                  <p class="mt-3 text-xs font-medium text-[#8a6a38]">
+                    {% if item.rating %}<i class="fa-solid fa-star"></i> {{ item.rating|floatformat:1 }} ({{ item.review_count }}){% else %}New on Elegentra{% endif %}
+                  </p>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </section>
 {% endif %}
 
-<div id="reviewLoginPrompt" class="pointer-events-none fixed inset-0 z-[70] hidden bg-black/35 opacity-0 transition">
+<div id="reviewLoginPrompt" class="pointer-events-none fixed inset-0 z-[80] hidden bg-black/35 opacity-0 transition">
   <div class="flex min-h-screen items-center justify-center px-4">
     <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="text-lg font-semibold text-[#1F1F1F]">Login To Add Review</p>
-          <p class="mt-1 text-sm text-[#6A6A6A]">Please log in first to rate this salon and share your review.</p>
+          <p class="text-lg font-semibold text-[#1f1a15]">Login To Add Review</p>
+          <p class="mt-1 text-sm text-[#6a6a6a]">Please log in first to rate this salon and share your review.</p>
         </div>
-        <button type="button" id="reviewLoginPromptClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E7DAC8] text-[#6A6A6A]">
+        <button type="button" id="reviewLoginPromptClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e7dac8] text-[#6a6a6a]">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div class="mt-5 flex gap-3">
-        <a id="reviewLoginPromptAction" href="{% url 'account_login' %}?next={{ request.path|urlencode }}#about" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-[#B89247] px-5 text-sm font-semibold text-white transition hover:bg-[#A88038]">
+        <a id="reviewLoginPromptAction" href="{% url 'account_login' %}?next={{ request.path|urlencode }}#about" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a88038]">
           Log In
         </a>
-        <button type="button" id="reviewLoginPromptCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#E7DAC8] px-5 text-sm font-semibold text-[#5A5A5A]">
+        <button type="button" id="reviewLoginPromptCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#e7dac8] px-5 text-sm font-semibold text-[#5a5a5a]">
           Cancel
         </button>
       </div>
@@ -907,42 +766,64 @@
   </div>
 </div>
 
+<div id="publicProfileToast" class="pointer-events-none fixed bottom-6 left-1/2 z-[90] -translate-x-1/2 rounded-full bg-[#1f1a15] px-4 py-2 text-xs font-semibold text-white opacity-0 shadow-[0_12px_24px_rgba(0,0,0,0.22)] transition duration-200">
+  Link copied
+</div>
+
 {{ whatsapp_template|json_script:"whatsapp-template-data" }}
 {{ display_name|json_script:"whatsapp-salon-name" }}
 
 <script>
   (function () {
-    function setupReviewForm(formId, ratingInputId, starSelector, textInputId) {
-      const ratingInput = document.getElementById(ratingInputId);
-      const starButtons = Array.from(document.querySelectorAll(starSelector));
-      const reviewForm = document.getElementById(formId);
-      const reviewTextInput = document.getElementById(textInputId);
+    const pageShell = document.getElementById("publicSaloonPage");
+    if (!pageShell) return;
+
+    function markReady() {
+      pageShell.classList.add("page-shell-ready");
+      window.setTimeout(function () {
+        pageShell.classList.remove("page-shell-loading");
+      }, 380);
+    }
+
+    if (document.readyState === "complete") {
+      requestAnimationFrame(markReady);
+    } else {
+      window.addEventListener("load", function () {
+        requestAnimationFrame(markReady);
+      }, { once: true });
+    }
+  })();
+
+  (function () {
+    function setupReviewForm() {
+      const ratingInput = document.getElementById("reviewRatingInput");
+      const starButtons = Array.from(document.querySelectorAll(".review-star-button"));
+      const reviewForm = document.getElementById("reviewForm");
+      const reviewTextInput = document.getElementById("reviewTextInput");
 
       if (!reviewForm) return;
 
       const isAuthenticated = reviewForm.dataset.authenticated === "true";
 
-      if (ratingInput && starButtons.length) {
-        function paintStars(value) {
-          starButtons.forEach((button, index) => {
-            const active = index < value;
-            button.classList.toggle("text-[#C5A24B]", active);
-            button.classList.toggle("text-[#D8CFC1]", !active);
-          });
-        }
-
-        starButtons.forEach((button) => {
-          button.addEventListener("click", function () {
-            if (!isAuthenticated) {
-              openLoginPrompt();
-              return;
-            }
-            const value = parseInt(button.getAttribute("data-value"), 10) || 0;
-            ratingInput.value = value;
-            paintStars(value);
-          });
+      function paintStars(value) {
+        starButtons.forEach((button, index) => {
+          const active = index < value;
+          button.classList.toggle("text-[#c5a24b]", active);
+          button.classList.toggle("text-[#d8cfc1]", !active);
         });
       }
+
+      starButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+          if (!isAuthenticated) {
+            openLoginPrompt();
+            return;
+          }
+          const value = parseInt(button.getAttribute("data-value"), 10) || 0;
+          ratingInput.value = value;
+          paintStars(value);
+        });
+      });
 
       if (!isAuthenticated && reviewTextInput) {
         reviewTextInput.addEventListener("focus", function (event) {
@@ -966,17 +847,14 @@
     const loginPrompt = document.getElementById("reviewLoginPrompt");
     const loginPromptClose = document.getElementById("reviewLoginPromptClose");
     const loginPromptCancel = document.getElementById("reviewLoginPromptCancel");
-    const mobileReviewToggle = document.getElementById("mobileReviewToggle");
-    const mobileReviewPanel = document.getElementById("mobileReviewPanel");
-    const mobileReviewChevron = document.getElementById("mobileReviewChevron");
 
-    function openLoginPrompt() {
+    window.openLoginPrompt = function () {
       if (!loginPrompt) return;
       loginPrompt.classList.remove("hidden", "pointer-events-none", "opacity-0");
       requestAnimationFrame(function () {
         loginPrompt.classList.add("opacity-100");
       });
-    }
+    };
 
     function closeLoginPrompt() {
       if (!loginPrompt) return;
@@ -995,13 +873,6 @@
       });
     }
 
-    if (mobileReviewToggle && mobileReviewPanel && mobileReviewChevron) {
-      mobileReviewToggle.addEventListener("click", function () {
-        mobileReviewPanel.classList.toggle("hidden");
-        mobileReviewChevron.classList.toggle("rotate-180");
-      });
-    }
-
     document.querySelectorAll("[data-review-edit-toggle]").forEach(function (button) {
       button.addEventListener("click", function () {
         var target = button.getAttribute("data-review-edit-toggle");
@@ -1013,8 +884,8 @@
     function paintEditStars(target, value) {
       document.querySelectorAll('.review-edit-star[data-target="' + target + '"]').forEach(function (button, index) {
         var active = index < value;
-        button.classList.toggle("text-[#C5A24B]", active);
-        button.classList.toggle("text-[#D8CFC1]", !active);
+        button.classList.toggle("text-[#c5a24b]", active);
+        button.classList.toggle("text-[#d8cfc1]", !active);
       });
     }
 
@@ -1035,8 +906,7 @@
       paintEditStars(target, value);
     });
 
-    setupReviewForm("reviewForm", "reviewRatingInput", ".review-star-button", "reviewTextInput");
-    setupReviewForm("reviewFormMobile", "reviewRatingInputMobile", ".review-star-button-mobile", "reviewTextInputMobile");
+    setupReviewForm();
   })();
 
   (function () {
@@ -1051,6 +921,9 @@
     function syncFavoriteState(nextState) {
       favoriteButtons.forEach(function (button) {
         button.classList.toggle("is-active", nextState);
+        button.classList.toggle("border-[#f0c7c7]", nextState);
+        button.classList.toggle("bg-[rgba(255,244,244,0.24)]", nextState);
+        button.classList.toggle("text-[#ffd9d9]", nextState);
         button.setAttribute("aria-label", nextState ? "Remove from favourites" : "Save to favourites");
         const icon = button.querySelector("i");
         if (!icon) return;
@@ -1077,13 +950,6 @@
           .then(function (data) {
             if (!data.ok) return;
             syncFavoriteState(Boolean(data.is_favorited));
-            if (data.is_favorited) {
-              favoriteButtons.forEach(function (item) {
-                item.classList.remove("favorite-pop");
-                void item.offsetWidth;
-                item.classList.add("favorite-pop");
-              });
-            }
           })
           .catch(function () {});
       });
@@ -1101,24 +967,71 @@
         const trackUrl = link.getAttribute("data-map-track-url");
         if (!trackUrl) return;
 
-        const body = new URLSearchParams();
         fetch(trackUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
             "X-CSRFToken": getCsrfToken()
           },
-          body: body.toString(),
+          body: "",
           keepalive: true
-        }).catch(function () {
-          // Keep the map action smooth even if tracking fails.
-        });
+        }).catch(function () {});
+      });
+    });
+  })();
+
+  (function () {
+    const shareButtons = Array.from(document.querySelectorAll("[data-share-button]"));
+    const toast = document.getElementById("publicProfileToast");
+    if (!shareButtons.length) return;
+
+    let toastTimer = null;
+
+    function showCopyToast(text) {
+      if (!toast) return;
+      toast.textContent = text || "Link copied";
+      toast.classList.remove("opacity-0");
+      toast.classList.add("opacity-100");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        toast.classList.remove("opacity-100");
+        toast.classList.add("opacity-0");
+      }, 1600);
+    }
+
+    async function copyToClipboard(url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        showCopyToast("Link copied");
+      } catch (error) {
+        showCopyToast("Unable to copy");
+      }
+    }
+
+    shareButtons.forEach(function (button) {
+      button.addEventListener("click", async function () {
+        const url = button.dataset.shareUrl || window.location.href;
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: "{{ display_name|escapejs }}",
+              text: "Check out this salon on Elegentra",
+              url: url
+            });
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+          }
+        }
+        copyToClipboard(url);
       });
     });
   })();
 
   (function () {
     const tabs = Array.from(document.querySelectorAll(".public-tab"));
+    const tabsAnchor = document.getElementById("publicTabsAnchor");
+    const header = document.querySelector("header");
     const panels = {
       services: document.getElementById("public-tab-services"),
       gallery: document.getElementById("public-tab-gallery"),
@@ -1129,8 +1042,6 @@
       if (!panels[target]) target = "services";
 
       tabs.forEach((item) => {
-        item.classList.remove("border-[#C5A24B]", "text-[#1F1F1F]");
-        item.classList.add("border-transparent", "text-[#1F1F1F]/78");
         item.classList.remove("is-active");
       });
 
@@ -1141,8 +1052,6 @@
 
       const activeTab = tabs.find((item) => item.dataset.target === target);
       if (activeTab) {
-        activeTab.classList.add("border-[#C5A24B]", "text-[#1F1F1F]");
-        activeTab.classList.remove("border-transparent", "text-[#1F1F1F]/78");
         activeTab.classList.add("is-active");
       }
 
@@ -1150,11 +1059,19 @@
       panels[target].classList.add("block");
     }
 
+    function scrollTabsIntoView() {
+      if (!tabsAnchor) return;
+      const headerHeight = header ? Math.round(header.getBoundingClientRect().height) : 80;
+      const targetTop = Math.max(0, window.scrollY + tabsAnchor.getBoundingClientRect().top - headerHeight - 2);
+      window.scrollTo({ top: targetTop, behavior: "smooth" });
+    }
+
     tabs.forEach((tab) => {
       tab.addEventListener("click", function () {
         const target = tab.dataset.target;
         activateTab(target);
         window.location.hash = target;
+        scrollTabsIntoView();
       });
     });
 
@@ -1163,362 +1080,231 @@
   })();
 
   (function () {
-    const serviceButtons = Array.from(document.querySelectorAll(".service-toggle"));
-    const inquiryCart = document.getElementById("inquiryCart");
-    const selectedCount = document.getElementById("selectedCount");
-    const selectedServicesList = document.getElementById("selectedServicesList");
-    const confirmInquiryButton = document.getElementById("confirmInquiryButton");
-    const inquirySummaryToggle = document.getElementById("inquirySummaryToggle");
-    const inquirySummaryPanel = document.getElementById("inquirySummaryPanel");
-    const inquiryChevron = document.getElementById("inquiryChevron");
+    const dock = document.getElementById("publicTabsSticky");
+    const anchor = document.getElementById("publicTabsAnchor");
+    const scope = document.getElementById("publicTabsScope");
+    const header = document.querySelector("header");
+    if (!dock || !anchor || !scope || !header) return;
 
-    if (serviceButtons.length && inquiryCart) {
-      const whatsappNumber = "{{ public_whatsapp_number }}";
-      const template = JSON.parse(document.getElementById("whatsapp-template-data").textContent);
-      const salonName = JSON.parse(document.getElementById("whatsapp-salon-name").textContent);
-      const selected = new Map();
+    function updateDockOffset() {
+      const headerHeight = header ? Math.round(header.getBoundingClientRect().height) : 80;
+      document.documentElement.style.setProperty("--public-tabs-top", headerHeight + "px");
+    }
 
-      function getCsrfToken() {
-        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : "";
+    function updateDockState() {
+      const headerHeight = header ? Math.round(header.getBoundingClientRect().height) : 80;
+      const anchorRect = anchor.getBoundingClientRect();
+      const stickyHeight = Math.round(dock.getBoundingClientRect().height || dock.offsetHeight || 0);
+      const anchorTop = anchorRect.top;
+      const scopeBottom = scope.getBoundingClientRect().bottom;
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      anchor.style.height = stickyHeight + "px";
+      const shouldStart = anchorTop <= headerHeight;
+      const shouldEnd = scopeBottom <= headerHeight;
+      const shouldFix = shouldStart && !shouldEnd;
+
+      if (!shouldFix) {
+        dock.classList.remove("is-fixed");
+        dock.style.removeProperty("--public-tabs-left");
+        dock.style.removeProperty("--public-tabs-width");
+        dock.style.transform = "";
+        return;
       }
 
-      function registerInterest(button, serviceId) {
-        const interestUrl = button.dataset.interestUrl;
-        if (!interestUrl) return;
+      dock.classList.add("is-fixed");
+      dock.style.setProperty("--public-tabs-left", Math.round(anchorRect.left) + "px");
+      dock.style.setProperty("--public-tabs-width", Math.round(anchorRect.width) + "px");
 
-        const body = new URLSearchParams();
-        body.append("service_id", serviceId);
+      const enterOffset = isMobile ? 0 : Math.max(0, anchorTop - headerHeight);
+      const overlap = Math.max(0, (headerHeight + stickyHeight) - scopeBottom);
+      const nearEnd = scopeBottom <= (headerHeight + stickyHeight + 2);
+      const translateY = nearEnd ? (enterOffset - overlap) : enterOffset;
+      dock.style.transform = "translateY(" + translateY + "px)";
+    }
 
-        fetch(interestUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-            "X-CSRFToken": getCsrfToken()
-          },
-          body: body.toString()
-        }).catch(function () {
-          // Silent fail so the inquiry flow still feels smooth.
-        });
-      }
-
-      function buildMessage() {
-        const services = Array.from(selected.values()).map((item) => "- " + item.name + " (Rs. " + item.price + ")").join("\n");
-        let message = template.replaceAll("{salon_name}", salonName);
-
-        if (message.includes("{services}")) {
-          message = message.replaceAll("{services}", services);
-        } else {
-          message += "\n\n" + services;
-        }
-
-        return message.trim();
-      }
-
-      function setButtonState(button, active) {
-        if (active) {
-          button.classList.remove("border-[#B89247]", "bg-[#D2AE63]", "text-white");
-          button.classList.add("border-[#D7C09A]", "bg-[#F5ECDB]", "text-[#8B6732]");
-          button.innerHTML = '<span class="inline-flex items-center gap-2"><i class="fa-solid fa-check"></i> Added</span>';
-        } else {
-          button.classList.remove("border-[#D7C09A]", "bg-[#F5ECDB]", "text-[#8B6732]");
-          button.classList.add("border-[#B89247]", "bg-[#D2AE63]", "text-white");
-          button.textContent = "Check Availability";
-        }
-      }
-
-      function renderCart() {
-        const count = selected.size;
-        selectedCount.textContent = count;
-
-        if (count === 0) {
-          inquiryCart.classList.add("pointer-events-none", "opacity-0");
-          inquiryCart.classList.remove("opacity-100");
-          inquirySummaryPanel.classList.add("hidden");
-          selectedServicesList.innerHTML = "";
-          return;
-        }
-
-        inquiryCart.classList.remove("pointer-events-none", "opacity-0");
-        inquiryCart.classList.add("opacity-100");
-
-        selectedServicesList.innerHTML = Array.from(selected.values()).map((item) => (
-          '<div class="flex items-center justify-between gap-3 rounded-[1rem] bg-[#FFF8EE] px-3 py-2">' +
-            '<div>' +
-              '<p class="font-medium text-[#1E1E1E]">' + item.name + '</p>' +
-              '<p class="text-xs text-[#6A6A6A]">Rs. ' + item.price + '</p>' +
-            '</div>' +
-            '<button type="button" class="remove-selected text-xs font-semibold text-[#A47A38]" data-remove-id="' + item.id + '">Remove</button>' +
-          '</div>'
-        )).join("");
-
-        confirmInquiryButton.href = "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(buildMessage());
-      }
-
-      serviceButtons.forEach((button) => {
-        button.addEventListener("click", function () {
-          const id = button.dataset.serviceId;
-          const payload = {
-            id: id,
-            name: button.dataset.serviceName,
-            price: button.dataset.servicePrice
-          };
-
-          if (selected.has(id)) {
-            selected.delete(id);
-            document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, false));
-          } else {
-            selected.set(id, payload);
-            document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, true));
-            registerInterest(button, id);
-          }
-
-          renderCart();
-        });
+    let ticking = false;
+    function requestUpdateDockState() {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        updateDockState();
+        ticking = false;
       });
+    }
 
-      document.addEventListener("click", function (event) {
-        const removeButton = event.target.closest("[data-remove-id]");
-        if (!removeButton) return;
+    updateDockOffset();
+    updateDockState();
+    window.addEventListener("resize", function () {
+      updateDockOffset();
+      requestUpdateDockState();
+    });
+    window.addEventListener("scroll", requestUpdateDockState, { passive: true });
 
-        const id = removeButton.getAttribute("data-remove-id");
-        selected.delete(id);
-        document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, false));
-        renderCart();
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(function () {
+        updateDockOffset();
+        requestUpdateDockState();
       });
-
-      inquirySummaryToggle.addEventListener("click", function () {
-        inquirySummaryPanel.classList.toggle("hidden");
-        inquiryChevron.classList.toggle("rotate-180");
-      });
+      observer.observe(header);
+      observer.observe(scope);
     }
   })();
 
   (function () {
-    const galleryPosts = [
-      {% for post in gallery_posts %}
-        {
-          title: "{{ post.title|default:display_name|escapejs }}",
-          description: "{{ post.description|default:''|escapejs }}",
-          date: "{{ post.created_at|date:'M d, Y'|escapejs }}",
-          media: [
-            {% for media in post.image_media %}
-              {
-                url: "{{ media.file.url|escapejs }}"
-              }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-          ]
-        }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    const serviceButtons = Array.from(document.querySelectorAll(".service-toggle"));
+    const selectionBar = document.getElementById("selectionBar");
+    const selectedCount = document.getElementById("selectedCount");
+    const selectedCountLabel = document.getElementById("selectedCountLabel");
+    const confirmInquiryButton = document.getElementById("confirmInquiryButton");
+    const primaryWhatsappButton = document.getElementById("primaryWhatsappButton");
+    const primaryWhatsappButtonDesktop = document.getElementById("primaryWhatsappButtonDesktop");
 
-    const triggers = Array.from(document.querySelectorAll("[data-post-trigger]"));
-    const modal = document.getElementById("galleryModal");
-    const modalScroller = document.getElementById("galleryModalScroller");
-    const desktopMedia = document.getElementById("galleryDesktopMedia");
-    const desktopOverlay = document.getElementById("galleryDesktopOverlay");
-    const desktopTitle = document.getElementById("galleryDesktopTitle");
-    const desktopDescription = document.getElementById("galleryDesktopDescription");
-    const desktopDate = document.getElementById("galleryDesktopDate");
-    const mobileFeed = document.getElementById("galleryMobileFeed");
-    const dots = document.getElementById("galleryDots");
-    const mediaPrev = document.getElementById("galleryMediaPrev");
-    const mediaNext = document.getElementById("galleryMediaNext");
-    const closeDesktop = document.getElementById("galleryModalCloseDesktop");
-    const closeMobile = document.getElementById("galleryModalCloseMobile");
-    const backButton = document.getElementById("galleryBackButton");
+    if (!serviceButtons.length) return;
 
-    if (!galleryPosts.length || !modal || !modalScroller || !desktopMedia || !mobileFeed || !dots || !mediaPrev || !mediaNext || !closeDesktop || !closeMobile || !backButton) return;
+    const whatsappNumber = "{{ public_whatsapp_number }}";
+    const template = JSON.parse(document.getElementById("whatsapp-template-data").textContent);
+    const salonName = JSON.parse(document.getElementById("whatsapp-salon-name").textContent);
+    const selected = new Map();
 
-    let activePostIndex = 0;
-    let activeMediaIndex = 0;
+    function getCsrfToken() {
+      const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+      return match ? decodeURIComponent(match[1]) : "";
+    }
 
-    function renderDesktopMedia() {
-      const post = galleryPosts[activePostIndex];
-      const item = post.media[activeMediaIndex];
-      if (!item) return;
+    function registerInterest(button, serviceId) {
+      const interestUrl = button.dataset.interestUrl;
+      if (!interestUrl) return;
 
-      desktopTitle.textContent = post.title;
-      desktopDescription.textContent = post.description || "-";
-      desktopDate.textContent = post.date;
+      const body = new URLSearchParams();
+      body.append("service_id", serviceId);
 
-      if (post.media.length > 1) {
-        desktopOverlay.classList.remove("hidden");
-        desktopOverlay.textContent = (activeMediaIndex + 1) + "/" + post.media.length;
+      fetch(interestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          "X-CSRFToken": getCsrfToken()
+        },
+        body: body.toString()
+      }).catch(function () {});
+    }
+
+    function buildMessage(includeSelections) {
+      const selectedServices = Array.from(selected.values()).map((item) => "- " + item.name + " (Rs. " + item.price + ")").join("\n");
+      const fallbackServices = "- I would like to know more about your services and availability.";
+      const servicesText = includeSelections && selectedServices ? selectedServices : fallbackServices;
+      let message = template.replaceAll("{salon_name}", salonName);
+
+      if (message.includes("{services}")) {
+        message = message.replaceAll("{services}", servicesText);
       } else {
-        desktopOverlay.classList.add("hidden");
+        message += "\n\n" + servicesText;
       }
 
-      desktopMedia.innerHTML = '<img src="' + item.url + '" alt="' + post.title + '" class="h-[420px] w-full object-contain bg-gray-50">';
-
-      dots.innerHTML = post.media.map((_, index) => (
-        '<button type="button" class="' +
-          (index === activeMediaIndex ? 'h-1.5 w-6 rounded-full bg-gray-900' : 'h-1.5 w-1.5 rounded-full bg-gray-300') +
-          '" data-desktop-dot="' + index + '" aria-label="Go to media ' + (index + 1) + '"></button>'
-      )).join("");
-
-      mediaPrev.classList.toggle("hidden", post.media.length <= 1);
-      mediaPrev.classList.toggle("inline-flex", post.media.length > 1);
-      mediaNext.classList.toggle("hidden", post.media.length <= 1);
-      mediaNext.classList.toggle("inline-flex", post.media.length > 1);
+      return message.trim();
     }
 
-    function renderMobileFeed(selectedIndex) {
-      mobileFeed.innerHTML = galleryPosts.map((post, postIndex) => {
-        const mediaMarkup = post.media.map((media, mediaIndex) => {
-          const hiddenClass = mediaIndex === 0 ? "" : " hidden";
-          return '<div class="public-mobile-slide' + hiddenClass + '" data-mobile-post="' + postIndex + '"><img src="' + media.url + '" alt="' + post.title + '" class="w-full h-72 object-contain bg-gray-50"></div>';
-        }).join("");
-
-        const dotsMarkup = post.media.length > 1
-          ? '<div class="flex items-center justify-center gap-1 mt-2" data-mobile-dots="' + postIndex + '">' + post.media.map((_, mediaIndex) => (
-              '<button type="button" class="' + (mediaIndex === 0 ? 'w-1.5 h-1.5 rounded-full bg-gray-900' : 'w-1.5 h-1.5 rounded-full bg-gray-300') + '" data-mobile-dot="' + postIndex + '" data-index="' + mediaIndex + '"></button>'
-            )).join("") + '</div>'
-          : "";
-
-        return (
-          '<div class="py-4" id="public-post-' + postIndex + '">' +
-            '<div class="flex items-center gap-2 px-4">' +
-              '<div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200">' +
-                '{% if saloon.banner_image %}<img src="{{ saloon.banner_image.url }}" alt="{{ display_name|escapejs }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-[#EFE4D5]"></div>{% endif %}' +
-              '</div>' +
-              '<div>' +
-                '<p class="text-xs font-semibold text-gray-900">{{ display_name|escapejs }}</p>' +
-                '<p class="text-[11px] text-gray-500">' + post.date + '</p>' +
-              '</div>' +
-            '</div>' +
-            '<div class="mt-3 overflow-hidden border-y border-gray-100 relative">' +
-              (post.media.length > 1 ? '<div class="absolute top-3 right-3 z-10 bg-black/30 text-white text-[11px] px-2 py-1 rounded-full" data-mobile-overlay="' + postIndex + '">1/' + post.media.length + '</div>' : '') +
-              '<div class="public-mobile-carousel" data-mobile-carousel="' + postIndex + '">' + mediaMarkup + '</div>' +
-            '</div>' +
-            dotsMarkup +
-            '<p class="px-4 pt-3 text-sm font-semibold text-gray-900">' + post.title + '</p>' +
-            '<p class="px-4 pt-2 text-sm text-gray-700 whitespace-pre-line">' + (post.description || '-') + '</p>' +
-          '</div>'
-        );
-      }).join("");
-
-      initializeMobileGallery();
-    }
-
-    function initializeMobileGallery() {
-      const state = {};
-
-      function update(postIndex) {
-        const slides = mobileFeed.querySelectorAll('.public-mobile-slide[data-mobile-post="' + postIndex + '"]');
-        slides.forEach((slide, index) => {
-          slide.classList.toggle("hidden", index !== state[postIndex]);
-        });
-
-        const overlay = mobileFeed.querySelector('[data-mobile-overlay="' + postIndex + '"]');
-        if (overlay) overlay.textContent = (state[postIndex] + 1) + "/" + slides.length;
-
-        mobileFeed.querySelectorAll('[data-mobile-dot="' + postIndex + '"]').forEach((dot, index) => {
-          dot.classList.toggle("bg-gray-900", index === state[postIndex]);
-          dot.classList.toggle("bg-gray-300", index !== state[postIndex]);
-        });
+    function syncWhatsappLinks() {
+      const baseUrl = whatsappNumber ? "https://wa.me/" + whatsappNumber + "?text=" : "#";
+      if (primaryWhatsappButton) {
+        primaryWhatsappButton.href = baseUrl + encodeURIComponent(buildMessage(false));
       }
-
-      mobileFeed.querySelectorAll(".public-mobile-carousel").forEach((carousel) => {
-        const postIndex = carousel.getAttribute("data-mobile-carousel");
-        state[postIndex] = 0;
-        let startX = 0;
-        let isTouch = false;
-
-        carousel.addEventListener("touchstart", function (e) {
-          if (!e.touches || !e.touches.length) return;
-          isTouch = true;
-          startX = e.touches[0].clientX;
-        }, { passive: true });
-
-        carousel.addEventListener("touchend", function (e) {
-          if (!isTouch) return;
-          isTouch = false;
-          if (!e.changedTouches || !e.changedTouches.length) return;
-          const delta = e.changedTouches[0].clientX - startX;
-          const slides = mobileFeed.querySelectorAll('.public-mobile-slide[data-mobile-post="' + postIndex + '"]');
-          if (Math.abs(delta) < 40 || !slides.length) return;
-          if (delta < 0) {
-            state[postIndex] = (state[postIndex] + 1) % slides.length;
-          } else {
-            state[postIndex] = (state[postIndex] - 1 + slides.length) % slides.length;
-          }
-          update(postIndex);
-        }, { passive: true });
-      });
-
-      mobileFeed.querySelectorAll("[data-mobile-dot]").forEach((dot) => {
-        dot.addEventListener("click", function () {
-          const postIndex = dot.getAttribute("data-mobile-dot");
-          state[postIndex] = parseInt(dot.getAttribute("data-index"), 10) || 0;
-          update(postIndex);
-        });
-      });
-
+      if (primaryWhatsappButtonDesktop) {
+        primaryWhatsappButtonDesktop.href = baseUrl + encodeURIComponent(buildMessage(false));
+      }
+      if (confirmInquiryButton) {
+        confirmInquiryButton.href = baseUrl + encodeURIComponent(buildMessage(true));
+      }
     }
 
-    function scrollMobileToPost(postIndex) {
-      const target = document.getElementById("public-post-" + postIndex);
-      if (!target) return;
-      const headerOffset = 56;
-      modalScroller.scrollTop = Math.max(0, target.offsetTop - headerOffset);
-    }
+    function setButtonState(button, active) {
+      const card = document.querySelector('[data-service-card="' + button.dataset.serviceId + '"]');
 
-    function openModal(postIndex) {
-      activePostIndex = postIndex;
-      activeMediaIndex = 0;
-      renderDesktopMedia();
-      renderMobileFeed(postIndex);
-      modal.classList.remove("hidden", "pointer-events-none");
-      requestAnimationFrame(() => modal.classList.add("opacity-100"));
-      document.body.classList.add("overflow-hidden");
-      modalScroller.scrollTop = 0;
-      requestAnimationFrame(() => {
-        if (window.innerWidth < 1024) {
-          scrollMobileToPost(postIndex);
+      if (active) {
+        button.classList.remove("border-[#d4b782]", "text-[#8c6a2c]");
+        button.classList.add("border-[#c79c54]", "bg-[#fbf3e5]", "text-[#6c4f1d]");
+        button.innerHTML = '<span class="inline-flex items-center gap-2"><i class="fa-solid fa-check text-xs"></i> Selected</span>';
+        if (card) {
+          card.classList.add("border-[#d6b780]", "bg-[#fffaf3]");
         }
-      });
+      } else {
+        button.classList.remove("border-[#c79c54]", "bg-[#fbf3e5]", "text-[#6c4f1d]");
+        button.classList.add("border-[#d4b782]", "text-[#8c6a2c]");
+        button.textContent = "Choose";
+        if (card) {
+          card.classList.remove("border-[#d6b780]", "bg-[#fffaf3]");
+        }
+      }
     }
 
-    function closeModal() {
-      modal.classList.remove("opacity-100");
-      setTimeout(() => {
-        modal.classList.add("hidden", "pointer-events-none");
-      }, 200);
-      document.body.classList.remove("overflow-hidden");
+    function renderSelectionBar() {
+      const count = selected.size;
+      if (selectedCount) selectedCount.textContent = count;
+      if (selectedCountLabel) selectedCountLabel.textContent = count === 1 ? "service selected" : "services selected";
+
+      if (!selectionBar) return;
+
+      if (count === 0) {
+        selectionBar.classList.add("pointer-events-none", "opacity-0");
+        selectionBar.classList.remove("opacity-100");
+        syncWhatsappLinks();
+        return;
+      }
+
+      selectionBar.classList.remove("pointer-events-none", "opacity-0");
+      selectionBar.classList.add("opacity-100");
+      syncWhatsappLinks();
     }
 
-    triggers.forEach((button, index) => {
+    serviceButtons.forEach((button) => {
       button.addEventListener("click", function () {
-        openModal(index);
+        const id = button.dataset.serviceId;
+        const payload = {
+          id: id,
+          name: button.dataset.serviceName,
+          price: button.dataset.servicePrice
+        };
+
+        if (selected.has(id)) {
+          selected.delete(id);
+          document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, false));
+        } else {
+          selected.set(id, payload);
+          document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach((match) => setButtonState(match, true));
+          registerInterest(button, id);
+        }
+
+        renderSelectionBar();
       });
     });
 
-    mediaPrev.addEventListener("click", function () {
-      const post = galleryPosts[activePostIndex];
-      activeMediaIndex = (activeMediaIndex - 1 + post.media.length) % post.media.length;
-      renderDesktopMedia();
-    });
+    syncWhatsappLinks();
+    renderSelectionBar();
+  })();
 
-    mediaNext.addEventListener("click", function () {
-      const post = galleryPosts[activePostIndex];
-      activeMediaIndex = (activeMediaIndex + 1) % post.media.length;
-      renderDesktopMedia();
+  (function () {
+    function closeServiceCards(exceptId) {
+      document.querySelectorAll("[data-service-info-card]").forEach(function (card) {
+        if (card.getAttribute("data-service-info-card") !== exceptId) card.classList.add("hidden");
+      });
+    }
+    document.querySelectorAll("[data-service-info-toggle]").forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var id = button.getAttribute("data-service-info-toggle");
+        var card = document.querySelector('[data-service-info-card="' + id + '"]');
+        if (!card) return;
+        var willOpen = card.classList.contains("hidden");
+        closeServiceCards(id);
+        card.classList.toggle("hidden", !willOpen);
+      });
     });
-
-    dots.addEventListener("click", function (event) {
-      const dot = event.target.closest("[data-desktop-dot]");
-      if (!dot) return;
-      activeMediaIndex = parseInt(dot.getAttribute("data-desktop-dot"), 10) || 0;
-      renderDesktopMedia();
-    });
-
-    closeDesktop.addEventListener("click", closeModal);
-    closeMobile.addEventListener("click", closeModal);
-    backButton.addEventListener("click", closeModal);
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) closeModal();
-    });
+    document.addEventListener("click", function () { closeServiceCards(); });
   })();
 </script>
 {% endblock %}
+
+
+
+
+

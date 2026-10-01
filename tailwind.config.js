@@ -6,7 +6,11 @@ module.exports = {
     "./static/js/**/*.js"
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        bauserif: ["Bauserif", "serif"],
+      },
+    },
   },
   plugins: [],
 };

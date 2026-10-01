@@ -1,0 +1,15 @@
+{% extends "staffpanel/base.html" %}
+{% block content %}
+<h2 class="text-xl font-semibold">Founder Program</h2>
+<div class="mt-4 rounded-xl border border-[#d8e0ea] bg-white p-4 shadow-sm">
+  {% for sub in founders %}
+    <div class="grid gap-2 border-b border-slate-100 py-3 text-sm last:border-b-0 sm:grid-cols-[80px_1fr_140px]">
+      <strong>#{{ sub.founder_partner_number }}</strong>
+      <a href="{% url 'staffpanel:saloon_review' sub.saloon.id %}" class="font-semibold text-slate-900 transition hover:text-[#9A7B47] hover:underline">{{ sub.saloon.name }}</a>
+      <span>{{ sub.trial_ends_at|date:"d M Y" }}</span>
+    </div>
+  {% empty %}
+    <p class="text-sm text-slate-500">No founder partners yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

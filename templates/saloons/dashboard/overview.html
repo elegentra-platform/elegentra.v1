@@ -1,4 +1,4 @@
-{% extends "saloons/dashboard/dashboard.html" %}
+﻿{% extends "saloons/dashboard/dashboard.html" %}
 
 {% block content %}
 <div class="grid grid-cols-2 gap-4 mb-8 min-w-0 lg:grid-cols-4">
@@ -20,28 +20,100 @@
     <p class="text-sm text-gray-500">{{ top_service_support }}</p>
   </div>
 
-  <div class="bg-white rounded-2xl p-4 sm:p-5 min-w-0">
-    <i class="fa-regular fa-circle-check mb-3 p-2 rounded-lg bg-green-50 text-green-600"></i>
-    <p class="text-xl sm:text-2xl font-semibold">{{ saloon.get_approval_status_display }}</p>
-    <p class="text-sm text-gray-500">Salon Status</p>
+  <div class="rounded-2xl border border-[#ecdfc0] bg-gradient-to-br from-[#fff9ec] to-[#faf0d6] p-4 sm:p-5 min-w-0">
+    {% if billing_state == "ended_ready" %}
+      <i class="fa-solid fa-circle-check mb-3 p-2 rounded-lg bg-[#e7f3ea] text-[#2f6f45]"></i>
+      <p class="text-xl sm:text-2xl font-semibold text-[#2d251d]">Active</p>
+      <p class="text-sm text-[#8a6834]">Billing enabled</p>
+    {% elif billing_state == "ended_pending" %}
+      <i class="fa-solid fa-triangle-exclamation mb-3 p-2 rounded-lg bg-[#fbeee0] text-[#a15d1f]"></i>
+      <p class="text-xl sm:text-2xl font-semibold text-[#2d251d]">Action needed</p>
+      <p class="text-sm text-[#8a6834]">Renew subscription</p>
+    {% else %}
+      <i class="fa-regular fa-clock mb-3 p-2 rounded-lg bg-[#f3e2b8] text-[#8a6834]"></i>
+      <p class="text-xl sm:text-2xl font-semibold text-[#2d251d]">{{ trial_days_left }} day{{ trial_days_left|pluralize }} left</p>
+      <p class="text-sm text-[#8a6834]">Free trial</p>
+    {% endif %}
   </div>
 </div>
 
+
+<div class="mb-8 overflow-hidden rounded-[28px] border border-[#e7d3ff] bg-gradient-to-br from-[#f9f4ff] via-[#f6f0ff] to-[#fffaf7] shadow-[0_18px_55px_rgba(109,74,177,0.12)]">
+  <div class="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+    <div class="p-5 sm:p-6 lg:p-7">
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-[#d9c5ff] bg-gradient-to-r from-[#efe6ff] to-[#fdf1f0] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[#5d2dc2] shadow-sm">
+        <i class="fa-solid fa-link text-[11px]"></i>
+        MyFestivo
+      </div>
+      <h2 class="text-xl font-semibold text-[#1d1630] sm:text-2xl">Expand Your Business Beyond Salons</h2>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-[#484058]">
+        Reach customers planning weddings, birthdays, engagements, corporate events, and more. Connect your Elegentra account to MyFestivo and review what you want to import there.
+      </p>
+      <div class="mt-5 grid gap-3 text-sm text-[#382f49] sm:grid-cols-2">
+        <div class="flex items-center gap-2 rounded-2xl border border-[#e7d6ff] bg-[#f5f1ff] px-3 py-2 shadow-sm">
+          <i class="fa-regular fa-circle-check text-[#6b3fe1]"></i>
+          <span>No repeated onboarding</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-2xl border border-[#e7d6ff] bg-[#f5f1ff] px-3 py-2 shadow-sm">
+          <i class="fa-regular fa-id-card text-[#6b3fe1]"></i>
+          <span>Import your business profile</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-2xl border border-[#e7d6ff] bg-[#f5f1ff] px-3 py-2 shadow-sm">
+          <i class="fa-solid fa-scissors text-[#6b3fe1]"></i>
+          <span>Import services and gallery</span>
+        </div>
+        <div class="flex items-center gap-2 rounded-2xl border border-[#e7d6ff] bg-[#f5f1ff] px-3 py-2 shadow-sm">
+          <i class="fa-regular fa-building text-[#6b3fe1]"></i>
+          <span>One business identity</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-col justify-between gap-5 border-t border-[#e6d4ff] bg-gradient-to-br from-[#f4ebff] via-[#f8f0ff] to-[#fff7f0] p-5 sm:p-6 lg:border-l lg:border-t-0 lg:p-7">
+      {% if saloon.myfestivo_handoff_at %}
+        <div>
+          <p class="text-sm font-semibold text-[#432d7d]">MyFestivo handoff sent</p>
+          <p class="mt-2 text-xs leading-5 text-[#5f5375]">Your Elegentra profile was sent to MyFestivo. Open MyFestivo to manage the imported business dashboard.</p>
+        </div>
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <a href="{{ myfestivo_dashboard_url }}" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#d9c7ff] bg-white px-4 py-2.5 text-sm font-semibold text-[#4c2b8d] shadow-sm transition hover:bg-[#f6f0ff]">
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+            Open MyFestivo
+          </a>
+          <a href="{% url 'saloon_dashboard_connect_myfestivo' user.username %}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#5b2ee6] via-[#7b4ef4] to-[#9d4df6] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(109,74,177,0.38)] ring-2 ring-white/60 transition hover:brightness-110">
+            <i class="fa-solid fa-link text-xs"></i>
+            Connect MyFestivo
+          </a>
+        </div>
+      {% else %}
+        <div>
+          <p class="text-sm font-semibold text-[#2f234d]">Ready for festival and event customers?</p>
+          <p class="mt-2 text-xs leading-5 text-[#5f5375]">We will verify your Elegentra WhatsApp number, then send your profile, services, service-tagged gallery, and banner to MyFestivo for review.</p>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <a href="{% url 'saloon_dashboard_connect_myfestivo' user.username %}" class="inline-flex w-fit items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#5b2ee6] via-[#7b4ef4] to-[#9d4df6] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_32px_rgba(109,74,177,0.38)] ring-2 ring-white/60 transition hover:brightness-110">
+            <i class="fa-solid fa-link text-xs"></i>
+            Connect MyFestivo
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 <div class="mb-8 rounded-[26px] border border-[#e7dbc7] bg-gradient-to-r from-[#fff8ee] via-white to-[#f6ebd6] p-5 sm:p-6">
   <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
     <div>
       <p class="text-xs uppercase tracking-[0.18em] text-[#98723b]">Subscription</p>
       <h2 class="mt-2 text-xl font-semibold text-[#2d251d]">
         {% if subscription.status == "active" %}
-          Autopay is active at INR {{ subscription_plan.amount }}/month
+          Autopay is active at ₹{{ subscription_plan.amount }}/month
         {% elif subscription.status == "trialing" %}
-          Your first month is free for {{ subscription.trial_days_left }} more day{{ subscription.trial_days_left|pluralize }}
+          Your assigned trial is free for {{ subscription.trial_days_left }} more day{{ subscription.trial_days_left|pluralize }}
         {% else %}
           Connect autopay before your listing renewal date
         {% endif %}
       </h2>
       <p class="mt-2 text-sm text-[#6d5b43]">
-        Launch offer anchored at INR {{ subscription_plan.strike_amount }}, billed at INR {{ subscription_plan.amount }}/month after the free trial.
+        Launch offer anchored at ₹{{ subscription_plan.strike_amount }}, billed at ₹{{ subscription_plan.amount }}/month after the free trial.
       </p>
     </div>
     <a href="{% url 'saloon_dashboard_subscription' user.username %}" class="inline-flex items-center justify-center rounded-2xl bg-[#c79a43] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(199,154,67,0.24)] transition hover:bg-[#bb903d]">
@@ -50,6 +122,15 @@
   </div>
 </div>
 
+<div class="mb-4 flex items-center justify-between gap-3">
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[#98723b]">Analytics</p>
+    <h2 class="text-lg font-semibold text-[#2d251d]">Business activity</h2>
+  </div>
+  <a href="{% url 'saloon_dashboard_analytics' user.username %}" class="inline-flex items-center gap-2 rounded-full border border-[#e2d3ba] bg-white px-4 py-2 text-sm font-semibold text-[#7b5a23] shadow-sm transition hover:bg-[#fff8ee]">
+    View all analytics <i class="fa-solid fa-arrow-right text-xs"></i>
+  </a>
+</div>
 <div class="grid lg:grid-cols-2 gap-6 mb-10 min-w-0">
   <div class="bg-white rounded-2xl p-4 sm:p-6 min-w-0">
     <div class="flex items-center justify-between gap-3 mb-4">
@@ -57,16 +138,16 @@
       <span class="rounded-full bg-[#F7F2E8] px-3 py-1 text-xs font-medium text-[#9A7131]">{{ interest_total }} total</span>
     </div>
 
-    <div class="relative w-full min-w-0" style="height: 300px;">
-      <canvas id="interestChart" style="width:100%; max-width:100%; height:100%;"></canvas>
+    <div class="relative h-[300px] w-full min-w-0">
+      <canvas id="interestChart" class="h-full w-full max-w-full"></canvas>
     </div>
   </div>
 
   <div class="bg-white rounded-2xl p-4 sm:p-6 min-w-0">
     <h2 class="font-medium mb-4">Monthly visibility</h2>
 
-    <div class="relative w-full min-w-0" style="height: 300px;">
-      <canvas id="visibilityChart" style="width:100%; max-width:100%; height:100%;"></canvas>
+    <div class="relative h-[300px] w-full min-w-0">
+      <canvas id="visibilityChart" class="h-full w-full max-w-full"></canvas>
     </div>
   </div>
 </div>
@@ -88,7 +169,7 @@
         <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ gallery_post_total }} gallery posts</span>
         <span class="rounded-full bg-[#F6F7FB] px-3 py-1">{{ review_total }} reviews</span>
       </div>
-      <a href="{% url 'public_saloon' slug=saloon.slug %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium">
+      <a href="{{ saloon_public_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium">
         <i class="fa-regular fa-eye"></i> View public profile
       </a>
     </div>
@@ -110,12 +191,6 @@ window.addEventListener("load", () => {
   const activityViews = JSON.parse(document.getElementById("dashboard-activity-views").textContent);
   const activityMaps = JSON.parse(document.getElementById("dashboard-activity-maps").textContent);
 
-  document.querySelectorAll("canvas").forEach(c => {
-    const parent = c.parentElement;
-    c.width = parent.clientWidth;
-    c.style.width = parent.clientWidth + "px";
-  });
-
   new Chart(document.getElementById("interestChart"), {
     type: "doughnut",
     data: {
@@ -127,8 +202,9 @@ window.addEventListener("load", () => {
       }]
     },
     options: {
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
+      devicePixelRatio: window.devicePixelRatio || 1,
       cutout: "70%",
       layout: {
         padding: { bottom: 16 }
@@ -177,8 +253,9 @@ window.addEventListener("load", () => {
       ]
     },
     options: {
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
+      devicePixelRatio: window.devicePixelRatio || 1,
       plugins: {
         legend: {
           position: "bottom",
@@ -197,3 +274,5 @@ window.addEventListener("load", () => {
 });
 </script>
 {% endblock %}
+
+

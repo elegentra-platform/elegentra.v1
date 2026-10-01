@@ -124,7 +124,9 @@ class Service(models.Model):
     )
 
     image = models.ImageField(
-        upload_to="services/images/"
+        upload_to="services/images/",
+        null=True,
+        blank=True,
     )
 
     # 🔹 SOFT DELETE (ADDED – SAFE)
