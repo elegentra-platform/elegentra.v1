@@ -176,7 +176,7 @@
                 <div class="vendor-cell">
                   <div class="vendor-avatar">{{ saloon.name|default:saloon.owner.email|first|upper }}</div>
                   <div>
-                    <div class="vendor-main">{{ saloon.name|default:"(No name)" }}</div>
+                    <div class="vendor-main">{{ saloon.name|default:"(No name)" }}</div>{% if saloon.is_test_saloon %}<span class="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">Test</span>{% endif %}
                     <div class="vendor-muted">{{ saloon.whatsapp_number|default:"No WhatsApp" }}</div>
                   </div>
                 </div>

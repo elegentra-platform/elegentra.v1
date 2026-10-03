@@ -1,4 +1,4 @@
-﻿from functools import wraps
+from functools import wraps
 from datetime import datetime
 
 from django.contrib import messages
@@ -16,7 +16,13 @@ from saloons.models import GalleryPost, Saloon, SaloonRejectionReason
 from services.models import MainCategory, Service, ServiceCategory
 from plans.billing import assign_subscription_trial_on_approval
 from plans.models import SaloonSubscription, SubscriptionPaymentHistory, SubscriptionWebhookEvent
-from .models import StaffProfile
+from .models import StaffPanelSetting, StaffProfile
+
+TEST_SALOON_MODE_KEY = "test_saloon_mode"
+
+
+def _is_test_saloon_mode_enabled():
+    return StaffPanelSetting.get_bool(TEST_SALOON_MODE_KEY, default=False)
 
 
 def _staff_role(user):
@@ -288,6 +294,7 @@ def saloon_list(request):
             "sort": sort,
             "query": query,
             "status_choices": Saloon.APPROVAL_STATUS_CHOICES,
+            "test_saloon_mode_enabled": _is_test_saloon_mode_enabled(),
         }),
     )
 
@@ -315,6 +322,7 @@ def saloon_review(request, saloon_id):
             "services": Service.objects.filter(saloon=saloon).select_related("category").order_by("-created_at"),
             "gallery_posts": saloon.gallery_posts.prefetch_related("media").all()[:12],
             "rejection_history": saloon.rejection_reasons.order_by("-created_at")[:10],
+            "test_saloon_mode_enabled": _is_test_saloon_mode_enabled(),
         }),
     )
 
@@ -407,12 +415,20 @@ def gallery_post_moderate(request, saloon_id, post_id, action):
 def saloon_approve(request, saloon_id):
     saloon = get_object_or_404(Saloon, id=saloon_id)
     was_approved = saloon.approval_status == Saloon.APPROVAL_APPROVED
+    update_fields = ["approval_status", "is_active", "updated_at"]
+
+    if not was_approved and _is_test_saloon_mode_enabled() and request.POST.get("is_test_saloon") == "1":
+        saloon.is_test_saloon = True
+        saloon.test_saloon_marked_at = timezone.now()
+        saloon.test_saloon_marked_by = request.user
+        update_fields.extend(["is_test_saloon", "test_saloon_marked_at", "test_saloon_marked_by"])
+
     saloon.approval_status = Saloon.APPROVAL_APPROVED
     saloon.is_active = True
-    saloon.save(update_fields=["approval_status", "is_active", "updated_at"])
+    saloon.save(update_fields=update_fields)
     if not was_approved:
         assign_subscription_trial_on_approval(saloon)
-    messages.success(request, "Saloon approved.")
+    messages.success(request, "Test saloon approved." if saloon.is_test_saloon else "Saloon approved.")
     next_url = request.POST.get("next")
     if next_url:
         return redirect(next_url)
@@ -739,12 +755,55 @@ def audit_logs(request):
     }))
 
 
-@super_admin_required
+@admin_required
 def system_settings(request):
-    return render(request, "staffpanel/simple_page.html", _staff_context(request, {
+    if request.method == "POST":
+        action = request.POST.get("action", "").strip()
+        saloon_id = request.POST.get("saloon_id")
+
+        if action == "toggle_test_mode":
+            enabled = request.POST.get("enabled") == "1"
+            StaffPanelSetting.set_bool(TEST_SALOON_MODE_KEY, enabled, request.user)
+            messages.success(request, "Test salon mode turned on." if enabled else "Test salon mode turned off.")
+        elif action in {"hide_test", "delete_test", "convert_test"} and saloon_id:
+            saloon = get_object_or_404(Saloon, id=saloon_id, is_test_saloon=True)
+            if action == "hide_test":
+                saloon.is_active = False
+                saloon.test_saloon_hidden_at = timezone.now()
+                saloon.save(update_fields=["is_active", "test_saloon_hidden_at", "updated_at"])
+                messages.success(request, f"{saloon.name or 'Test saloon'} hidden from public pages.")
+            elif action == "delete_test":
+                name = saloon.name or "Test saloon"
+                saloon.delete()
+                messages.success(request, f"{name} deleted.")
+            elif action == "convert_test":
+                saloon.is_test_saloon = False
+                saloon.test_saloon_converted_at = timezone.now()
+                saloon.save(update_fields=["is_test_saloon", "test_saloon_converted_at", "updated_at"])
+                messages.success(request, f"{saloon.name or 'Saloon'} converted to a real saloon.")
+        elif action == "hide_all_tests":
+            count = Saloon.objects.filter(is_test_saloon=True, is_active=True).update(
+                is_active=False,
+                test_saloon_hidden_at=timezone.now(),
+                updated_at=timezone.now(),
+            )
+            messages.success(request, f"{count} test saloon(s) hidden.")
+        elif action == "delete_all_tests":
+            qs = Saloon.objects.filter(is_test_saloon=True)
+            count = qs.count()
+            qs.delete()
+            messages.success(request, f"{count} test saloon(s) deleted.")
+        else:
+            messages.error(request, "Unknown test salon action.")
+        return redirect("staffpanel:system_settings")
+
+    test_saloons = Saloon.objects.filter(is_test_saloon=True).select_related("owner", "profile").order_by("-updated_at", "-id")
+    return render(request, "staffpanel/system_settings.html", _staff_context(request, {
         "active_tab": "system_settings",
-        "page_title": "System Settings",
-        "page_note": "Super Admin only. Keep dangerous platform settings here later.",
+        "test_saloon_mode_enabled": _is_test_saloon_mode_enabled(),
+        "test_saloons": test_saloons,
+        "test_saloon_count": test_saloons.count(),
+        "active_test_saloon_count": test_saloons.filter(is_active=True).count(),
     }))
 
 

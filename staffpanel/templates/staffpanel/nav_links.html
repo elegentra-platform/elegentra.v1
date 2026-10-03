@@ -10,6 +10,7 @@
     <a href="{% url 'staffpanel:subscription_management' %}" class="staff-nav-link {% if active_tab == 'subscription_management' %}is-active{% endif %}"><i class="fa-regular fa-credit-card mr-2"></i> Subscription Management</a>
     <a href="{% url 'staffpanel:reports' %}" class="staff-nav-link {% if active_tab == 'reports' %}is-active{% endif %}"><i class="fa-solid fa-chart-column mr-2"></i> Reports</a>
     <a href="{% url 'staffpanel:notifications' %}" class="staff-nav-link {% if active_tab == 'notifications' %}is-active{% endif %}"><i class="fa-regular fa-bell mr-2"></i> Notifications</a>
+    <a href="{% url 'staffpanel:system_settings' %}" class="staff-nav-link {% if active_tab == 'system_settings' %}is-active{% endif %}"><i class="fa-solid fa-flask mr-2"></i> Test Salon Mode</a>
   {% endif %}
 
   {% if is_staff_super_admin %}
@@ -19,7 +20,6 @@
     <a href="{% url 'staffpanel:plans' %}" class="staff-nav-link {% if active_tab == 'plans' %}is-active{% endif %}"><i class="fa-solid fa-layer-group mr-2"></i> Plans</a>
     <a href="{% url 'staffpanel:analytics' %}" class="staff-nav-link {% if active_tab == 'analytics' %}is-active{% endif %}"><i class="fa-solid fa-chart-pie mr-2"></i> Analytics</a>
     <a href="{% url 'staffpanel:audit_logs' %}" class="staff-nav-link {% if active_tab == 'audit_logs' %}is-active{% endif %}"><i class="fa-solid fa-clock-rotate-left mr-2"></i> Audit Logs</a>
-    <a href="{% url 'staffpanel:system_settings' %}" class="staff-nav-link {% if active_tab == 'system_settings' %}is-active{% endif %}"><i class="fa-solid fa-sliders mr-2"></i> System Settings</a>
     <a href="{% url 'staffpanel:razorpay' %}" class="staff-nav-link {% if active_tab == 'razorpay' %}is-active{% endif %}"><i class="fa-solid fa-money-check-dollar mr-2"></i> Razorpay</a>
     <a href="{% url 'staffpanel:feature_flags' %}" class="staff-nav-link {% if active_tab == 'feature_flags' %}is-active{% endif %}"><i class="fa-solid fa-toggle-on mr-2"></i> Feature Flags</a>
   {% endif %}

@@ -18,7 +18,7 @@
     <tbody>
       {% for saloon in saloons %}
         <tr class="border-t border-slate-100 align-top">
-          <td class="px-4 py-3">{{ saloon.name|default:"(No name)" }}</td>
+          <td class="px-4 py-3"><div>{{ saloon.name|default:"(No name)" }}</div>{% if saloon.is_test_saloon %}<span class="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">Test</span>{% endif %}</td>
           <td class="px-4 py-3">
             <div>{{ saloon.owner.email }}</div>
             <div class="text-xs text-slate-500">{{ saloon.whatsapp_number }}</div>

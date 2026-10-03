@@ -1,0 +1,102 @@
+{% extends "staffpanel/base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <section class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.22em] text-[#9A7B47]">Launch Controls</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-tight">Test Salon Mode</h2>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Approved test salons can appear publicly, but they never consume Founder Partner slots.</p>
+      </div>
+      <form method="post" class="shrink-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_test_mode">
+        <input type="hidden" name="enabled" value="{% if test_saloon_mode_enabled %}0{% else %}1{% endif %}">
+        <button type="submit" class="inline-flex min-w-36 items-center justify-center rounded-xl px-5 py-3 text-sm font-bold shadow-sm transition {% if test_saloon_mode_enabled %}border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100{% else %}bg-slate-950 text-white hover:bg-slate-800{% endif %}">
+          {% if test_saloon_mode_enabled %}Turn off{% else %}Turn on{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div class="mt-5 grid gap-3 sm:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Mode</p>
+        <p class="mt-2 text-xl font-semibold {% if test_saloon_mode_enabled %}text-emerald-700{% else %}text-slate-900{% endif %}">{% if test_saloon_mode_enabled %}Active{% else %}Off{% endif %}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Test Salons</p>
+        <p class="mt-2 text-xl font-semibold text-slate-950">{{ test_saloon_count }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Public Now</p>
+        <p class="mt-2 text-xl font-semibold text-slate-950">{{ active_test_saloon_count }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-[#d8e0ea] bg-white p-5 shadow-sm">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h3 class="text-lg font-semibold">Test salons</h3>
+        <p class="mt-1 text-sm text-slate-500">Manage temporary launch listings after approval.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <form method="post" onsubmit="return confirm('Hide all test salons from public pages?');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="hide_all_tests">
+          <button type="submit" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100">Hide all</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Delete all test salons permanently?');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_all_tests">
+          <button type="submit" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100">Delete all</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
+      {% for saloon in test_saloons %}
+        <div class="grid gap-3 border-b border-slate-100 p-4 last:border-0 lg:grid-cols-[1.4fr_.8fr_1.2fr] lg:items-center">
+          <div>
+            <a href="{% url 'staffpanel:saloon_review' saloon.id %}" class="font-semibold text-slate-950 hover:text-[#9A7B47] hover:underline">{{ saloon.name|default:"Unnamed salon" }}</a>
+            <p class="mt-1 text-sm text-slate-500">{{ saloon.owner.email }}</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs font-bold">
+            {% if saloon.is_active %}
+              <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Public</span>
+            {% else %}
+              <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Hidden</span>
+            {% endif %}
+            <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">Test</span>
+          </div>
+          <div class="flex flex-wrap gap-2 lg:justify-end">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="hide_test">
+              <input type="hidden" name="saloon_id" value="{{ saloon.id }}">
+              <button type="submit" class="rounded-lg border border-amber-200 px-3 py-2 text-sm font-bold text-amber-800 hover:bg-amber-50">Hide</button>
+            </form>
+            <form method="post" onsubmit="return confirm('Convert this test salon into a real salon?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="convert_test">
+              <input type="hidden" name="saloon_id" value="{{ saloon.id }}">
+              <button type="submit" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50">Convert</button>
+            </form>
+            <form method="post" onsubmit="return confirm('Delete this test salon permanently?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_test">
+              <input type="hidden" name="saloon_id" value="{{ saloon.id }}">
+              <button type="submit" class="rounded-lg border border-rose-200 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50">Delete</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div class="p-8 text-center text-sm text-slate-500">No test salons yet.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

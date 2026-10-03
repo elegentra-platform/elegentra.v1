@@ -80,3 +80,38 @@ class StaffProfile(models.Model):
     @property
     def can_access_panel(self):
         return self.status == self.STATUS_ACTIVE
+
+
+class StaffPanelSetting(models.Model):
+    key = models.CharField(max_length=80, unique=True)
+    value = models.JSONField(default=dict, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff_panel_settings_updated",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+
+    def __str__(self):
+        return self.key
+
+    @classmethod
+    def get_bool(cls, key, default=False):
+        setting = cls.objects.filter(key=key).first()
+        if not setting:
+            return default
+        return bool((setting.value or {}).get("enabled", default))
+
+    @classmethod
+    def set_bool(cls, key, enabled, user=None):
+        setting, _ = cls.objects.get_or_create(key=key, defaults={"value": {}})
+        setting.value = {"enabled": bool(enabled)}
+        setting.updated_by = user if getattr(user, "is_authenticated", False) else None
+        setting.save(update_fields=["value", "updated_by", "updated_at"])
+        return setting

@@ -1,4 +1,4 @@
-﻿{% extends "staffpanel/base.html" %}
+{% extends "staffpanel/base.html" %}
 
 {% block title %}Review Vendor{% endblock %}
 
@@ -28,6 +28,7 @@
   <div>
     <h2 class="text-xl font-semibold">Vendor Review</h2>
     <p class="mt-1 text-sm text-slate-600">Internal profile, uploads, services, and approval status.</p>
+    {% if saloon.is_test_saloon %}<span class="mt-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Test Salon</span>{% endif %}
   </div>
   {% if saloon.approval_status == 'pending' %}
     <a href="{% url 'staffpanel:saloon_queue' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to queue</a>
@@ -44,6 +45,7 @@
       <div><span class="text-slate-500">Owner email:</span> {{ saloon.owner.email }}</div>
       <div><span class="text-slate-500">WhatsApp:</span> {{ saloon.whatsapp_number }}</div>
       <div><span class="text-slate-500">Status:</span> {{ saloon.approval_status }}</div>
+      <div><span class="text-slate-500">Listing type:</span> {% if saloon.is_test_saloon %}<span class="font-semibold text-amber-700">Test salon</span>{% else %}Real salon{% endif %}</div>
     </div>
 
     {% if saloon.banner_image %}
@@ -134,9 +136,15 @@
 
   {% if saloon.approval_status == 'pending' %}
     <div class="mt-4 flex flex-wrap gap-2">
-      <form method="post" action="{% url 'staffpanel:saloon_approve' saloon.id %}">
+      <form method="post" action="{% url 'staffpanel:saloon_approve' saloon.id %}" class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
         {% csrf_token %}
         <input type="hidden" name="next" value="{% url 'staffpanel:saloon_review' saloon.id %}">
+        {% if test_saloon_mode_enabled %}
+          <label class="mb-3 flex cursor-pointer items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800">
+            <input type="checkbox" name="is_test_saloon" value="1" class="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500">
+            Approve as test salon
+          </label>
+        {% endif %}
         <button type="submit" class="rounded-md bg-emerald-600 px-4 py-2 text-white">Approve vendor</button>
       </form>
       <form method="post" action="{% url 'staffpanel:saloon_reject' saloon.id %}" class="flex flex-wrap items-center gap-2">

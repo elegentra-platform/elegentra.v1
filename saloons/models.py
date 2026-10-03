@@ -105,8 +105,21 @@ class Saloon(models.Model):
     is_verified = models.BooleanField(default=False)
 
     myfestivo_handoff_at = models.DateTimeField(null=True, blank=True)
-
     is_active = models.BooleanField(default=True)
+    is_test_saloon = models.BooleanField(
+        default=False,
+        help_text="Internal launch/test listing. It can appear publicly but never consumes founder partner slots.",
+    )
+    test_saloon_marked_at = models.DateTimeField(null=True, blank=True)
+    test_saloon_marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="test_saloons_marked",
+    )
+    test_saloon_converted_at = models.DateTimeField(null=True, blank=True)
+    test_saloon_hidden_at = models.DateTimeField(null=True, blank=True)
 
     approval_status = models.CharField(
         max_length=20,

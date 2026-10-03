@@ -37,7 +37,7 @@ def get_default_subscription_plan():
 
 
 def _approved_founder_count():
-    return SaloonSubscription.objects.filter(is_founder_partner=True).count()
+    return SaloonSubscription.objects.filter(is_founder_partner=True, saloon__is_test_saloon=False).count()
 
 
 @transaction.atomic
@@ -57,14 +57,16 @@ def assign_subscription_trial_on_approval(saloon):
         return subscription, plan
 
     approved_at = timezone.now()
-    founder_number = _approved_founder_count() + 1
-    is_founder = founder_number <= FOUNDER_PARTNER_LIMIT
+    is_test_saloon = bool(getattr(saloon, "is_test_saloon", False))
+    founder_number = None if is_test_saloon else _approved_founder_count() + 1
+    is_founder = bool(founder_number and founder_number <= FOUNDER_PARTNER_LIMIT)
     trial_days = FOUNDER_TRIAL_DAYS if is_founder else STANDARD_TRIAL_DAYS
     notes = dict(getattr(subscription, "notes", {}) or {}) if subscription else {}
     notes.update({
         "origin": "approval_trial",
-        "trial_rule": "founder_90_day" if is_founder else "standard_14_day",
+        "trial_rule": "test_saloon_14_day" if is_test_saloon else ("founder_90_day" if is_founder else "standard_14_day"),
         "trial_assigned_from": "saloon_approval",
+        "is_test_saloon": is_test_saloon,
     })
 
     defaults = {
