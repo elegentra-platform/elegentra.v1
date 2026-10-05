@@ -20,7 +20,7 @@ def get_default_subscription_plan():
     plan, _ = ListingSubscriptionPlan.objects.get_or_create(
         slug="elegentra-monthly",
         defaults={
-            "name": "Professional",
+            "name": "Elegentra Listing",
             "description": "Keep your salon live on Elegentra with discovery placement, gallery, and premium support.",
             "amount": Decimal("699.00"),
             "strike_amount": Decimal("999.00"),
