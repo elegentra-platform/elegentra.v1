@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.files import File
 from django.core.files.storage import default_storage
+from core.image_processing import optimize_public_image_upload
 
 from services.models import Service
 from plans.billing import get_or_create_saloon_subscription, sync_local_subscription_state, subscription_has_platform_access, subscription_lock_reason
@@ -21,7 +22,7 @@ MAX_IMAGES_ONLY = 10
 
 def _dashboard_guard(request, username):
     if request.user.username != username:
-        return None, redirect("home")
+        return None, redirect("public_home")
 
     saloon = Saloon.objects.filter(owner=request.user).first()
     if not saloon:
@@ -231,9 +232,11 @@ def gallery_draft_save(request, username):
         if not media_type:
             return JsonResponse({"ok": False, "message": "Only images are allowed."}, status=400)
         extension = upload.name.rsplit(".", 1)[-1].lower() if "." in upload.name else "jpg"
+        optimized_upload = optimize_public_image_upload(upload)
+        optimized_extension = optimized_upload.name.rsplit(".", 1)[-1].lower() if "." in optimized_upload.name else extension
         saved_path = default_storage.save(
-            f"saloons/gallery_drafts/{saloon.id}/{draft_id}/{index}.{extension}",
-            upload,
+            f"saloons/gallery_drafts/{saloon.id}/{draft_id}/{index}.{optimized_extension}",
+            optimized_upload,
         )
         media.append({
             "path": saved_path,
@@ -314,7 +317,7 @@ def gallery_create(request, username):
             for idx, (upload, media_type) in enumerate(media_items, start=1):
                 GalleryMedia.objects.create(
                     post=post,
-                    file=upload,
+                    file=optimize_public_image_upload(upload) if media_type == GalleryMedia.TYPE_IMAGE else upload,
                     media_type=media_type,
                     order=idx,
                 )
@@ -444,7 +447,7 @@ def gallery_edit(request, username, post_id):
             for idx, (upload, media_type) in enumerate(new_items, start=start):
                 GalleryMedia.objects.create(
                     post=post,
-                    file=upload,
+                    file=optimize_public_image_upload(upload) if media_type == GalleryMedia.TYPE_IMAGE else upload,
                     media_type=media_type,
                     order=idx,
                 )

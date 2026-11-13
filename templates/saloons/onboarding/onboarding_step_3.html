@@ -74,17 +74,32 @@
 
           <select
             name="service_category_{{ forloop.counter }}"
-            {% if forloop.first and not service.category_id %}required{% endif %}
+            {% if forloop.first and not service.category_id and not service.main_category_id %}required{% endif %}
             class="w-full border rounded px-3 py-2 text-sm"
           >
             <option value="">Select category</option>
-            {% for category in categories %}
-              <option value="{{ category.id }}"
-                {% if service.category_id == category.id %}selected{% endif %}>
-                {{ category.name }}
+            {% for main in main_categories %}
+              <option value="main:{{ main.id }}"
+                {% if service.main_category_id == main.id %}selected{% endif %}>
+                {{ main.name }}
               </option>
+              {% for category in main.approved_subcategories %}
+                <option value="category:{{ category.id }}"
+                  {% if service.category_id == category.id %}selected{% endif %}>
+                  &nbsp;&nbsp;— {{ category.name }}
+                </option>
+              {% endfor %}
             {% endfor %}
+            {% if own_pending_categories %}
+              <optgroup label="Your submitted categories (pending approval)">
+                {% for category in own_pending_categories %}
+                  <option value="category:{{ category.id }}"
+                    {% if service.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endif %}
           </select>
+          <p class="text-xs text-gray-500">Choose a main category if no exact subcategory fits.</p>
 
           <div class="text-xs text-gray-400 text-center">or</div>
 
@@ -137,6 +152,7 @@ function previewBanner(input) {
   img.classList.remove("hidden");
   if (placeholder) placeholder.classList.add("hidden");
 }
+
 </script>
 
 </body>

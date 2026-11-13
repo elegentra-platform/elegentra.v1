@@ -10,6 +10,12 @@
       background: rgba(255, 244, 244, 0.96);
       border-color: rgba(239, 202, 202, 0.95);
     }
+
+
+    .category-scroll-row {
+      overscroll-behavior-inline: contain;
+      scroll-behavior: smooth;
+    }
   </style>
 {% endblock %}
 
@@ -54,7 +60,7 @@
 {% block content %}
   <div class="mt-4 md:min-h-[70vh]">
     {% if has_filters %}
-      <div class="mt-4 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div class="category-scroll-row mt-4 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-category-scroll>
         <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
           {% for category in categories %}
             <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
@@ -73,7 +79,7 @@
         </div>
       </div>
 
-      <div class="mt-2 hidden md:flex w-full items-center justify-center gap-6">
+      <div class="category-scroll-row mt-2 hidden w-full items-center gap-6 overflow-x-auto pb-2 md:flex md:justify-start [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-category-scroll>
         {% for category in categories %}
           <a href="{% url 'public_search' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
             <div class="w-16 h-16 rounded-full {% if selected_category == category.slug %}bg-[#efe2c6] border-[#d6b16f]{% else %}bg-white/55 border-white/60{% endif %} border shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
@@ -162,7 +168,7 @@
         </div>
         <div class="mt-6 text-xl font-medium text-gray-900">Search salons near you</div>
 
-        <div class="mt-8 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div class="category-scroll-row mt-8 w-full md:hidden overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-category-scroll>
           <div class="flex min-w-full w-max items-center justify-center gap-5 px-4">
             {% for category in categories %}
               <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 flex flex-col items-center gap-2">
@@ -181,7 +187,7 @@
           </div>
         </div>
 
-        <div class="mt-10 hidden w-full items-center justify-center gap-6 md:flex">
+        <div class="category-scroll-row mt-10 hidden w-full items-center gap-6 overflow-x-auto pb-2 md:flex md:justify-start [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-category-scroll>
           {% for category in categories %}
             <a href="{% url 'public_search' %}?category={{ category.slug }}{% if user_lat and user_lng %}&lat={{ user_lat }}&lng={{ user_lng }}{% endif %}" class="shrink-0 w-[108px] flex flex-col items-center gap-2">
               <div class="w-16 h-16 rounded-full bg-white/55 border border-white/60 shadow-sm flex items-center justify-center text-[#6B6256] overflow-hidden">
@@ -205,6 +211,21 @@
 
 {% block scripts %}
 <script>
+
+
+    (function () {
+      const rows = Array.from(document.querySelectorAll("[data-category-scroll]"));
+      if (!rows.length) return;
+
+      rows.forEach(function (row) {
+        row.addEventListener("wheel", function (event) {
+          if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+          row.scrollLeft += event.deltaY;
+          event.preventDefault();
+        }, { passive: false });
+      });
+    })();
+
   (function () {
     const favoriteButtons = Array.from(document.querySelectorAll("[data-card-favorite]"));
 

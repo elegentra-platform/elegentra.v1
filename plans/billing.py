@@ -13,6 +13,32 @@ FOUNDER_PARTNER_LIMIT = 50
 FOUNDER_TRIAL_DAYS = 90
 STANDARD_TRIAL_DAYS = 14
 GRACE_PERIOD_DAYS = 3
+# Razorpay charges a renewal at the start of the new cycle and then sends the webhook.
+# Keep a live autopay salon unlocked for this long past period end so that small delay
+# never locks a paying salon.
+RENEWAL_BUFFER = timedelta(hours=36)
+
+
+def live_subscription_q(now=None):
+    """
+    Database version of `subscription_has_platform_access`, for listing queries
+    (which salons are publicly visible). Keep the two in step.
+    """
+    from django.db.models import Q
+
+    now = now or timezone.now()
+    return (
+        Q(trial_ends_at__gt=now)
+        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__isnull=True)
+        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__gt=now - RENEWAL_BUFFER)
+        | Q(status=SaloonSubscription.STATUS_PAST_DUE, grace_period_ends_at__gt=now)
+        | Q(status=SaloonSubscription.STATUS_CANCELLED, current_period_end__gt=now)
+    )
+
+
+def autopay_is_live(subscription):
+    """Autopay is set up and has not been cancelled or paused by the owner."""
+    return bool(subscription.autopay_confirmed_at) and subscription.status != SaloonSubscription.STATUS_CANCELLED
 
 
 def get_default_subscription_plan():
@@ -134,7 +160,11 @@ def sync_local_subscription_state(subscription):
             subscription.save(update_fields=["status", "updated_at"])
         return subscription
 
-    if subscription.autopay_confirmed_at and subscription.current_period_end and subscription.current_period_end > now:
+    if (
+        subscription.autopay_confirmed_at
+        and subscription.current_period_end
+        and subscription.current_period_end + RENEWAL_BUFFER > now
+    ):
         subscription.status = SaloonSubscription.STATUS_ACTIVE
     elif subscription.trial_ends_at > now:
         subscription.status = SaloonSubscription.STATUS_TRIALING
@@ -151,12 +181,11 @@ def sync_local_subscription_state(subscription):
 
 
 def subscription_access_until(subscription):
+    """The date the salon stays unlocked until (what the owner has already paid for)."""
     subscription = sync_local_subscription_state(subscription)
-    candidates = [
-        subscription.trial_ends_at,
-        subscription.current_period_end,
-        subscription.grace_period_ends_at,
-    ]
+    candidates = [subscription.trial_ends_at, subscription.current_period_end]
+    if subscription.status == SaloonSubscription.STATUS_PAST_DUE:
+        candidates.append(subscription.grace_period_ends_at)
     candidates = [value for value in candidates if value]
     if not candidates:
         return None
@@ -171,10 +200,16 @@ def subscription_has_platform_access(subscription):
         return True
 
     if subscription.status == SaloonSubscription.STATUS_ACTIVE:
-        return not subscription.current_period_end or subscription.current_period_end > now
+        if not subscription.current_period_end:
+            return True
+        return subscription.current_period_end + RENEWAL_BUFFER > now
 
     if subscription.status == SaloonSubscription.STATUS_PAST_DUE:
         return bool(subscription.grace_period_ends_at and subscription.grace_period_ends_at > now)
+
+    if subscription.status == SaloonSubscription.STATUS_CANCELLED:
+        # Like Spotify/YouTube: cancelling autopay keeps access until the paid period ends.
+        return bool(subscription.current_period_end and subscription.current_period_end > now)
 
     return False
 
@@ -183,8 +218,8 @@ def subscription_lock_reason(subscription):
     subscription = sync_local_subscription_state(subscription)
     if subscription.status == SaloonSubscription.STATUS_CANCELLED:
         return {
-            "title": "Subscription cancelled",
-            "message": "Your listing is paused because autopay was cancelled. Renew your subscription to make your salon public again.",
+            "title": "Autopay cancelled",
+            "message": "Your autopay was cancelled and your paid period has ended, so your listing is paused. Renew your subscription to make your salon public again.",
         }
     if subscription.status == SaloonSubscription.STATUS_EXPIRED:
         return {
@@ -423,3 +458,152 @@ def apply_razorpay_webhook_event(subscription, event_name, details):
 
 
 
+
+
+# ---------------------------------------------------------------------------
+# Razorpay subscription webhooks (subscription.* events)
+# ---------------------------------------------------------------------------
+
+def _ts_to_datetime(value):
+    if not value:
+        return None
+    try:
+        return timezone.datetime.fromtimestamp(int(value), tz=timezone.get_current_timezone())
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
+
+def _record_razorpay_payment(subscription, payment_entity, status):
+    payment_id = payment_entity.get("id") or ""
+    if not payment_id:
+        return None
+    method = payment_entity.get("method") or ""
+    if method == "upi" and payment_entity.get("vpa"):
+        method_label = f"UPI AutoPay {payment_entity.get('vpa')}"
+    elif method == "card":
+        last4 = (payment_entity.get("card") or {}).get("last4") or ""
+        method_label = f"Card ****{last4}" if last4 else "Card"
+    else:
+        method_label = method.upper() if method else ""
+    amount_paise = payment_entity.get("amount") or 0
+    history, created = SubscriptionPaymentHistory.objects.get_or_create(
+        subscription=subscription,
+        razorpay_payment_id=payment_id,
+        defaults={
+            "saloon": subscription.saloon,
+            "plan": subscription.plan,
+            "paid_at": _ts_to_datetime(payment_entity.get("created_at")) or timezone.now(),
+            "amount": _decimal_from_payload(Decimal(amount_paise) / 100),
+            "currency": payment_entity.get("currency") or subscription.plan.currency,
+            "payment_status": status,
+            "payment_method": method_label,
+            "renewal_type": "renewal",
+            "razorpay_subscription_id": subscription.razorpay_subscription_id,
+            "transaction_reference": payment_entity.get("order_id") or "",
+            "raw_payload": payment_entity,
+        },
+    )
+    if not created and history.payment_status != status:
+        history.payment_status = status
+        history.raw_payload = payment_entity
+        history.save(update_fields=["payment_status", "raw_payload"])
+    return history
+
+
+def _start_grace_period(subscription, now):
+    if not subscription.grace_period_started_at:
+        subscription.grace_period_started_at = now
+        base = max(subscription.current_period_end or now, now)
+        subscription.grace_period_ends_at = base + timedelta(days=GRACE_PERIOD_DAYS)
+
+
+def apply_razorpay_subscription_event(subscription, event_name, payload):
+    """
+    Update a local subscription from a Razorpay `subscription.*` webhook.
+
+    authenticated        -> autopay mandate set up
+    activated / charged  -> paid; extend access to Razorpay's current cycle end
+    pending / halted     -> renewal charge failed; grace period while Razorpay retries
+    cancelled / paused / completed
+                         -> owner stopped autopay (UPI app, bank or our dashboard); keep
+                            access until the already-paid period ends, then lock
+    resumed              -> owner resumed a paused mandate
+    """
+    now = timezone.now()
+    event = (event_name or "").lower()
+    entities = payload.get("payload", {}) or {}
+    sub_entity = (entities.get("subscription") or {}).get("entity") or {}
+    payment_entity = (entities.get("payment") or {}).get("entity") or {}
+
+    notes = dict(subscription.notes or {})
+    notes["last_razorpay_event"] = event
+    notes["last_razorpay_event_at"] = now.isoformat()
+    subscription.notes = notes
+
+    gateway_status = sub_entity.get("status") or ""
+    if gateway_status:
+        subscription.razorpay_status = gateway_status
+
+    current_start = _ts_to_datetime(sub_entity.get("current_start"))
+    current_end = _ts_to_datetime(sub_entity.get("current_end"))
+
+    if event == "subscription.authenticated":
+        subscription.autopay_confirmed_at = subscription.autopay_confirmed_at or now
+        subscription.cancelled_at = None
+        subscription.cancel_at_cycle_end = False
+        if subscription.status in {SaloonSubscription.STATUS_PENDING_AUTH, SaloonSubscription.STATUS_EXPIRED}:
+            subscription.status = (
+                SaloonSubscription.STATUS_TRIALING
+                if subscription.trial_ends_at > now
+                else SaloonSubscription.STATUS_ACTIVE
+            )
+
+    elif event in {"subscription.activated", "subscription.charged", "subscription.resumed"}:
+        subscription.autopay_confirmed_at = subscription.autopay_confirmed_at or now
+        subscription.cancelled_at = None
+        subscription.cancel_at_cycle_end = False
+        subscription.grace_period_started_at = None
+        subscription.grace_period_ends_at = None
+        if current_start:
+            subscription.current_period_start = current_start
+        if current_end:
+            subscription.current_period_end = current_end
+        subscription.status = (
+            SaloonSubscription.STATUS_TRIALING
+            if subscription.trial_ends_at > now
+            else SaloonSubscription.STATUS_ACTIVE
+        )
+        if event == "subscription.charged" and payment_entity:
+            history = _record_razorpay_payment(subscription, payment_entity, SubscriptionPaymentHistory.STATUS_SUCCESS)
+            if history:
+                subscription.last_payment_id = history.razorpay_payment_id
+                subscription.last_payment_status = "SUCCESS"
+
+    elif event in {"subscription.pending", "subscription.halted"}:
+        subscription.status = SaloonSubscription.STATUS_PAST_DUE
+        _start_grace_period(subscription, now)
+        if payment_entity:
+            history = _record_razorpay_payment(subscription, payment_entity, SubscriptionPaymentHistory.STATUS_FAILED)
+            if history:
+                subscription.last_payment_id = history.razorpay_payment_id
+                subscription.last_payment_status = "FAILED"
+        notes["last_failure_reason"] = payment_entity.get("error_description") or ""
+
+    elif event in {"subscription.cancelled", "subscription.paused", "subscription.completed"}:
+        subscription.status = SaloonSubscription.STATUS_CANCELLED
+        subscription.cancelled_at = subscription.cancelled_at or now
+        subscription.cancel_at_cycle_end = True
+        notes["autopay_stopped_reason"] = event.split(".", 1)[1]
+        # A failed renewal followed by cancel should not keep the grace period open.
+        subscription.grace_period_started_at = None
+        subscription.grace_period_ends_at = None
+
+    else:
+        # subscription.updated and anything new: keep the cycle dates in sync.
+        if current_start:
+            subscription.current_period_start = current_start
+        if current_end:
+            subscription.current_period_end = current_end
+
+    subscription.save()
+    return subscription

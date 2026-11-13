@@ -1,4 +1,4 @@
-﻿from django.urls import path
+from django.urls import path
 
 from . import views
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path("saloons/<int:saloon_id>/", views.saloon_review, name="saloon_review"),
     path("saloons/<int:saloon_id>/approve/", views.saloon_approve, name="saloon_approve"),
     path("saloons/<int:saloon_id>/reject/", views.saloon_reject, name="saloon_reject"),
+    path("saloons/<int:saloon_id>/media-sizes/", views.saloon_media_sizes, name="saloon_media_sizes"),
     path("saloons/<int:saloon_id>/gallery/<int:post_id>/", views.saloon_gallery_detail, name="saloon_gallery_detail"),
     path("saloons/<int:saloon_id>/gallery/<int:post_id>/<slug:action>/", views.gallery_post_moderate, name="gallery_post_moderate"),
     path("categories/", views.category_queue, name="category_queue"),
@@ -22,6 +23,10 @@ urlpatterns = [
     path("categories/<int:category_id>/reject/", views.category_reject, name="category_reject"),
     path("categories/bulk-map/", views.category_bulk_map_main, name="category_bulk_map_main"),
     path("categories/<int:category_id>/map/", views.category_map_main, name="category_map_main"),
+    path("categories/<int:category_id>/update/", views.category_update, name="category_update"),
+    path("categories/<int:category_id>/delete/", views.category_delete, name="category_delete"),
+    path("service-review/<int:service_id>/update/", views.service_review_update, name="service_review_update"),
+    path("service-review/<int:service_id>/delete/", views.service_review_delete, name="service_review_delete"),
     path("staff-management/", views.staff_management, name="staff_management"),
     path("staff-management/<int:profile_id>/", views.staff_detail, name="staff_detail"),
     path("staff-management/<int:profile_id>/<slug:action>/", views.staff_action, name="staff_action"),
@@ -37,4 +42,6 @@ urlpatterns = [
     path("razorpay/", views.razorpay, name="razorpay"),
     path("feature-flags/", views.feature_flags, name="feature_flags"),
 ]
+
+
 

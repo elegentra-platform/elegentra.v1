@@ -101,6 +101,11 @@ class Saloon(models.Model):
         null=True,
         blank=True
     )
+    logo_image = models.ImageField(
+        upload_to="saloons/logos/",
+        null=True,
+        blank=True
+    )
 
     is_verified = models.BooleanField(default=False)
 
@@ -360,6 +365,29 @@ class SaloonMapClick(models.Model):
         return f"{self.saloon} map click"
 
 
+class SaloonContactClick(models.Model):
+    CALL = "call"
+    WHATSAPP = "whatsapp"
+    KIND_CHOICES = [(CALL, "Call"), (WHATSAPP, "WhatsApp")]
+    saloon = models.ForeignKey(Saloon, on_delete=models.CASCADE, related_name="contact_click_events")
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [models.Index(fields=["saloon", "kind", "created_at"])]
+
+
+class GalleryView(models.Model):
+    saloon = models.ForeignKey(Saloon, on_delete=models.CASCADE, related_name="gallery_view_events")
+    post = models.ForeignKey("GalleryPost", on_delete=models.CASCADE, related_name="view_events")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [models.Index(fields=["post", "created_at"])]
+
+
 # =========================
 # STEP 2 – VERIFICATION
 # =========================
@@ -550,4 +578,6 @@ class ApprovedSaloon(Saloon):
         proxy = True
         verbose_name = "Approved Saloon"
         verbose_name_plural = "Approved Saloons"
+
+
 

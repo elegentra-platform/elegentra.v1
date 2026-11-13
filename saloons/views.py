@@ -14,8 +14,10 @@ from django.db.models import Exists, OuterRef
 from django.views.decorators.http import require_POST
 
 from core.seo import build_absolute_url, build_image_url, build_seo_payload, truncate_text
+from core.image_processing import optimize_public_image_upload
 from public.models import FavoriteSaloon
 from plans.models import SaloonSubscription
+from plans.billing import live_subscription_q
 from .serializers import (
     SaloonOnboardingStepOneSerializer,
     SaloonOnboardingStepTwoSerializer,
@@ -31,8 +33,11 @@ from .models import (
     SaloonReview,
     SaloonProfileView,
     SaloonMapClick,
+    SaloonContactClick,
+    GalleryView,
 )
 from services.models import Service, ServiceCategory, ServiceInterest
+from services.category_choices import category_choice_context, category_choice_value, resolve_category_choice
 from .utils import (
     build_saloon_public_url,
     build_service_slots,
@@ -48,6 +53,28 @@ OTP_COOLDOWN_SECONDS = 5
 OTP_MAX_ATTEMPTS = 3
 OTP_LOCK_SECONDS = 5
 User = get_user_model()
+
+PROFILE_VIEW_HOURS = 12
+SERVICE_INTEREST_HOURS = 12
+
+
+def _is_salon_owner(request, saloon):
+    return bool(request.user.is_authenticated and saloon.owner_id == request.user.id)
+
+
+def _session_timestamp(request, key):
+    raw = request.session.get(key)
+    if not raw:
+        return None
+    try:
+        return timezone.datetime.fromisoformat(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _mark_session_timestamp(request, key):
+    request.session[key] = timezone.now().isoformat()
+    request.session.modified = True
 
 
 DAY_KEYS = [
@@ -86,12 +113,7 @@ def _format_time_label(value):
 
 def _platform_visible_saloons(queryset):
     now = timezone.now()
-    live_subscription = SaloonSubscription.objects.filter(saloon=OuterRef("pk")).filter(
-        Q(trial_ends_at__gt=now)
-        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__isnull=True)
-        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__gt=now)
-        | Q(status=SaloonSubscription.STATUS_PAST_DUE, grace_period_ends_at__gt=now)
-    )
+    live_subscription = SaloonSubscription.objects.filter(saloon=OuterRef("pk")).filter(live_subscription_q(now))
     return queryset.annotate(has_platform_access=Exists(live_subscription)).filter(has_platform_access=True)
 
 def _display_name(saloon, profile=None):
@@ -448,6 +470,8 @@ def build_service_slots(existing_services, rejection_map):
                 "name": service["name"],
                 "price": service["price"],
                 "category_id": service.get("category_id"),
+                "main_category_id": service.get("main_category_id"),
+                "category_value": service.get("category_value", ""),
                 "rejection": (
                     rejection_map.get(f"service_{i+1}")
                     or rejection_map.get(f"service_image_{i+1}")
@@ -458,6 +482,8 @@ def build_service_slots(existing_services, rejection_map):
                 "name": "",
                 "price": "",
                 "category_id": None,
+                "main_category_id": None,
+                "category_value": "",
                 "rejection": None
             })
 
@@ -621,7 +647,7 @@ def partner_pricing(request):
 @login_required
 def dashboard(request, username):
     if request.user.username != username:
-        return redirect("home")
+        return redirect("public_home")
 
     saloon = Saloon.objects.filter(owner=request.user).first()
     if not saloon:
@@ -1064,11 +1090,7 @@ def saloon_onboarding_step_three(request):
         for r in saloon.rejection_reasons.all()
     }
 
-    categories = ServiceCategory.objects.filter(
-        is_active=True
-    ).filter(
-        Q(is_approved=True) | Q(created_by_saloon=saloon)
-    )
+    main_categories, own_pending_categories = category_choice_context(saloon)
 
     existing_services_qs = Service.objects.filter(
         saloon=saloon,
@@ -1080,6 +1102,8 @@ def saloon_onboarding_step_three(request):
             "name": s.name,
             "price": s.price,
             "category_id": s.category_id,
+            "main_category_id": s.main_category_id,
+            "category_value": category_choice_value(s),
         } for s in qs]
 
     if request.method == "POST":
@@ -1089,16 +1113,16 @@ def saloon_onboarding_step_three(request):
         for i in range(1, 4):
             name = request.POST.get(f"service_name_{i}", "").strip()
             price = request.POST.get(f"service_price_{i}", "").strip()
-            category_id = request.POST.get(f"service_category_{i}")
+            category_value = request.POST.get(f"service_category_{i}")
             new_category = request.POST.get(f"service_new_category_{i}", "").strip()
 
-            if name or price or category_id or new_category:
+            if name or price or category_value or new_category:
                 slot_errors = []
                 if not name:
                     slot_errors.append("Service name is required.")
                 if not price:
                     slot_errors.append("Price is required.")
-                if not category_id and not new_category:
+                if not category_value and not new_category:
                     slot_errors.append("Category is required.")
 
                 if slot_errors:
@@ -1115,12 +1139,19 @@ def saloon_onboarding_step_three(request):
                             "created_by_saloon": saloon,
                         }
                     )
-                    category_id = category.id
+                    main_category = None
+                else:
+                    category, main_category = resolve_category_choice(category_value, saloon)
+                    if not category and not main_category:
+                        rejection_map[f"service_{i}"] = "Please select an available category."
+                        continue
 
                 services.append({
                     "name": name,
                     "price": price,
-                    "category_id": int(category_id),
+                    "category_id": category.id if category else None,
+                    "main_category_id": main_category.id if main_category else None,
+                    "category_value": f"category:{category.id}" if category else f"main:{main_category.id}",
                 })
 
         if not banner and not saloon.banner_image:
@@ -1135,12 +1166,13 @@ def saloon_onboarding_step_three(request):
                 "service_slots": service_slots,
                 "banner_image": saloon.banner_image.url if saloon.banner_image else None,
                 "rejection_map": rejection_map,
-                "categories": categories,
+                "main_categories": main_categories,
+                "own_pending_categories": own_pending_categories,
             })
 
         # ===== SAVE =====
         if banner:
-            saloon.banner_image = banner
+            saloon.banner_image = optimize_public_image_upload(banner)
 
         Service.objects.filter(
             saloon=saloon,
@@ -1153,6 +1185,7 @@ def saloon_onboarding_step_three(request):
                 name=s["name"],
                 price=s["price"],
                 category_id=s["category_id"],
+                main_category_id=s["main_category_id"],
                 is_active=False,
                 is_visible=True,
                 added_during_onboarding=True,
@@ -1171,7 +1204,8 @@ def saloon_onboarding_step_three(request):
         "service_slots": service_slots,
         "banner_image": saloon.banner_image.url if saloon.banner_image else None,
         "rejection_map": rejection_map,
-        "categories": categories,
+        "main_categories": main_categories,
+        "own_pending_categories": own_pending_categories,
     })
 @login_required
 def saloon_onboarding_step_four(request):
@@ -1215,13 +1249,25 @@ def public_saloon(request, slug):
         return redirect(canonical_url)
 
     profile = getattr(saloon, "profile", None)
-    SaloonProfileView.objects.create(saloon=saloon)
+    if not _is_salon_owner(request, saloon):
+        key = f"elegentra_profile_view:{saloon.pk}"
+        previous = _session_timestamp(request, key)
+        if not previous or timezone.now() - previous >= timedelta(hours=PROFILE_VIEW_HOURS):
+            SaloonProfileView.objects.create(saloon=saloon)
+            _mark_session_timestamp(request, key)
     map_url = profile.get_google_maps_url() if profile else ""
     services = saloon.services.filter(
         is_active=True,
         is_visible=True,
         is_deleted=False,
-    ).select_related("category")
+    ).select_related("category", "main_category")
+    service_category_filters = []
+    seen_category_keys = set()
+    for service in services:
+        key = f"category:{service.category_id}" if service.category_id else f"main:{service.main_category_id}"
+        if key not in seen_category_keys:
+            service_category_filters.append({"key": key, "name": service.category_label})
+            seen_category_keys.add(key)
     display_name = _display_name(saloon, profile)
     whatsapp_template = profile.get_whatsapp_prefill_template() if profile else ""
     whatsapp_number = "".join(ch for ch in saloon.whatsapp_number if ch.isdigit())
@@ -1253,6 +1299,7 @@ def public_saloon(request, slug):
             "display_name": display_name,
             "map_url": map_url,
             "services": services,
+            "service_category_filters": service_category_filters,
             "whatsapp_template": whatsapp_template,
             "public_whatsapp_number": whatsapp_number,
             "gallery_posts": gallery_posts,
@@ -1303,7 +1350,45 @@ def public_saloon_map_click(request, slug):
         is_active=True,
         approval_status=Saloon.APPROVAL_APPROVED,
     )
-    SaloonMapClick.objects.create(saloon=saloon)
+    if not _is_salon_owner(request, saloon):
+        page_key = f"elegentra_page_action:{saloon.pk}:map"
+        if not request.session.get(page_key):
+            SaloonMapClick.objects.create(saloon=saloon)
+            request.session[page_key] = True
+            request.session.modified = True
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def public_saloon_contact_click(request, slug, kind):
+    saloon = get_object_or_404(Saloon, slug=slug, is_active=True, approval_status=Saloon.APPROVAL_APPROVED)
+    if kind not in {SaloonContactClick.CALL, SaloonContactClick.WHATSAPP}:
+        return JsonResponse({"ok": False}, status=400)
+    if not _is_salon_owner(request, saloon):
+        page_key = f"elegentra_page_action:{saloon.pk}:{kind}"
+        if not request.session.get(page_key):
+            SaloonContactClick.objects.create(saloon=saloon, kind=kind)
+            request.session[page_key] = True
+            request.session.modified = True
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def public_saloon_page_resume(request, slug):
+    saloon = get_object_or_404(Saloon, slug=slug, is_active=True, approval_status=Saloon.APPROVAL_APPROVED)
+    for kind in ("map", SaloonContactClick.CALL, SaloonContactClick.WHATSAPP):
+        request.session.pop(f"elegentra_page_action:{saloon.pk}:{kind}", None)
+    request.session.modified = True
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def public_service_interest_reset(request, slug):
+    saloon = get_object_or_404(Saloon, slug=slug, is_active=True, approval_status=Saloon.APPROVAL_APPROVED)
+    ids = [str(value).strip() for value in request.POST.getlist("service_id") if str(value).strip()]
+    for service_id in ids:
+        request.session.pop(f"elegentra_service_interest:{saloon.pk}:{service_id}", None)
+    request.session.modified = True
     return JsonResponse({"ok": True})
 
 
@@ -1323,7 +1408,12 @@ def public_service_interest(request, slug):
         is_active=True,
         is_deleted=False,
     )
-    ServiceInterest.objects.create(service=service)
+    if not _is_salon_owner(request, saloon):
+        key = f"elegentra_service_interest:{saloon.pk}:{service.pk}"
+        previous = _session_timestamp(request, key)
+        if not previous or timezone.now() - previous >= timedelta(hours=SERVICE_INTEREST_HOURS):
+            ServiceInterest.objects.create(service=service)
+            _mark_session_timestamp(request, key)
     total_interest = service.interest_events.count()
     return JsonResponse({
         "ok": True,
@@ -1450,6 +1540,13 @@ def public_gallery_detail(request, slug, post_id):
     post = get_object_or_404(GalleryPost.objects.select_related("service", "service__category"), id=post_id, saloon=saloon)
     if not post.image_media:
         return redirect("public_saloon", slug=saloon.slug)
+
+    if not _is_salon_owner(request, saloon):
+        key = f"elegentra_gallery_view:{post.pk}"
+        previous = _session_timestamp(request, key)
+        if not previous or timezone.now() - previous >= timedelta(hours=PROFILE_VIEW_HOURS):
+            GalleryView.objects.create(saloon=saloon, post=post)
+            _mark_session_timestamp(request, key)
 
     posts = _gallery_posts_with_images(saloon)
     post_ids = [p.id for p in posts]

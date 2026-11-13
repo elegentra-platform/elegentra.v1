@@ -40,16 +40,37 @@
               </div>
             </div>
 
-            <a
-              href="{{ saloon_public_url }}"
-              target="_blank"
-              rel="noopener"
-              class="mt-4 inline-block text-sm font-semibold text-blue-600"
-              data-public-profile-link
-            >
-              View Public Profile
-            </a>
-          </div>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <a
+                href="{{ saloon_public_url }}"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex items-center gap-2 rounded-xl border border-[#e6d8bf] bg-white px-3 py-2 text-sm font-semibold text-[#7a5a23] shadow-sm transition hover:bg-[#fff7e8]"
+                data-public-profile-link
+              >
+                <i class="fa-solid fa-globe text-xs"></i>
+                View Public Profile
+              </a>
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl bg-[#c79a43] px-3 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(199,154,67,0.22)] transition hover:bg-[#b98d3a]"
+                data-native-profile-share
+                data-share-title="{{ saloon.name|escape }} on Elegentra"
+                data-share-text="View {{ saloon.name|escape }} on Elegentra"
+                data-share-url="{{ saloon_public_url }}"
+              >
+                <i class="fa-solid fa-share-nodes text-xs"></i>
+                Share
+              </button>
+              <a
+                href="{% url 'saloon_dashboard_share_poster_preview' username=saloon.owner.username %}"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#e6d8bf] bg-white text-[#7a5a23] shadow-sm transition hover:bg-[#fff7e8]"
+                aria-label="Preview share poster"
+                title="Preview share poster"
+              >
+                <i class="fa-regular fa-image text-sm"></i>
+              </a>
+            </div>          </div>
 
           <a
             href="{% url 'saloon_dashboard_edit_basic_detail' username=saloon.owner.username %}"
@@ -66,7 +87,6 @@
       <div class="rounded-2xl border border-[#e7dbc7] bg-[#fffcf8] p-4">
         <div class="mb-3">
           <h3 class="text-sm font-semibold text-[#2d251d]">Your Salon Link</h3>
-          <p class="mt-1 text-xs text-[#7a6a54]">Set your personal subdomain for sharing and visibility.</p>
         </div>
 
         <div class="flex items-stretch gap-2">
@@ -163,7 +183,7 @@
           <div class="flex items-center gap-4 min-w-0">
             <div class="min-w-0">
               <p class="font-semibold truncate">{{ service.name }}</p>
-              <p class="mt-1 text-sm text-gray-500">{{ service.category.name }}</p>
+              <p class="mt-1 text-sm text-gray-500">{{ service.category_label }}</p>
               <p class="text-sm text-gray-500">Rs. {{ service.offer_price|default:service.price }}</p>
             </div>
           </div>
@@ -281,6 +301,31 @@
 
 <script>
   (function () {
+    const shareButton = document.querySelector("[data-native-profile-share]");
+    if (!shareButton) return;
+
+    shareButton.addEventListener("click", async function () {
+      const shareData = {
+        title: shareButton.dataset.shareTitle || document.title,
+        text: shareButton.dataset.shareText || "",
+        url: shareButton.dataset.shareUrl || window.location.href
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (error) {
+          if (error && error.name === "AbortError") return;
+        }
+      }
+
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareData.url);
+        if (typeof showToast === "function") showToast("success", "Profile link copied", "Share it in any app.");
+      }
+    });
+  })();  (function () {
     if (!window.location.hash) return;
     var hash = window.location.hash.replace("#", "");
     var target = document.getElementById(hash);
@@ -297,6 +342,7 @@
     const saveButton = document.getElementById("saloonSlugSave");
     const previewLink = document.getElementById("saloonPublicUrlPreview");
     const publicLinks = Array.from(document.querySelectorAll("[data-public-profile-link]"));
+    const profileShareButtons = Array.from(document.querySelectorAll("[data-native-profile-share]"));
     const checkUrl = "{{ saloon_slug_check_url }}";
     const updateUrl = "{{ saloon_slug_update_url }}";
 
@@ -340,6 +386,8 @@
       previewLink.href = url;
       publicLinks.forEach(function (link) {
         link.href = url;
+      });      profileShareButtons.forEach(function (button) {
+        button.dataset.shareUrl = url;
       });
     }
 
@@ -470,6 +518,10 @@
   })();
 </script>
 {% endblock %}
+
+
+
+
 
 
 

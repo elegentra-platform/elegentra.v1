@@ -33,7 +33,7 @@
 
           <div class="min-w-0">
             <p class="truncate text-base font-semibold">{{ service.name }}</p>
-            <p class="mt-1 text-sm text-gray-500">{{ service.category.name }}</p>
+            <p class="mt-1 text-sm text-gray-500">{{ service.category_label }}</p>
             <p class="text-sm font-medium text-gray-800">Rs. {{ service.offer_price|default:service.price }}</p>
           </div>
         </div>

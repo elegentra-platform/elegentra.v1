@@ -105,7 +105,7 @@
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
                     <p class="mt-1 break-words text-[15px] font-semibold leading-5 text-[#211b16]">{{ post.service.name }}</p>
                     <p class="mt-3 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ post.service.offer_price|default:post.service.price }}</p>
-                    {% if post.service.category %}<p class="mt-1 text-xs text-gray-500">{{ post.service.category.name }}</p>{% endif %}
+                    <p class="mt-1 text-xs text-gray-500">{{ post.service.category_label }}</p>
                   </div>
                 </div>
               {% endif %}
@@ -185,7 +185,7 @@
                   <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
                   <p class="mt-1 break-words text-[15px] font-semibold leading-5 text-[#211b16]">{{ item.service.name }}</p>
                   <p class="mt-3 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ item.service.offer_price|default:item.service.price }}</p>
-                  {% if item.service.category %}<p class="mt-1 text-xs text-gray-500">{{ item.service.category.name }}</p>{% endif %}
+                  <p class="mt-1 text-xs text-gray-500">{{ item.service.category_label }}</p>
                 </div>
               </div>
             {% endif %}

@@ -2,7 +2,7 @@ from core.file_cleanup import register_file_cleanup
 from .models import GalleryMedia, Saloon, SaloonVerification
 
 
-register_file_cleanup(Saloon, ["banner_image"])
+register_file_cleanup(Saloon, ["banner_image", "logo_image"])
 register_file_cleanup(
     SaloonVerification,
     [

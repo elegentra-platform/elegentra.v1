@@ -30,11 +30,17 @@
     <p class="mt-1 text-sm text-slate-600">Internal profile, uploads, services, and approval status.</p>
     {% if saloon.is_test_saloon %}<span class="mt-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Test Salon</span>{% endif %}
   </div>
-  {% if saloon.approval_status == 'pending' %}
-    <a href="{% url 'staffpanel:saloon_queue' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to queue</a>
-  {% else %}
-    <a href="{% url 'staffpanel:saloon_list' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to all vendors</a>
-  {% endif %}
+  <div class="flex flex-wrap items-center justify-end gap-2">
+    <a href="{% url 'staffpanel:saloon_media_sizes' saloon.id %}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md border border-[#d6c28c] bg-[#fffaf0] px-3 py-1.5 text-sm font-semibold text-[#7a5a18] transition hover:bg-[#f7edd2]">
+      <i class="fa-solid fa-hard-drive text-xs"></i>
+      Image sizes
+    </a>
+    {% if saloon.approval_status == 'pending' %}
+      <a href="{% url 'staffpanel:saloon_queue' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to queue</a>
+    {% else %}
+      <a href="{% url 'staffpanel:saloon_list' %}" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm">Back to all vendors</a>
+    {% endif %}
+  </div>
 </div>
 
 <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
@@ -179,7 +185,7 @@
               <div class="font-medium">{{ service.name }}</div>
               {% if service.description %}<div class="mt-1 max-w-md text-xs text-slate-500">{{ service.description }}</div>{% endif %}
             </td>
-            <td class="px-3 py-2">{{ service.category.name }}</td>
+            <td class="px-3 py-2">{{ service.category_label }}</td>
             <td class="px-3 py-2">
               {% if service.offer_price %}
                 <span class="font-medium">{{ service.offer_price }}</span>

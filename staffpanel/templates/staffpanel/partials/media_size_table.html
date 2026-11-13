@@ -1,0 +1,85 @@
+<section class="mt-5 overflow-hidden rounded-2xl border border-[#d8e0ea] bg-white shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-4">
+    <div>
+      <h3 class="text-base font-semibold">{{ title }}</h3>
+      <p class="mt-1 text-xs text-slate-500">{{ note }}</p>
+    </div>
+  </div>
+
+  {% if rows %}
+    <div class="hidden overflow-x-auto md:block">
+      <table class="min-w-full text-sm">
+        <thead class="bg-[#f8fafc] text-left text-slate-600">
+          <tr>
+            <th class="px-4 py-3">{{ image_heading }}</th>
+            <th class="px-4 py-3">Image name</th>
+            <th class="px-4 py-3">Type</th>
+            <th class="px-4 py-3">Format</th>
+            <th class="px-4 py-3">Dimensions</th>
+            <th class="px-4 py-3">Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr class="border-t border-slate-100 align-middle">
+              <td class="px-4 py-3">
+                {% if row.is_image and row.url %}
+                  <a href="{{ row.url }}" target="_blank" rel="noopener" class="block h-16 w-24 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <img src="{{ row.url }}" alt="{{ row.label }}" class="h-full w-full object-cover">
+                  </a>
+                {% elif row.url %}
+                  <a href="{{ row.url }}" target="_blank" rel="noopener" class="inline-flex h-16 w-24 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500">File</a>
+                {% else %}
+                  <span class="inline-flex h-16 w-24 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-400">-</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <p class="font-semibold text-slate-900">{{ row.name }}</p>
+                <p class="mt-1 max-w-xs truncate text-xs text-slate-500">{{ row.path }}</p>
+              </td>
+              <td class="px-4 py-3">
+                <p class="font-medium text-slate-800">{{ row.label }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ row.source }}</p>
+              </td>
+              <td class="px-4 py-3 font-semibold text-slate-700">{{ row.format }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ row.dimensions }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ row.size }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid gap-3 p-4 md:hidden">
+      {% for row in rows %}
+        <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {% if row.is_image and row.url %}
+            <a href="{{ row.url }}" target="_blank" rel="noopener" class="block aspect-[16/10] bg-slate-50">
+              <img src="{{ row.url }}" alt="{{ row.label }}" class="h-full w-full object-cover">
+            </a>
+          {% endif %}
+          <div class="space-y-3 p-4">
+            <div>
+              <p class="text-sm font-semibold text-slate-950">{{ row.label }}</p>
+              <p class="mt-1 break-all text-xs text-slate-500">{{ row.name }}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded-xl bg-slate-50 p-3"><span class="block font-bold uppercase tracking-[0.12em] text-slate-500">Format</span><span class="mt-1 block text-sm font-semibold text-slate-900">{{ row.format }}</span></div>
+              <div class="rounded-xl bg-slate-50 p-3"><span class="block font-bold uppercase tracking-[0.12em] text-slate-500">Size</span><span class="mt-1 block text-sm font-semibold text-slate-900">{{ row.size }}</span></div>
+              <div class="rounded-xl bg-slate-50 p-3"><span class="block font-bold uppercase tracking-[0.12em] text-slate-500">Dimensions</span><span class="mt-1 block text-sm font-semibold text-slate-900">{{ row.dimensions }}</span></div>
+              <div class="rounded-xl bg-slate-50 p-3"><span class="block font-bold uppercase tracking-[0.12em] text-slate-500">Type</span><span class="mt-1 block text-sm font-semibold text-slate-900">{{ row.source }}</span></div>
+            </div>
+            {% if row.url %}<a href="{{ row.url }}" target="_blank" rel="noopener" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">Open file</a>{% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="flex min-h-[180px] items-center justify-center p-8 text-center">
+      <div>
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff4d8] text-[#9A7B47]"><i class="fa-solid fa-images"></i></div>
+        <p class="mt-4 font-semibold text-slate-900">{{ empty_text }}</p>
+      </div>
+    </div>
+  {% endif %}
+</section>

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}{{ seo.title|default:display_name }}{% endblock %}
 {% block main_class %}max-w-none px-0 pb-28 md:pb-24{% endblock %}
@@ -119,11 +119,121 @@
         border-right: 0;
       }
     }
+
+    .service-category-row {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      padding: 0.1rem 0.1rem 0.35rem;
+      scrollbar-width: none;
+    }
+
+    .service-category-row::-webkit-scrollbar { display: none; }
+
+    .service-category-pill {
+      flex: 0 0 auto;
+      border: 1px solid #ddcfbb;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #776650;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.72rem 1rem;
+      transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+    }
+
+    .service-category-pill.is-active {
+      border-color: #c79c54;
+      background: #fff7e9;
+      color: #6c4f1d;
+    }
+    .public-services-layout {
+      display: block;
+      position: relative;
+    }
+
+    .public-services-main {
+      min-width: 0;
+    }
+
+    .public-selected-rail {
+      display: none;
+    }
+
+    .public-selected-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: none;
+    }
+
+    .public-selected-list {
+      min-height: 0;
+      max-height: 13.5rem;
+      overflow-y: auto;
+      padding-right: 0.15rem;
+      scrollbar-width: thin;
+    }
+
+    .public-selected-list::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .public-selected-list::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(180, 143, 82, 0.35);
+    }
+
+    @media (min-width: 1024px) {
+      .public-services-layout .service-card {
+        min-height: 5.75rem;
+        padding: 1rem 1.25rem !important;
+      }
+
+      .public-services-layout .service-card > div:last-child {
+        margin-top: 0.65rem;
+      }
+
+      .public-services-layout.has-selection {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+        gap: 1.25rem;
+        align-items: start;
+      }
+
+      .public-services-layout.has-selection .public-selected-rail {
+        display: block;
+        position: sticky;
+        top: calc(var(--public-tabs-top, 88px) + 5.25rem);
+        align-self: start;
+        height: fit-content;
+        max-height: calc(100vh - var(--public-tabs-top, 88px) - 6.25rem);
+        z-index: 30;
+      }
+
+      .public-services-layout.has-selection .public-selected-card {
+        height: auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .public-services-layout.has-selection .public-selected-list {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      #selectionBar {
+        display: none !important;
+      }
+    }
   </style>
 {% endblock %}
 
 {% block content %}
-<section id="publicSaloonPage" class="page-shell-loading relative overflow-x-hidden bg-[#f5efe8]">
+<section id="publicSaloonPage" class="page-shell-ready relative overflow-x-clip bg-[#f5efe8]">
   <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(232,217,194,0.55),_transparent_58%)]"></div>
 
   <div class="relative mx-auto max-w-6xl px-0 md:px-4 md:py-6">
@@ -224,6 +334,8 @@
             <a
               href="#"
               id="primaryWhatsappButton"
+              data-contact-track-kind="whatsapp"
+              data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='whatsapp' %}"
               target="_blank"
               rel="noopener"
               class="hero-cta-shine relative isolate mb-3 inline-flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-full px-6 text-sm font-semibold text-[#24180a] transition-all duration-200 hover:brightness-[1.03] active:scale-95"
@@ -236,6 +348,8 @@
           <div class="flex gap-3">
             <a
               href="tel:{% if profile.contact_number %}{{ profile.contact_number }}{% else %}{{ saloon.whatsapp_number }}{% endif %}"
+              data-contact-track-kind="call"
+              data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='call' %}"
               class="inline-flex min-h-[50px] w-1/2 items-center justify-center rounded-full border border-white/80 bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
             >
               <i class="fa-solid fa-phone mr-2 text-sm"></i>
@@ -244,9 +358,8 @@
 
             {% if map_url %}
               <a
-                href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
-                {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
-                {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+                href="{{ map_url }}" target="_blank" rel="noopener"
+                data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"
                 class="inline-flex min-h-[50px] w-1/2 items-center justify-center rounded-full border border-white/80 bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
               >
                 <i class="fa-solid fa-location-dot mr-2 text-sm"></i>
@@ -332,6 +445,8 @@
                 <a
                   href="#"
                   id="primaryWhatsappButtonDesktop"
+                  data-contact-track-kind="whatsapp"
+                  data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='whatsapp' %}"
                   target="_blank"
                   rel="noopener"
                   class="hero-cta-shine relative isolate inline-flex min-h-[52px] items-center justify-center gap-2 overflow-hidden rounded-full px-6 text-sm font-semibold text-[#24180a] transition-all duration-200 hover:brightness-[1.03] active:scale-95"
@@ -343,6 +458,8 @@
 
               <a
                 href="tel:{% if profile.contact_number %}{{ profile.contact_number }}{% else %}{{ saloon.whatsapp_number }}{% endif %}"
+                data-contact-track-kind="call"
+                data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='call' %}"
                 class="inline-flex min-h-[52px] items-center justify-center rounded-full border-2 border-white/90 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
               >
                 <i class="fa-solid fa-phone mr-2 text-sm"></i>
@@ -351,9 +468,8 @@
 
               {% if map_url %}
                 <a
-                  href="{% if user.is_authenticated %}{{ map_url }}{% else %}{% url 'account_login' %}?next={{ request.path|urlencode }}{% endif %}"
-                  {% if user.is_authenticated %}target="_blank" rel="noopener"{% endif %}
-                  {% if user.is_authenticated %}data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"{% endif %}
+                  href="{{ map_url }}" target="_blank" rel="noopener"
+                  data-map-track-url="{% url 'public_saloon_map_click' slug=saloon.slug %}"
                   class="inline-flex min-h-[52px] items-center justify-center rounded-full border-2 border-white/90 bg-white/12 px-6 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:bg-white/16 active:scale-95"
                 >
                   <i class="fa-solid fa-location-dot mr-2 text-sm"></i>
@@ -400,19 +516,29 @@
       <div class="mt-7 pb-24 md:mt-8 md:pb-28">
         <div id="public-tab-services" class="public-tab-panel block">
           {% if services %}
-            <div class="grid gap-3.5 md:gap-4">
+            <div id="publicServicesLayout" class="public-services-layout">
+              <div class="public-services-main grid gap-3.5 md:gap-4">
+              {% if service_category_filters %}
+                <div class="service-category-row" aria-label="Filter services by category">
+                  <button type="button" class="service-category-pill is-active" data-service-category-filter="" aria-pressed="true">All</button>
+                  {% for category in service_category_filters %}
+                    <button type="button" class="service-category-pill" data-service-category-filter="{{ category.key }}" aria-pressed="false">{{ category.name }}</button>
+                  {% endfor %}
+                </div>
+              {% endif %}
               {% for service in services %}
                 <article
                   class="service-card rounded-[1.4rem] border border-[#eadfce] bg-white p-4 shadow-[0_16px_34px_rgba(74,56,30,0.06)] transition duration-300 md:p-5"
                   data-service-card="{{ service.id }}"
+                  data-service-category="{% if service.category_id %}category:{{ service.category_id }}{% else %}main:{{ service.main_category_id }}{% endif %}"
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <p class="text-base font-semibold text-[#1f1a15] md:text-lg">{{ service.name }}</p>
-                      <p class="mt-1.5 text-sm text-[#8a7b66]">{{ service.category.name }}</p>
+                      <p class="mt-1.5 text-sm text-[#8a7b66]">{{ service.category_label }}</p>
                     </div>
                     <p class="shrink-0 text-sm font-medium text-[#7b6a54]">
-                      Rs. {% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}
+                      ₹{% if service.offer_price %}{{ service.offer_price }}{% else %}{{ service.price }}{% endif %}
                     </p>
                   </div>
 
@@ -430,6 +556,24 @@
                   </div>
                 </article>
               {% endfor %}
+              </div>
+
+              {% if public_whatsapp_number %}
+                <aside id="desktopSelectionPanel" class="public-selected-rail" aria-live="polite">
+                  <div class="public-selected-card rounded-[1.65rem] border border-[#e3c981] bg-[#fffaf0] p-5 shadow-[0_22px_46px_rgba(74,56,30,0.10)]">
+                    <div>
+                      <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#b08a38]">Selected Services</p>
+                      <p class="mt-2 text-sm font-semibold text-[#6b5b45]"><span id="desktopSelectedCount">0</span> <span id="desktopSelectedCountLabel">services selected</span></p>
+                    </div>
+                    <div class="my-4 h-px bg-[#eadbbf]"></div>
+                    <div id="desktopSelectedServices" class="public-selected-list space-y-2"></div>
+                    <a id="desktopConfirmInquiryButton" data-contact-track-kind="whatsapp" data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='whatsapp' %}" href="#" target="_blank" rel="noopener" class="hero-cta-shine mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#d0ad43] px-5 text-sm font-semibold text-[#2f271d] shadow-[0_18px_35px_rgba(160,124,38,0.22)] transition hover:-translate-y-0.5 hover:bg-[#c6a138]">
+                      <i class="fa-brands fa-whatsapp text-xl" aria-hidden="true"></i>
+                      Chat with Salon
+                    </a>
+                  </div>
+                </aside>
+              {% endif %}
             </div>
           {% else %}
             <div class="rounded-[1.5rem] border border-dashed border-[#d8c8af] bg-white/70 px-6 py-10 text-center text-[#8a7b66]">
@@ -477,7 +621,7 @@
                         <div class="hidden absolute bottom-full left-0 mb-2 w-64 max-w-[76vw] rounded-lg border border-[#e8e1d7] bg-white/95 p-3.5 text-left shadow-[0_22px_55px_rgba(24,20,16,0.16)] backdrop-blur" data-service-info-card="public-grid-{{ post.id }}">
                           <p class="text-[10px] font-semibold uppercase tracking-wide text-[#9a8568]">Service details</p>
                           <p class="mt-1 break-words text-xs font-semibold text-gray-900">{{ post.service.name }}</p>
-                          <p class="mt-2 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">Rs. {{ post.service.offer_price|default:post.service.price }}</p>
+                          <p class="mt-2 inline-flex rounded-md bg-[#f7f3ec] px-2.5 py-1 text-sm font-semibold text-[#5f4b32]">₹{{ post.service.offer_price|default:post.service.price }}</p>
                         </div>
                       </div>
                     {% endif %}
@@ -490,7 +634,7 @@
                   </a>
                 {% endwith %}
               {% endfor %}
-            </div>
+              </div>
           {% else %}
             <div class="rounded-[1.5rem] border border-dashed border-[#d8c8af] bg-white/70 px-6 py-10 text-center text-[#8a7b66]">
               Gallery coming soon.
@@ -524,59 +668,43 @@
                 </div>
               </div>
 
-
-              <details class="review-compose group mt-6 overflow-hidden rounded-[1.45rem] border border-[#E4D2B6] bg-[linear-gradient(135deg,#fffdf9,#fff4e3)] shadow-[0_16px_34px_rgba(74,56,30,0.08)]">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-[#fff6e8] sm:px-5">
-                  <span class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#F7E7C6,#D9B46B)] text-[#5F3F12] shadow-[0_10px_22px_rgba(181,140,78,0.20),inset_0_1px_0_rgba(255,255,255,0.55)]">
-                      <i class="fa-solid fa-star-half-stroke text-sm"></i>
-                    </span>
-                    <span class="min-w-0">
-                      <span class="block text-sm font-semibold text-[#2e2418]">Write a review</span>
-                      <span class="mt-0.5 block text-xs leading-5 text-[#7b6a54]">Rate this salon and share your experience.</span>
-                    </span>
-                  </span>
-                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#DFC89F] bg-white text-[#8a6a38] shadow-[0_8px_18px_rgba(74,56,30,0.08)] transition group-open:rotate-180 group-open:bg-[#2E2418] group-open:text-white"><i class="fa-solid fa-chevron-down text-xs"></i></span>
-                </summary>
-
-                <form
-                  method="post"
-                  action="{% url 'public_saloon_add_review' slug=saloon.slug %}"
-                  class="space-y-4 border-t border-[#eadfce] px-4 pb-5 pt-4 sm:px-5"
-                  id="reviewForm"
-                  data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
-                  data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about"
-                >
-                  {% csrf_token %}
-                  <div>
-                    <p class="mb-2 text-sm font-medium text-[#5a4d40]">Your rating</p>
-                    <input type="hidden" name="rating" id="reviewRatingInput" required>
-                    <div class="flex items-center gap-2" id="reviewStarPicker">
-                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                      <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
-                    </div>
+              <form
+                method="post"
+                action="{% url 'public_saloon_add_review' slug=saloon.slug %}"
+                class="mt-6 space-y-4"
+                id="reviewForm"
+                data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+                data-login-url="{% url 'account_login' %}?next={{ request.path|urlencode }}#about"
+              >
+                {% csrf_token %}
+                <div>
+                  <p class="mb-2 text-sm font-medium text-[#5a4d40]">Your rating</p>
+                  <input type="hidden" name="rating" id="reviewRatingInput" required>
+                  <div class="flex items-center gap-2" id="reviewStarPicker">
+                    <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="1" aria-label="1 star"><i class="fa-solid fa-star text-xl"></i></button>
+                    <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="2" aria-label="2 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                    <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="3" aria-label="3 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                    <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="4" aria-label="4 stars"><i class="fa-solid fa-star text-xl"></i></button>
+                    <button type="button" class="review-star-button text-[#d8cfc1] transition hover:scale-110" data-value="5" aria-label="5 stars"><i class="fa-solid fa-star text-xl"></i></button>
                   </div>
+                </div>
 
-                  <textarea
-                    name="review_text"
-                    rows="4"
-                    id="reviewTextInput"
-                    class="w-full rounded-xl border border-[#e7dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f1a15] outline-none transition focus:border-[#c79c54]"
-                    placeholder="Share your experience with this salon"
-                    required
-                  ></textarea>
+                <textarea
+                  name="review_text"
+                  rows="4"
+                  id="reviewTextInput"
+                  class="w-full rounded-xl border border-[#e7dac8] bg-[#fffdf9] px-4 py-3 text-sm text-[#1f1a15] outline-none transition focus:border-[#c79c54]"
+                  placeholder="Share your experience with this salon"
+                  required
+                ></textarea>
 
-                  <button
-                    type="submit"
-                    class="inline-flex min-h-[46px] w-full items-center justify-center rounded-full bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a57f39] sm:w-auto"
-                  >
-                    Submit Review
-                  </button>
-                </form>
-              </details>
+                <button
+                  type="submit"
+                  class="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a57f39]"
+                >
+                  Submit Review
+                </button>
+              </form>
             </section>
           </div>
 
@@ -652,28 +780,48 @@
 
 <div
   id="selectionBar"
-  class="pointer-events-none fixed inset-x-0 bottom-24 z-40 px-4 opacity-0 transition duration-300 md:bottom-6"
+  class="pointer-events-none fixed inset-x-0 bottom-20 z-40 mx-auto w-full max-w-4xl px-4 opacity-0 transition duration-300 md:bottom-6"
 >
-  <div class="mx-auto max-w-3xl rounded-full border border-[#e3d1b2] bg-[rgba(255,249,239,0.96)] p-2 shadow-[0_20px_45px_rgba(74,56,30,0.18)] backdrop-blur-md">
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-full bg-white px-4 py-3">
-      <p class="text-sm font-semibold text-[#2a2118]">
-        <span id="selectedCount">0</span> <span id="selectedCountLabel">services selected</span>
-      </p>
-      {% if public_whatsapp_number %}
-        <a
-          href="#"
-          id="confirmInquiryButton"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a57f39]"
+  <div class="mx-auto max-w-2xl rounded-[1.45rem] border border-[#E3CEAA] bg-[#FFF9EF] p-3 shadow-[0_16px_36px_rgba(93,72,42,0.14)]">
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          id="mobileSelectionToggle"
+          class="flex flex-1 items-center justify-between rounded-[1rem] border border-[#E9D8B8] bg-white px-4 py-3 text-left"
+          aria-expanded="false"
+          aria-controls="mobileSelectedDropdown"
         >
-          Chat with Salon
-        </a>
-      {% endif %}
+          <span>
+            <span class="block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A47A38]">Selected</span>
+            <span class="mt-1 block text-sm font-semibold text-[#1E1E1E]"><span id="selectedCount">0</span> <span id="selectedCountLabel">services added</span></span>
+          </span>
+          <i id="mobileSelectionChevron" class="fa-solid fa-chevron-up text-[#A47A38] transition-transform" aria-hidden="true"></i>
+        </button>
+
+        {% if public_whatsapp_number %}
+          <a
+            href="#"
+            id="confirmInquiryButton"
+            data-contact-track-kind="whatsapp"
+            data-contact-track-url="{% url 'public_saloon_contact_click' slug=saloon.slug kind='whatsapp' %}"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex h-11 shrink-0 items-center justify-center rounded-[1rem] bg-[#B89247] px-4 text-sm font-semibold text-white transition hover:bg-[#A88038]"
+          >
+            Send
+          </a>
+        {% endif %}
+      </div>
+
+      <div id="mobileSelectedDropdown" class="hidden">
+        <div class="rounded-[1rem] border border-[#E8DAC1] bg-white px-4 py-3">
+          <div id="mobileSelectedServices" class="max-h-48 space-y-2 overflow-y-auto text-sm text-[#5A5A5A]"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
 {% if related_nearby_saloons or related_city_saloons %}
   <section class="border-t border-[#e8dccf] bg-[#fffaf4]">
     <div class="mx-auto max-w-6xl px-4 py-10 sm:px-5 md:px-6">
@@ -962,21 +1110,21 @@
       return match ? decodeURIComponent(match[1]) : "";
     }
 
+    function track(url) {
+      if (!url) return;
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "X-CSRFToken": getCsrfToken() }, body: "", keepalive: true }).catch(function () {});
+    }
     document.querySelectorAll("[data-map-track-url]").forEach(function (link) {
       link.addEventListener("click", function () {
         const trackUrl = link.getAttribute("data-map-track-url");
-        if (!trackUrl) return;
-
-        fetch(trackUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-            "X-CSRFToken": getCsrfToken()
-          },
-          body: "",
-          keepalive: true
-        }).catch(function () {});
+        track(trackUrl);
       });
+    });
+    document.querySelectorAll("[data-contact-track-url]").forEach(function (link) {
+      link.addEventListener("click", function () { track(link.getAttribute("data-contact-track-url")); });
+    });
+    window.addEventListener("pageshow", function () {
+      track("{% url 'public_saloon_page_resume' slug=saloon.slug %}");
     });
   })();
 
@@ -1151,13 +1299,40 @@
   })();
 
   (function () {
+    const categoryButtons = Array.from(document.querySelectorAll("[data-service-category-filter]"));
+    const serviceCards = Array.from(document.querySelectorAll("[data-service-card]"));
+
+    categoryButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        const categoryId = button.dataset.serviceCategoryFilter || "";
+        categoryButtons.forEach(function (item) {
+          const active = item === button;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        serviceCards.forEach(function (card) {
+          card.hidden = !!categoryId && card.dataset.serviceCategory !== categoryId;
+        });
+      });
+    });
+  })();
+  (function () {
     const serviceButtons = Array.from(document.querySelectorAll(".service-toggle"));
     const selectionBar = document.getElementById("selectionBar");
     const selectedCount = document.getElementById("selectedCount");
     const selectedCountLabel = document.getElementById("selectedCountLabel");
     const confirmInquiryButton = document.getElementById("confirmInquiryButton");
+    const mobileSelectionToggle = document.getElementById("mobileSelectionToggle");
+    const mobileSelectionChevron = document.getElementById("mobileSelectionChevron");
+    const mobileSelectedDropdown = document.getElementById("mobileSelectedDropdown");
+    const mobileSelectedServices = document.getElementById("mobileSelectedServices");
     const primaryWhatsappButton = document.getElementById("primaryWhatsappButton");
     const primaryWhatsappButtonDesktop = document.getElementById("primaryWhatsappButtonDesktop");
+    const publicServicesLayout = document.getElementById("publicServicesLayout");
+    const desktopSelectedCount = document.getElementById("desktopSelectedCount");
+    const desktopSelectedCountLabel = document.getElementById("desktopSelectedCountLabel");
+    const desktopSelectedServices = document.getElementById("desktopSelectedServices");
+    const desktopConfirmInquiryButton = document.getElementById("desktopConfirmInquiryButton");
 
     if (!serviceButtons.length) return;
 
@@ -1189,7 +1364,7 @@
     }
 
     function buildMessage(includeSelections) {
-      const selectedServices = Array.from(selected.values()).map((item) => "- " + item.name + " (Rs. " + item.price + ")").join("\n");
+      const selectedServices = Array.from(selected.values()).map((item) => "- " + item.name + " (₹" + item.price + ")").join("\n");
       const fallbackServices = "- I would like to know more about your services and availability.";
       const servicesText = includeSelections && selectedServices ? selectedServices : fallbackServices;
       let message = template.replaceAll("{salon_name}", salonName);
@@ -1213,6 +1388,19 @@
       }
       if (confirmInquiryButton) {
         confirmInquiryButton.href = baseUrl + encodeURIComponent(buildMessage(true));
+        confirmInquiryButton.addEventListener("click", function () {
+          const body = new URLSearchParams();
+          selected.forEach(function (item) { body.append("service_id", item.id); });
+          fetch("{% url 'public_service_interest_reset' slug=saloon.slug %}", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "X-CSRFToken": getCsrfToken() }, body: body.toString(), keepalive: true }).catch(function () {});
+        });
+      }
+      if (desktopConfirmInquiryButton) {
+        desktopConfirmInquiryButton.href = baseUrl + encodeURIComponent(buildMessage(true));
+        desktopConfirmInquiryButton.addEventListener("click", function () {
+          const body = new URLSearchParams();
+          selected.forEach(function (item) { body.append("service_id", item.id); });
+          fetch("{% url 'public_service_interest_reset' slug=saloon.slug %}", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "X-CSRFToken": getCsrfToken() }, body: body.toString(), keepalive: true }).catch(function () {});
+        });
       }
     }
 
@@ -1236,16 +1424,81 @@
       }
     }
 
-    function renderSelectionBar() {
+    function renderDesktopSelection(count) {
+      const shouldShow = count > 0 && !!desktopSelectedServices;
+      if (publicServicesLayout) {
+        publicServicesLayout.classList.toggle("has-selection", shouldShow);
+      }
+      if (desktopSelectedCount) desktopSelectedCount.textContent = count;
+      if (desktopSelectedCountLabel) desktopSelectedCountLabel.textContent = count === 1 ? "service selected" : "services selected";
+      if (!desktopSelectedServices) return;
+
+      desktopSelectedServices.innerHTML = "";
+      selected.forEach(function (item) {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-3 rounded-[1rem] border border-[#eadbbf] bg-white px-4 py-3 text-sm shadow-[0_8px_20px_rgba(74,56,30,0.04)]";
+
+        const name = document.createElement("span");
+        name.className = "min-w-0 font-semibold text-[#2f271d]";
+        name.textContent = item.name;
+
+        const price = document.createElement("span");
+        price.className = "shrink-0 text-xs font-semibold text-[#8c6a2c]";
+        price.textContent = "₹" + item.price;
+
+        row.appendChild(name);
+        row.appendChild(price);
+        desktopSelectedServices.appendChild(row);
+      });
+    }
+    function setMobileDropdownOpen(open) {
+      if (!mobileSelectedDropdown || !mobileSelectionToggle) return;
+      mobileSelectedDropdown.classList.toggle("hidden", !open);
+      mobileSelectionToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      if (mobileSelectionChevron) mobileSelectionChevron.classList.toggle("rotate-180", open);
+    }
+
+    function renderMobileSelection() {
+      if (!mobileSelectedServices) return;
+      mobileSelectedServices.innerHTML = "";
+      selected.forEach(function (item) {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-3 rounded-[1rem] bg-[#FFF8EE] px-3 py-2";
+        const details = document.createElement("div");
+        details.className = "min-w-0";
+        const name = document.createElement("p");
+        name.className = "truncate font-medium text-[#1E1E1E]";
+        name.textContent = item.name;
+        const price = document.createElement("p");
+        price.className = "text-xs text-[#6A6A6A]";
+        price.textContent = "₹" + item.price;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "shrink-0 text-xs font-semibold text-[#A47A38]";
+        remove.dataset.removeSelectedId = item.id;
+        remove.textContent = "Remove";
+        details.appendChild(name);
+        details.appendChild(price);
+        row.appendChild(details);
+        row.appendChild(remove);
+        mobileSelectedServices.appendChild(row);
+      });
+    }    function renderSelectionBar() {
       const count = selected.size;
       if (selectedCount) selectedCount.textContent = count;
-      if (selectedCountLabel) selectedCountLabel.textContent = count === 1 ? "service selected" : "services selected";
+      if (selectedCountLabel) selectedCountLabel.textContent = count === 1 ? "service added" : "services added";
+      renderDesktopSelection(count);
+      renderMobileSelection();
 
-      if (!selectionBar) return;
+      if (!selectionBar) {
+        syncWhatsappLinks();
+        return;
+      }
 
       if (count === 0) {
         selectionBar.classList.add("pointer-events-none", "opacity-0");
         selectionBar.classList.remove("opacity-100");
+        setMobileDropdownOpen(false);
         syncWhatsappLinks();
         return;
       }
@@ -1253,6 +1506,25 @@
       selectionBar.classList.remove("pointer-events-none", "opacity-0");
       selectionBar.classList.add("opacity-100");
       syncWhatsappLinks();
+    }
+
+    if (mobileSelectionToggle) {
+      mobileSelectionToggle.addEventListener("click", function () {
+        const open = mobileSelectionToggle.getAttribute("aria-expanded") === "true";
+        setMobileDropdownOpen(!open);
+      });
+    }
+    if (mobileSelectedServices) {
+      mobileSelectedServices.addEventListener("click", function (event) {
+        const removeButton = event.target.closest("[data-remove-selected-id]");
+        if (!removeButton) return;
+        const id = removeButton.dataset.removeSelectedId;
+        selected.delete(id);
+        document.querySelectorAll('.service-toggle[data-service-id="' + id + '"]').forEach(function (match) {
+          setButtonState(match, false);
+        });
+        renderSelectionBar();
+      });
     }
 
     serviceButtons.forEach((button) => {
@@ -1303,6 +1575,8 @@
   })();
 </script>
 {% endblock %}
+
+
 
 
 

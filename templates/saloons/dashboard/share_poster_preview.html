@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share poster · {{ saloon.name }}</title>
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .poster-preview-frame {
+      width:min(100%, calc((100vh - 92px) * 900 / 1600));
+      aspect-ratio:900 / 1600;
+      flex:0 0 auto;
+      overflow:hidden;
+      border:1px solid rgba(128,105,76,.22);
+      border-radius:.75rem;
+      background:#fff;
+      box-shadow:0 18px 48px rgba(70,52,33,.20), 0 2px 8px rgba(70,52,33,.08);
+    }
+    .poster-preview-frame img {
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    @media (min-width:640px) {
+      .poster-preview-frame {
+        border-radius:0;
+        box-shadow:0 24px 60px rgba(60,44,29,.18);
+      }
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden bg-[#f7f5f1] text-[#211d19]">
+  <main class="h-screen w-full">
+    <div>
+      <section class="flex h-screen flex-col bg-transparent">
+        <header class="z-20 flex shrink-0 items-center justify-between gap-3 bg-transparent px-4 py-4 sm:absolute sm:inset-x-0 sm:top-0 sm:px-8 sm:py-5 lg:px-12">
+          <a href="{{ back_url }}" class="inline-flex h-12 items-center gap-3 rounded-2xl bg-white px-4 font-semibold shadow-[0_10px_28px_rgba(54,41,28,.10)] transition hover:-translate-y-0.5"><i class="fa-solid fa-chevron-left"></i><span>Back</span></a>
+          <div class="flex items-center gap-3">
+            <a href="{{ poster_url }}" download="{{ saloon.slug }}-share-poster.png" class="inline-flex h-12 items-center gap-3 rounded-2xl bg-white px-4 font-semibold shadow-[0_10px_28px_rgba(54,41,28,.10)] transition hover:-translate-y-0.5" aria-label="Download poster"><i class="fa-solid fa-download text-lg"></i><span class="hidden sm:inline">Download</span></a>
+            <button type="button" class="inline-flex h-12 items-center gap-3 rounded-2xl bg-white px-4 font-semibold shadow-[0_10px_28px_rgba(54,41,28,.10)] transition hover:-translate-y-0.5" data-poster-share aria-label="Share poster"><i class="fa-solid fa-share-nodes text-lg"></i><span class="hidden sm:inline">Share</span></button>
+          </div>
+        </header>
+        <div class="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 pb-3 sm:px-8 sm:pb-5 lg:px-12">
+          <div class="poster-preview-frame"><img src="{{ poster_url }}" alt="{{ saloon.name }} share poster preview"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="shareFallbackToast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-full bg-[#211d19] px-4 py-2 text-sm font-semibold text-white opacity-0 shadow-xl transition">Poster link copied</div>
+  <script>
+    (function () {
+      const buttons = Array.from(document.querySelectorAll("[data-poster-share]"));
+      const posterUrl = new URL("{{ poster_url|escapejs }}", window.location.href).href;
+      const publicUrl = "{{ public_url|escapejs }}";
+      const filename = "{{ saloon.slug|escapejs }}-share-poster.png";
+      const toast = document.getElementById("shareFallbackToast");
+      function showToast() {
+        if (!toast) return;
+        toast.classList.remove("opacity-0", "translate-y-3");
+        setTimeout(function () { toast.classList.add("opacity-0", "translate-y-3"); }, 1800);
+      }
+      async function sharePoster() {
+        if (navigator.share) {
+          try {
+            const response = await fetch(posterUrl);
+            const blob = await response.blob();
+            const file = new File([blob], filename, { type: "image/png" });
+            if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: "{{ saloon.name|escapejs }}", text: "View {{ saloon.name|escapejs }} on Elegentra", url: publicUrl, files: [file] });
+              return;
+            }
+            await navigator.share({ title: "{{ saloon.name|escapejs }}", text: "View {{ saloon.name|escapejs }} on Elegentra", url: publicUrl });
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+          }
+        }
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(publicUrl);
+          showToast();
+        }
+      }
+      buttons.forEach(function (button) { button.addEventListener("click", sharePoster); });
+    })();
+  </script>
+</body>
+</html>

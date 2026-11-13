@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from core.seo import build_absolute_url, build_seo_payload
 from public.models import FavoriteSaloon, UserNotification
 from plans.models import SaloonSubscription
+from plans.billing import live_subscription_q
 from saloons.models import Saloon
 from saloons.utils import build_saloon_public_url, extract_saloon_slug_from_host, sync_saloon_slug_from_name
 from services.models import MainCategory, ServiceCategory
@@ -132,12 +133,7 @@ def media_range_serve(request, path):
 
 def _platform_visible_saloons(queryset):
     now = timezone.now()
-    live_subscription = SaloonSubscription.objects.filter(saloon=OuterRef("pk")).filter(
-        Q(trial_ends_at__gt=now)
-        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__isnull=True)
-        | Q(status=SaloonSubscription.STATUS_ACTIVE, current_period_end__gt=now)
-        | Q(status=SaloonSubscription.STATUS_PAST_DUE, grace_period_ends_at__gt=now)
-    )
+    live_subscription = SaloonSubscription.objects.filter(saloon=OuterRef("pk")).filter(live_subscription_q(now))
     return queryset.annotate(has_platform_access=Exists(live_subscription)).filter(has_platform_access=True)
 
 def _user_has_saloon(user):

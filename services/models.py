@@ -103,7 +103,18 @@ class Service(models.Model):
     category = models.ForeignKey(
         ServiceCategory,
         on_delete=models.PROTECT,
-        related_name="services"
+        related_name="services",
+        null=True,
+        blank=True,
+    )
+
+    main_category = models.ForeignKey(
+        MainCategory,
+        on_delete=models.PROTECT,
+        related_name="services",
+        null=True,
+        blank=True,
+        help_text="Used when the salon selects a broad main category instead of a subcategory.",
     )
 
     name = models.CharField(max_length=255)
@@ -167,6 +178,15 @@ class Service(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(category__isnull=False, main_category__isnull=True)
+                    | models.Q(category__isnull=True, main_category__isnull=False)
+                ),
+                name="service_has_exactly_one_category_choice",
+            ),
+        ]
         indexes = [
             models.Index(fields=["category"]),
             models.Index(fields=["is_promoted"]),
@@ -177,6 +197,15 @@ class Service(models.Model):
 
     def __str__(self):
         return f"{self.name} – {self.saloon.name}"
+
+
+    @property
+    def category_label(self):
+        if self.category_id:
+            return self.category.name
+        if self.main_category_id:
+            return self.main_category.name
+        return "Uncategorized"
 
 
 class ServiceInterest(models.Model):

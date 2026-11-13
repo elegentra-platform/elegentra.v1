@@ -11,3 +11,4 @@ psycopg[binary]==3.2.12
 cryptography==45.0.7
 razorpay==2.0.1
 django-storages[boto3]==1.14.6
+qrcode[pil]==8.2

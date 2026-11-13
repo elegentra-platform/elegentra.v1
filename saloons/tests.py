@@ -1,8 +1,13 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+
+from plans.billing import get_default_subscription_plan
+from plans.models import SaloonSubscription
 
 from .models import (
     Saloon,
@@ -114,6 +119,12 @@ class PublicReviewTests(TestCase):
             category="unisex",
             city="Kochi",
             locality="MG Road",
+        )
+        # Public pages only list salons with a live trial/subscription.
+        SaloonSubscription.objects.create(
+            saloon=self.saloon,
+            plan=get_default_subscription_plan(),
+            trial_ends_at=timezone.now() + timedelta(days=14),
         )
         self.category = ServiceCategory.objects.create(name="Haircut")
         self.service = Service.objects.create(

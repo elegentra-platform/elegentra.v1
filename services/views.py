@@ -5,9 +5,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils.text import slugify
 from django.urls import reverse
-from django.db.models import Q
 from saloons.models import Saloon
 from .models import Service, ServiceCategory
+from .category_choices import category_choice_context, category_choice_value, resolve_category_choice
 
 
 @login_required
@@ -19,9 +19,9 @@ def service_list(request):
         return redirect("saloon_dashboard", username=request.user.username)
 
     services = Service.objects.filter(
-    saloon=saloon,
-    is_deleted=False
-)
+        saloon=saloon,
+        is_deleted=False,
+    ).select_related("category", "main_category")
 
     return render(request, "saloons/dashboard/services.html", {
         "saloon": saloon,
@@ -39,18 +39,14 @@ def service_create(request):
         messages.error(request, "You cannot add services before approval.")
         return redirect("saloon_dashboard", username=request.user.username)
 
-    categories = ServiceCategory.objects.filter(
-        is_active=True
-    ).filter(
-        Q(is_approved=True) | Q(created_by_saloon=saloon)
-    )
+    main_categories, own_pending_categories = category_choice_context(saloon)
     gallery_create_url = reverse("saloon_gallery_create", kwargs={"username": request.user.username})
     service_create_url = reverse("service_create")
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
         price = request.POST.get("price")
-        category_id = request.POST.get("category")
+        category_choice = request.POST.get("category")
         new_category = request.POST.get("new_category", "").strip()
         description = request.POST.get("description", "")
         offer_price = request.POST.get("offer_price") or None
@@ -72,8 +68,13 @@ def service_create(request):
                     "created_by_saloon": saloon,
                 }
             )
-        elif category_id:
-            category = get_object_or_404(ServiceCategory, id=category_id)
+            main_category = None
+        elif category_choice:
+            category, main_category = resolve_category_choice(category_choice, saloon)
+            if not category and not main_category:
+                messages.error(request, "Please select an available category.")
+                redirect_url = service_create_url + "?return_to=gallery_create" if from_gallery else service_create_url
+                return redirect(redirect_url)
         else:
             messages.error(request, "Please select or add a category.")
             redirect_url = service_create_url + "?return_to=gallery_create" if from_gallery else service_create_url
@@ -85,6 +86,7 @@ def service_create(request):
             price=price,
             offer_price=offer_price,
             category=category,
+            main_category=main_category,
             description=description,
             is_visible=is_visible,
             is_active=True,
@@ -103,7 +105,8 @@ def service_create(request):
 
     return render(request, "services/service_form.html", {
         "saloon": saloon,
-        "categories": categories,
+        "main_categories": main_categories,
+        "own_pending_categories": own_pending_categories,
         "active_tab": "mysaloon" if from_gallery else "services",
         "show_back_button": True,
         "back_url": back_url,
@@ -122,11 +125,7 @@ def service_edit(request, service_id):
         return redirect("saloon_dashboard", username=request.user.username)
 
     service = get_object_or_404(Service, id=service_id, saloon=saloon)
-    categories = ServiceCategory.objects.filter(
-        is_active=True
-    ).filter(
-        Q(is_approved=True) | Q(created_by_saloon=saloon)
-    )
+    main_categories, own_pending_categories = category_choice_context(saloon)
 
     if request.method == "POST":
         service.name = request.POST.get("name", service.name)
@@ -135,9 +134,14 @@ def service_edit(request, service_id):
         service.description = request.POST.get("description", service.description)
         service.is_visible = request.POST.get("is_visible") == "on"
 
-        category_id = request.POST.get("category")
-        if category_id:
-            service.category = get_object_or_404(ServiceCategory, id=category_id)
+        category_choice = request.POST.get("category")
+        if category_choice:
+            category, main_category = resolve_category_choice(category_choice, saloon)
+            if not category and not main_category:
+                messages.error(request, "Please select an available category.")
+                return redirect("service_edit", service_id=service.id)
+            service.category = category
+            service.main_category = main_category
 
         service.save()
         messages.success(request, "Service updated.")
@@ -150,7 +154,9 @@ def service_edit(request, service_id):
     return render(request, "services/service_form.html", {
         "saloon": saloon,
         "service": service,
-        "categories": categories,
+        "main_categories": main_categories,
+        "own_pending_categories": own_pending_categories,
+        "selected_category_value": category_choice_value(service),
         "active_tab": "services",
         "show_back_button": True,
         "back_url": reverse("saloon_dashboard_services", kwargs={"username": request.user.username}),

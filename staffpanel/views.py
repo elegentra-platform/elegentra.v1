@@ -1,16 +1,19 @@
 from functools import wraps
 from datetime import datetime
+from pathlib import Path
 
 from django.contrib import messages
+from django.core.files.storage import default_storage
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.sessions.models import Session
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from PIL import Image, UnidentifiedImageError
 
 from saloons.models import GalleryPost, Saloon, SaloonRejectionReason
 from services.models import MainCategory, Service, ServiceCategory
@@ -19,7 +22,113 @@ from plans.models import SaloonSubscription, SubscriptionPaymentHistory, Subscri
 from .models import StaffPanelSetting, StaffProfile
 
 TEST_SALOON_MODE_KEY = "test_saloon_mode"
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
 
+
+def _format_file_size(size_bytes):
+    if size_bytes is None:
+        return "-"
+    try:
+        size = float(size_bytes)
+    except (TypeError, ValueError):
+        return "-"
+    units = ["B", "KB", "MB", "GB"]
+    unit_index = 0
+    while size >= 1024 and unit_index < len(units) - 1:
+        size /= 1024
+        unit_index += 1
+    if unit_index == 0:
+        return f"{int(size)} {units[unit_index]}"
+    return f"{size:.2f} {units[unit_index]}"
+
+
+def _media_file_row(file_field, label, source=""):
+    if not file_field or not getattr(file_field, "name", ""):
+        return None
+
+    file_name = file_field.name
+    display_name = Path(file_name).name
+    suffix = Path(display_name).suffix.lower()
+    file_format = suffix.lstrip(".").upper() or "-"
+    is_image = suffix in IMAGE_EXTENSIONS
+    size_bytes = None
+    dimensions = "-"
+    url = ""
+
+    try:
+        size_bytes = default_storage.size(file_name)
+    except Exception:
+        size_bytes = None
+
+    try:
+        url = file_field.url
+    except Exception:
+        url = ""
+
+    if is_image:
+        try:
+            with default_storage.open(file_name, "rb") as image_file:
+                image = Image.open(image_file)
+                width, height = image.size
+                dimensions = f"{width} x {height}"
+                if image.format:
+                    file_format = image.format.upper()
+        except (OSError, UnidentifiedImageError, ValueError):
+            dimensions = "-"
+
+    return {
+        "label": label,
+        "source": source,
+        "name": display_name,
+        "path": file_name,
+        "format": file_format,
+        "size_bytes": size_bytes,
+        "size": _format_file_size(size_bytes),
+        "dimensions": dimensions,
+        "url": url,
+        "is_image": is_image,
+    }
+
+
+def _saloon_media_rows(saloon):
+    rows = []
+
+    def add(file_field, label, source=""):
+        row = _media_file_row(file_field, label, source)
+        if row:
+            rows.append(row)
+
+    add(saloon.banner_image, "Banner image", "Salon branding")
+
+    for service in Service.objects.filter(saloon=saloon).only("name", "image"):
+        add(service.image, f"Service image - {service.name}", "Service")
+
+    for post in saloon.gallery_posts.prefetch_related("media").all():
+        post_title = post.title or f"Gallery post #{post.id}"
+        for media in post.media.all():
+            add(media.file, post_title, f"Gallery {media.get_media_type_display()}")
+
+    return rows
+
+def _saloon_verification_rows(verification):
+    if not verification:
+        return []
+
+    rows = []
+
+    def add(file_field, label):
+        row = _media_file_row(file_field, label, "Verification file")
+        if row:
+            rows.append(row)
+
+    add(verification.owner_id_proof, "Owner ID proof")
+    add(verification.inside_image_1, "Inside image 1")
+    add(verification.inside_image_2, "Inside image 2")
+    add(verification.inside_image_3, "Inside image 3")
+    add(verification.outside_image_1, "Outside image 1")
+    add(verification.outside_image_2, "Outside image 2")
+    add(verification.outside_image_3, "Outside image 3")
+    return rows
 
 def _is_test_saloon_mode_enabled():
     return StaffPanelSetting.get_bool(TEST_SALOON_MODE_KEY, default=False)
@@ -328,6 +437,33 @@ def saloon_review(request, saloon_id):
 
 
 @staff_required
+def saloon_media_sizes(request, saloon_id):
+    saloon = get_object_or_404(
+        Saloon.objects.select_related("owner", "profile", "verification"),
+        id=saloon_id,
+    )
+    try:
+        verification = saloon.verification
+    except Exception:
+        verification = None
+
+    media_rows = _saloon_media_rows(saloon)
+    verification_rows = _saloon_verification_rows(verification)
+    total_bytes = sum(row["size_bytes"] or 0 for row in media_rows + verification_rows)
+
+    return render(
+        request,
+        "staffpanel/saloon_media_sizes.html",
+        _staff_context(request, {
+            "active_tab": "saloons",
+            "saloon": saloon,
+            "media_rows": media_rows,
+            "verification_rows": verification_rows,
+            "total_size": _format_file_size(total_bytes),
+            "total_files": len(media_rows) + len(verification_rows),
+        }),
+    )
+@staff_required
 def saloon_gallery_detail(request, saloon_id, post_id):
     saloon = get_object_or_404(
         Saloon.objects.select_related("owner", "profile"),
@@ -467,11 +603,22 @@ def category_queue(request):
         .order_by("-created_at")
     )
     all_categories = (
-        ServiceCategory.objects.filter(is_active=True)
+        ServiceCategory.objects.all()
         .select_related("created_by_saloon", "main_category")
         .order_by("name")
     )
-    main_categories = MainCategory.objects.filter(is_active=True).order_by("display_order", "name")
+    approved_subcategories = ServiceCategory.objects.filter(
+        is_active=True,
+        is_approved=True,
+    ).order_by("name")
+    main_categories = MainCategory.objects.filter(is_active=True).prefetch_related(
+        Prefetch("service_categories", queryset=approved_subcategories, to_attr="approved_subcategories")
+    ).order_by("display_order", "name")
+    services = (
+        Service.objects.filter(is_deleted=False)
+        .select_related("saloon", "category", "main_category")
+        .order_by("-created_at")[:100]
+    )
     return render(
         request,
         "staffpanel/category_queue.html",
@@ -481,6 +628,7 @@ def category_queue(request):
             "all_categories": all_categories,
             "pending_count": pending_categories.count(),
             "main_categories": main_categories,
+            "services": services,
         }),
     )
 
@@ -489,11 +637,27 @@ def category_queue(request):
 @staff_required
 def category_map_main(request, category_id):
     category = get_object_or_404(ServiceCategory, id=category_id)
+    category_name = (request.POST.get("category_name") or "").strip()
     main_category_id = request.POST.get("main_category_id")
+    if not category_name:
+        messages.error(request, "Category name cannot be empty.")
+        return redirect("staffpanel:category_queue")
+    if len(category_name) > ServiceCategory._meta.get_field("name").max_length:
+        messages.error(request, "Category name is too long.")
+        return redirect("staffpanel:category_queue")
+    if ServiceCategory.objects.filter(name__iexact=category_name).exclude(id=category.id).exists():
+        messages.error(request, "A service category with that name already exists.")
+        return redirect("staffpanel:category_queue")
+
+    name_changed = category.name != category_name
+    if name_changed:
+        category.name = category_name
+        category.slug = ""
+
     if not main_category_id:
         category.main_category = None
-        category.save(update_fields=["main_category"])
-        messages.success(request, "Category mapping cleared.")
+        category.save()
+        messages.success(request, "Category name saved and mapping cleared.")
         next_url = request.POST.get("next")
         if next_url:
             return redirect(next_url)
@@ -501,8 +665,8 @@ def category_map_main(request, category_id):
 
     main_category = get_object_or_404(MainCategory, id=main_category_id, is_active=True)
     category.main_category = main_category
-    category.save(update_fields=["main_category"])
-    messages.success(request, "Category mapped to main category.")
+    category.save()
+    messages.success(request, "Category name and main-category mapping saved.")
     next_url = request.POST.get("next")
     if next_url:
         return redirect(next_url)
@@ -553,6 +717,106 @@ def category_reject(request, category_id):
     category.is_active = False
     category.save(update_fields=["is_active"])
     messages.success(request, "Service category rejected (disabled).")
+    return redirect("staffpanel:category_queue")
+
+
+@require_POST
+@staff_required
+def category_update(request, category_id):
+    category = get_object_or_404(ServiceCategory, id=category_id)
+    category_name = (request.POST.get("category_name") or "").strip()
+    main_category_id = (request.POST.get("main_category_id") or "").strip()
+    is_approved = request.POST.get("is_approved") == "on"
+    is_active = request.POST.get("is_active") == "on"
+
+    if not category_name:
+        messages.error(request, "Category name cannot be empty.")
+        return redirect("staffpanel:category_queue")
+    if len(category_name) > ServiceCategory._meta.get_field("name").max_length:
+        messages.error(request, "Category name is too long.")
+        return redirect("staffpanel:category_queue")
+    if ServiceCategory.objects.filter(name__iexact=category_name).exclude(id=category.id).exists():
+        messages.error(request, "A service category with that name already exists.")
+        return redirect("staffpanel:category_queue")
+
+    main_category = None
+    if main_category_id:
+        main_category = get_object_or_404(MainCategory, id=main_category_id, is_active=True)
+    if is_approved and not main_category:
+        messages.error(request, "An approved subcategory must be mapped to a main category.")
+        return redirect("staffpanel:category_queue")
+
+    if category.name != category_name:
+        category.name = category_name
+        category.slug = ""
+    category.main_category = main_category
+    category.is_approved = is_approved
+    category.is_active = is_active
+    category.save()
+    messages.success(request, "Service category updated.")
+    return redirect("staffpanel:category_queue")
+
+
+@require_POST
+@staff_required
+def category_delete(request, category_id):
+    category = get_object_or_404(ServiceCategory, id=category_id)
+    if category.services.exists():
+        category.is_active = False
+        category.is_approved = False
+        category.save(update_fields=["is_active", "is_approved"])
+        messages.warning(request, "This category is used by services, so it was disabled instead of permanently deleted.")
+    else:
+        category.delete()
+        messages.success(request, "Service category deleted.")
+    return redirect("staffpanel:category_queue")
+
+
+@require_POST
+@staff_required
+def service_review_update(request, service_id):
+    service = get_object_or_404(Service.objects.select_related("saloon"), id=service_id, is_deleted=False)
+    service_name = (request.POST.get("service_name") or "").strip()
+    category_choice = (request.POST.get("category_choice") or "").strip()
+
+    if not service_name:
+        messages.error(request, "Service name cannot be empty.")
+        return redirect("staffpanel:category_queue")
+
+    category = None
+    main_category = None
+    if category_choice.startswith("main:") and category_choice[5:].isdigit():
+        main_category = MainCategory.objects.filter(id=category_choice[5:], is_active=True).first()
+    elif category_choice.startswith("category:") and category_choice[9:].isdigit():
+        category = ServiceCategory.objects.filter(
+            id=category_choice[9:],
+            is_active=True,
+            is_approved=True,
+            main_category__is_active=True,
+        ).first()
+    if not category and not main_category:
+        messages.error(request, "Choose an active main category or approved subcategory.")
+        return redirect("staffpanel:category_queue")
+
+    service.name = service_name
+    service.category = category
+    service.main_category = main_category
+    service.is_active = request.POST.get("is_active") == "on"
+    service.is_visible = request.POST.get("is_visible") == "on"
+    service.save()
+    messages.success(request, "Service reviewed and updated.")
+    return redirect("staffpanel:category_queue")
+
+
+@require_POST
+@staff_required
+def service_review_delete(request, service_id):
+    service = get_object_or_404(Service, id=service_id, is_deleted=False)
+    service.is_deleted = True
+    service.deleted_at = timezone.now()
+    service.is_active = False
+    service.save(update_fields=["is_deleted", "deleted_at", "is_active", "updated_at"])
+    messages.success(request, "Service removed. It can still be recovered from the database if needed.")
     return redirect("staffpanel:category_queue")
 
 
@@ -824,4 +1088,7 @@ def feature_flags(request):
         "page_title": "Feature Flags",
         "page_note": "Launch switches and experimental features will live here.",
     }))
+
+
+
 

@@ -45,15 +45,28 @@
         class="w-full border rounded-lg px-3 py-2"
       >
         <option value="">Select category</option>
-        {% for cat in categories %}
-          <option
-            value="{{ cat.id }}"
-            {% if service and service.category_id == cat.id %}selected{% endif %}
-          >
-            {{ cat.name }}
+        {% for main in main_categories %}
+          <option value="main:{{ main.id }}" class="font-semibold"
+            {% if service and service.main_category_id == main.id %}selected{% endif %}>
+            {{ main.name }}
           </option>
+          {% for cat in main.approved_subcategories %}
+            <option value="category:{{ cat.id }}"
+              {% if service and service.category_id == cat.id %}selected{% endif %}>
+              &nbsp;&nbsp;— {{ cat.name }}
+            </option>
+          {% endfor %}
         {% endfor %}
+        {% if own_pending_categories %}
+          <optgroup label="Your submitted categories (pending approval)">
+            {% for cat in own_pending_categories %}
+              <option value="category:{{ cat.id }}"
+                {% if service and service.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </optgroup>
+        {% endif %}
       </select>
+      <p class="mt-1 text-xs text-gray-500">Choose a main category if no exact subcategory fits.</p>
     </div>
 
     <!-- OR New Category -->
