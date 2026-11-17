@@ -17,7 +17,7 @@ from PIL import Image, UnidentifiedImageError
 
 from saloons.models import GalleryPost, Saloon, SaloonRejectionReason
 from services.models import MainCategory, Service, ServiceCategory
-from plans.billing import assign_subscription_trial_on_approval
+from plans.billing import FOUNDER_PARTNER_LIMIT, assign_subscription_trial_on_approval, founder_spots_left
 from plans.models import SaloonSubscription, SubscriptionPaymentHistory, SubscriptionWebhookEvent
 from .models import StaffPanelSetting, StaffProfile
 
@@ -989,6 +989,8 @@ def founder_program(request):
     return render(request, "staffpanel/founder_program.html", _staff_context(request, {
         "active_tab": "founder_program",
         "founders": founders,
+        "founder_limit": FOUNDER_PARTNER_LIMIT,
+        "founder_spots_left": founder_spots_left(),
     }))
 
 

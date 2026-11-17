@@ -8,6 +8,16 @@
         <span class="inline-flex items-center rounded-full border border-[#ead5a3] bg-[#fff6df] px-3 py-1 text-xs font-semibold tracking-[0.18em] text-[#9c7333] uppercase">
           Billing
         </span>
+        {% if has_founder_price %}
+          <span class="founder-badge">
+            <i class="fa-solid fa-crown"></i>
+            Founder #{{ subscription.founder_partner_number }} · ₹{{ plan.amount|floatformat:0 }}/month for life
+          </span>
+          <style>
+            .founder-badge { margin-left: 8px; display: inline-flex; align-items: center; gap: 6px; border-radius: 9999px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: #fff; background: linear-gradient(135deg, #c79a43, #9c7333); box-shadow: 0 6px 16px rgba(156, 115, 51, 0.25); vertical-align: middle; }
+            @media (max-width: 480px) { .founder-badge { margin: 8px 0 0; } }
+          </style>
+        {% endif %}
         <h2 class="mt-4 text-3xl font-semibold leading-tight text-[#2e271f] sm:text-4xl">
           {% if billing_state == "trial_ready" %}
             You're all set.
@@ -201,6 +211,75 @@
         <form id="subscription-verify-form" class="hidden">
           {% csrf_token %}
         </form>
+
+        {% if autopay_ready or billing_state == "past_due" %}
+          <div id="cancel-autopay-modal" class="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title" aria-hidden="true">
+            <div class="cancel-modal__backdrop" data-cancel-close></div>
+            <div class="cancel-modal__card">
+              <button type="button" class="cancel-modal__x" data-cancel-close aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+
+              <div class="cancel-modal__icon"><i class="fa-regular fa-calendar-xmark"></i></div>
+              <h3 id="cancel-modal-title" class="cancel-modal__title">Cancel autopay?</h3>
+
+              {% if billing_state == "past_due" %}
+                <p class="cancel-modal__lead">
+                  Your last payment didn't go through, so your salon will be <strong>paused right away</strong> if you cancel now.
+                </p>
+              {% else %}
+                <p class="cancel-modal__lead">
+                  Your salon stays active until <strong>{{ access_until|date:"M d, Y" }}</strong>.
+                </p>
+              {% endif %}
+
+              <ul class="cancel-modal__list">
+                <li><i class="fa-solid fa-check"></i> No more monthly charges of ₹{{ plan.amount|floatformat:0 }}</li>
+                {% if billing_state != "past_due" %}
+                  <li><i class="fa-solid fa-check"></i> Everything keeps working until that date</li>
+                  <li><i class="fa-solid fa-rotate-left"></i> Turn autopay back on anytime before then</li>
+                {% endif %}
+                <li class="is-muted"><i class="fa-solid fa-pause"></i> After that, your salon profile and tools are paused</li>
+              </ul>
+
+              <p id="cancel-modal-error" class="cancel-modal__error" hidden></p>
+
+              <div class="cancel-modal__actions">
+                <button type="button" class="cancel-modal__keep" data-cancel-close>Keep autopay</button>
+                <button type="button" class="cancel-modal__confirm" id="cancel-modal-confirm">Yes, cancel autopay</button>
+              </div>
+            </div>
+          </div>
+
+          <style>
+            /* Above the dashboard's sticky header (z-index 9999) */
+            .cancel-modal { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; visibility: hidden; opacity: 0; transition: opacity .2s ease, visibility .2s ease; }
+            .cancel-modal.is-open { visibility: visible; opacity: 1; }
+            .cancel-modal__backdrop { position: absolute; inset: 0; background: rgba(46, 39, 31, 0.42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+            .cancel-modal__card { position: relative; width: 100%; max-width: 420px; border-radius: 28px; border: 1px solid #eadfcf; background: linear-gradient(160deg, #fffaf1 0%, #ffffff 55%, #f8efdc 100%); padding: 28px 24px 22px; box-shadow: 0 30px 80px rgba(46, 39, 31, 0.22); transform: translateY(12px) scale(.97); transition: transform .22s cubic-bezier(.2,.8,.2,1); text-align: center; }
+            .cancel-modal.is-open .cancel-modal__card { transform: translateY(0) scale(1); }
+            .cancel-modal__x { position: absolute; top: 14px; right: 14px; height: 34px; width: 34px; border-radius: 9999px; color: #8a7b66; display: flex; align-items: center; justify-content: center; transition: background-color .2s ease, color .2s ease; }
+            .cancel-modal__x:hover { background: rgba(181, 140, 78, 0.12); color: #5d4b33; }
+            .cancel-modal__icon { margin: 0 auto 14px; height: 56px; width: 56px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #a5651c; background: #fff1dc; border: 1px solid #f1d6ad; }
+            .cancel-modal__title { font-size: 22px; font-weight: 600; color: #2d251d; }
+            .cancel-modal__lead { margin-top: 8px; font-size: 14px; line-height: 1.6; color: #685744; }
+            .cancel-modal__lead strong { color: #2d251d; }
+            .cancel-modal__list { margin: 18px 0 0; padding: 14px 16px; list-style: none; text-align: left; border-radius: 18px; background: #fbf7ef; display: grid; gap: 10px; }
+            .cancel-modal__list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.45; color: #4b3f31; }
+            .cancel-modal__list li i { margin-top: 3px; width: 14px; font-size: 12px; color: #2f6f45; }
+            .cancel-modal__list li.is-muted { color: #8a7b66; }
+            .cancel-modal__list li.is-muted i { color: #b3412f; }
+            .cancel-modal__error { margin-top: 12px; border-radius: 12px; background: #fdecea; padding: 10px 12px; font-size: 13px; color: #b3412f; }
+            .cancel-modal__actions { margin-top: 20px; display: grid; gap: 10px; }
+            .cancel-modal__keep { width: 100%; border-radius: 16px; padding: 12px 16px; font-size: 14px; font-weight: 600; color: #fff; background: #c79a43; box-shadow: 0 12px 28px rgba(199, 154, 67, 0.28); transition: background-color .2s ease, transform .2s ease; }
+            .cancel-modal__keep:hover { background: #ba8e3a; transform: translateY(-1px); }
+            .cancel-modal__keep:focus-visible, .cancel-modal__confirm:focus-visible, .cancel-modal__x:focus-visible { outline: 3px solid rgba(199, 154, 67, 0.4); outline-offset: 2px; }
+            .cancel-modal__confirm { width: 100%; border-radius: 16px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #b3412f; background: transparent; border: 1px solid rgba(179, 65, 47, 0.35); transition: background-color .2s ease, border-color .2s ease; }
+            .cancel-modal__confirm:hover { background: #fdecea; border-color: #b3412f; }
+            .cancel-modal__confirm[disabled] { opacity: .65; cursor: wait; }
+            @media (min-width: 480px) { .cancel-modal__actions { grid-template-columns: 1fr 1fr; } .cancel-modal__keep { order: 2; } }
+          </style>
+        {% endif %}
       </div>
     </div>
   </section>
@@ -255,7 +334,7 @@
         <div class="flex gap-4">
           <div class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3e2b8] text-sm font-semibold text-[#7f5f2a]">3</div>
           <div>
-            <p class="text-sm font-semibold text-[#2d251d]">After the trial, it renews at ₹699</p>
+            <p class="text-sm font-semibold text-[#2d251d]">After the trial, it renews at ₹{{ plan.amount|floatformat:0 }}{% if has_founder_price %} for life{% endif %}</p>
             <p class="mt-1 text-sm leading-6 text-gray-600">You stay discoverable, and we keep the billing state visible here in the dashboard.</p>
           </div>
         </div>
@@ -270,17 +349,47 @@
 <script>
   (function () {
     const cancelButton = document.getElementById("subscription-cancel-btn");
-    if (!cancelButton) return;
+    const modal = document.getElementById("cancel-autopay-modal");
+    if (!cancelButton || !modal) return;
+    // Render at the top level so no parent layout (overflow/transform) can clip it.
+    document.body.appendChild(modal);
+    const confirmButton = document.getElementById("cancel-modal-confirm");
+    const keepButton = modal.querySelector(".cancel-modal__keep");
+    const errorBox = document.getElementById("cancel-modal-error");
     const verifyForm = document.getElementById("subscription-verify-form");
     const csrfToken = verifyForm ? verifyForm.querySelector("[name=csrfmiddlewaretoken]").value : "";
+    let busy = false;
 
-    cancelButton.addEventListener("click", async function () {
-      const ok = window.confirm(
-        "Cancel autopay?\n\nYou won't be charged again. Your salon stays active until the end of the period you already paid for, then it will be paused."
-      );
-      if (!ok || cancelButton.dataset.loading === "true") return;
-      cancelButton.dataset.loading = "true";
-      cancelButton.textContent = "Cancelling...";
+    function openModal() {
+      errorBox.hidden = true;
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      setTimeout(function () { keepButton.focus(); }, 50);
+    }
+
+    function closeModal() {
+      if (busy) return;
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      cancelButton.focus();
+    }
+
+    cancelButton.addEventListener("click", openModal);
+    modal.querySelectorAll("[data-cancel-close]").forEach(function (el) {
+      el.addEventListener("click", closeModal);
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+    });
+
+    confirmButton.addEventListener("click", async function () {
+      if (busy) return;
+      busy = true;
+      confirmButton.disabled = true;
+      confirmButton.textContent = "Cancelling...";
+      errorBox.hidden = true;
       try {
         const response = await fetch("{% url 'saloon_dashboard_subscription_cancel' saloon.owner.username %}", {
           method: "POST",
@@ -290,9 +399,11 @@
         if (!data.ok) throw new Error(data.message || "Could not cancel autopay right now.");
         window.location.href = data.redirect_url || window.location.href;
       } catch (error) {
-        alert(error.message || "Could not cancel autopay right now.");
-        cancelButton.dataset.loading = "false";
-        cancelButton.textContent = "Cancel autopay";
+        busy = false;
+        confirmButton.disabled = false;
+        confirmButton.textContent = "Yes, cancel autopay";
+        errorBox.textContent = error.message || "Could not cancel autopay right now. Please try again.";
+        errorBox.hidden = false;
       }
     });
   })();

@@ -33,10 +33,13 @@ import qrcode
 from public.models import UserNotification
 from core.image_processing import optimize_public_image_upload
 from services.models import Service, ServiceInterest
-from plans.models import SaloonSubscription, SubscriptionWebhookEvent
+from plans.models import SaloonSubscription, SubscriptionPaymentHistory, SubscriptionWebhookEvent
 from plans.billing import (
     apply_razorpay_subscription_event,
+    forfeit_founder_price,
     get_default_subscription_plan,
+    has_founder_price,
+    plan_for_subscription,
     get_or_create_saloon_subscription,
     sync_local_subscription_state,
     subscription_has_platform_access,
@@ -63,6 +66,7 @@ from .utils import (
     normalize_saloon_slug,
     saloon_domain_suffix,
     send_otp_whatsapp,
+    generate_otp,
     sync_saloon_slug_from_name,
 )
 
@@ -597,6 +601,7 @@ def dashboard_subscription(request, username):
             "autopay_ready": autopay_ready,
             "next_charge_date": next_charge_date,
             "access_until": billing["access_until"],
+            "has_founder_price": has_founder_price(subscription),
             "payment_enabled": payment_enabled,
             "razorpay_key_id": os.getenv("RAZORPAY_KEY_ID", "").strip(),
             **access,
@@ -1025,7 +1030,7 @@ def dashboard_change_whatsapp(request, username):
             messages.error(request, "OTP locked. Try again later.")
             return redirect("saloon_dashboard_change_whatsapp", username=saloon.owner.username)
 
-        new_otp = random.randint(100000, 999999)
+        new_otp = generate_otp()
         request.session.update({
             "change_otp": str(new_otp),
             "change_otp_channel": channel,
@@ -1035,8 +1040,8 @@ def dashboard_change_whatsapp(request, username):
         if channel == "email":
             try:
                 send_mail(
-                    subject="Your Saloon OTP",
-                    message=f"Your OTP code is {new_otp}",
+                    subject="Your Elegentra verification code",
+                    message=f"Your Elegentra verification code is {new_otp}. Do not share this code with anyone.",
                     from_email=getattr(settings, "DEFAULT_FROM_EMAIL", settings.EMAIL_HOST_USER),
                     recipient_list=[request.user.email],
                     fail_silently=False,
@@ -2182,6 +2187,10 @@ def dashboard_subscription_recurring_create(request, username):
                 status=400,
             )
         # outcome == "cleared": the old mandate is closed, fall through and create a new one.
+        # A founder who had paid and then let the subscription lapse restarts at the
+        # standard price ("₹499 for life while your subscription stays active").
+        if subscription.payment_history.filter(payment_status=SubscriptionPaymentHistory.STATUS_SUCCESS).exists():
+            forfeit_founder_price(subscription)
     elif (
         subscription.autopay_confirmed_at
         and has_access
@@ -2211,6 +2220,12 @@ def dashboard_subscription_recurring_create(request, username):
                 "theme": {"color": "#C59A43"},
             }
         )
+
+    # The new mandate is created on the plan this salon should pay now (founder or standard).
+    plan = plan_for_subscription(subscription)
+    if subscription.plan_id != plan.id:
+        subscription.plan = plan
+        subscription.save(update_fields=["plan", "updated_at"])
 
     try:
         remote_plan_id = _ensure_remote_plan(plan)

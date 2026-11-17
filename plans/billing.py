@@ -9,9 +9,11 @@ from django.utils import timezone
 from .models import ListingSubscriptionPlan, SaloonSubscription, SubscriptionPaymentHistory
 from saloons.models import Saloon
 
-FOUNDER_PARTNER_LIMIT = 50
-FOUNDER_TRIAL_DAYS = 90
+FOUNDER_PARTNER_LIMIT = 25
+FOUNDER_TRIAL_DAYS = 30
 STANDARD_TRIAL_DAYS = 14
+FOUNDER_MONTHLY_AMOUNT = Decimal("499.00")
+STANDARD_MONTHLY_AMOUNT = Decimal("699.00")
 GRACE_PERIOD_DAYS = 3
 # Razorpay charges a renewal at the start of the new cycle and then sends the webhook.
 # Keep a live autopay salon unlocked for this long past period end so that small delay
@@ -48,7 +50,7 @@ def get_default_subscription_plan():
         defaults={
             "name": "Elegentra Listing",
             "description": "Keep your salon live on Elegentra with discovery placement, gallery, and premium support.",
-            "amount": Decimal("699.00"),
+            "amount": STANDARD_MONTHLY_AMOUNT,
             "strike_amount": Decimal("999.00"),
             "billing_period": "monthly",
             "interval": 1,
@@ -62,13 +64,68 @@ def get_default_subscription_plan():
     return plan
 
 
+def get_founder_subscription_plan():
+    """₹499/month for life for the first FOUNDER_PARTNER_LIMIT approved salons."""
+    configured_razorpay_plan_id = os.getenv("RAZORPAY_FOUNDER_PLAN_ID", "").strip()
+    plan, _ = ListingSubscriptionPlan.objects.get_or_create(
+        slug="elegentra-founder-monthly",
+        defaults={
+            "name": "Elegentra Founder Partner",
+            "description": "Founder partner price, locked for life while the subscription stays active.",
+            "amount": FOUNDER_MONTHLY_AMOUNT,
+            "strike_amount": STANDARD_MONTHLY_AMOUNT,
+            "billing_period": "monthly",
+            "interval": 1,
+            "trial_days": FOUNDER_TRIAL_DAYS,
+            "currency": "INR",
+        },
+    )
+    if configured_razorpay_plan_id and plan.razorpay_plan_id != configured_razorpay_plan_id:
+        plan.razorpay_plan_id = configured_razorpay_plan_id
+        plan.save(update_fields=["razorpay_plan_id", "updated_at"])
+    return plan
+
+
+def has_founder_price(subscription):
+    """Founders keep ₹499 until a paid subscription lapses (see forfeit_founder_price)."""
+    return bool(subscription.is_founder_partner) and not (subscription.notes or {}).get("founder_price_forfeited")
+
+
+def plan_for_subscription(subscription):
+    return get_founder_subscription_plan() if has_founder_price(subscription) else get_default_subscription_plan()
+
+
+def forfeit_founder_price(subscription):
+    """
+    A founder whose paid subscription lapsed and who is starting again pays the
+    standard price. The founder badge/number stays; only the price changes.
+    """
+    if not has_founder_price(subscription):
+        return subscription
+    notes = dict(subscription.notes or {})
+    notes["founder_price_forfeited"] = True
+    notes["founder_price_forfeited_at"] = timezone.now().isoformat()
+    subscription.notes = notes
+    subscription.plan = get_default_subscription_plan()
+    subscription.save(update_fields=["notes", "plan", "updated_at"])
+    return subscription
+
+
+def _has_live_mandate(subscription):
+    """An approved Razorpay mandate is tied to the plan it was created on; never swap it."""
+    return bool(subscription.razorpay_subscription_id and subscription.autopay_confirmed_at)
+
+
 def _approved_founder_count():
     return SaloonSubscription.objects.filter(is_founder_partner=True, saloon__is_test_saloon=False).count()
 
 
+def founder_spots_left():
+    return max(0, FOUNDER_PARTNER_LIMIT - _approved_founder_count())
+
+
 @transaction.atomic
 def assign_subscription_trial_on_approval(saloon):
-    plan = get_default_subscription_plan()
     subscription = (
         SaloonSubscription.objects.select_for_update()
         .filter(saloon=saloon)
@@ -77,6 +134,9 @@ def assign_subscription_trial_on_approval(saloon):
     )
 
     if subscription and subscription.trial_assigned_at:
+        if _has_live_mandate(subscription):
+            return subscription, subscription.plan
+        plan = plan_for_subscription(subscription)
         if subscription.plan_id != plan.id:
             subscription.plan = plan
             subscription.save(update_fields=["plan", "updated_at"])
@@ -87,10 +147,11 @@ def assign_subscription_trial_on_approval(saloon):
     founder_number = None if is_test_saloon else _approved_founder_count() + 1
     is_founder = bool(founder_number and founder_number <= FOUNDER_PARTNER_LIMIT)
     trial_days = FOUNDER_TRIAL_DAYS if is_founder else STANDARD_TRIAL_DAYS
+    plan = get_founder_subscription_plan() if is_founder else get_default_subscription_plan()
     notes = dict(getattr(subscription, "notes", {}) or {}) if subscription else {}
     notes.update({
         "origin": "approval_trial",
-        "trial_rule": "test_saloon_14_day" if is_test_saloon else ("founder_90_day" if is_founder else "standard_14_day"),
+        "trial_rule": "test_saloon_14_day" if is_test_saloon else (f"founder_{FOUNDER_TRIAL_DAYS}_day" if is_founder else "standard_14_day"),
         "trial_assigned_from": "saloon_approval",
         "is_test_saloon": is_test_saloon,
     })
@@ -118,23 +179,25 @@ def assign_subscription_trial_on_approval(saloon):
 
 
 def get_or_create_saloon_subscription(saloon):
-    plan = get_default_subscription_plan()
     subscription = saloon.subscriptions.order_by("-created_at", "-id").first()
 
     if not subscription and saloon.approval_status == Saloon.APPROVAL_APPROVED:
         return assign_subscription_trial_on_approval(saloon)
 
     if subscription:
-        update_fields = []
-        if subscription.plan_id != plan.id:
-            subscription.plan = plan
-            update_fields.append("plan")
         if not subscription.trial_assigned_at and saloon.approval_status == Saloon.APPROVAL_APPROVED:
             return assign_subscription_trial_on_approval(saloon)
-        if update_fields:
-            subscription.save(update_fields=[*update_fields, "updated_at"])
+        if _has_live_mandate(subscription):
+            # Billing is fixed to the plan the mandate was approved on.
+            plan = subscription.plan
+        else:
+            plan = plan_for_subscription(subscription)
+            if subscription.plan_id != plan.id:
+                subscription.plan = plan
+                subscription.save(update_fields=["plan", "updated_at"])
         return sync_local_subscription_state(subscription), plan
 
+    plan = get_default_subscription_plan()
     now = timezone.now()
     subscription = SaloonSubscription.objects.create(
         saloon=saloon,

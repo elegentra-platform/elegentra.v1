@@ -289,6 +289,50 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", f'Elegentra <{EMAIL_HOST_USER}>')
 
 
+# ==================================================
+# LOGGING (shows up in Railway → service → Logs)
+# ==================================================
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "simple"},
+    },
+    "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
+    "loggers": {
+        # Server errors (500s) are logged here with the full traceback.
+        "django": {"handlers": ["console"], "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"), "propagate": False},
+    },
+}
+
+# ==================================================
+# ERROR TRACKING (Sentry) — only active when SENTRY_DSN is set
+# ==================================================
+SENTRY_DSN = os.getenv("SENTRY_DSN", "").strip()
+# Local development (DEBUG) doesn't report to Sentry, so only the live site raises alerts.
+# Set SENTRY_IN_DEBUG=1 to test Sentry from your own computer.
+if DEBUG and os.getenv("SENTRY_IN_DEBUG", "").strip() != "1":
+    SENTRY_DSN = ""
+if SENTRY_DSN and find_spec("sentry_sdk"):
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=os.getenv("SENTRY_ENVIRONMENT", "development" if DEBUG else "production"),
+        release=os.getenv("RAILWAY_GIT_COMMIT_SHA") or None,
+        # Don't send customers' or salon owners' personal data (emails, IPs, cookies) to Sentry.
+        send_default_pii=False,
+        # Never attach submitted form bodies: they can contain phone numbers and OTP codes.
+        max_request_body_size="never",
+        # Page-speed tracing: every request locally, 10% on the live site (override with env).
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "") or (1.0 if DEBUG else 0.1)),
+    )
+
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

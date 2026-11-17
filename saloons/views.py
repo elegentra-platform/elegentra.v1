@@ -17,7 +17,15 @@ from core.seo import build_absolute_url, build_image_url, build_seo_payload, tru
 from core.image_processing import optimize_public_image_upload
 from public.models import FavoriteSaloon
 from plans.models import SaloonSubscription
-from plans.billing import live_subscription_q
+from plans.billing import (
+    FOUNDER_MONTHLY_AMOUNT,
+    FOUNDER_PARTNER_LIMIT,
+    FOUNDER_TRIAL_DAYS,
+    STANDARD_MONTHLY_AMOUNT,
+    STANDARD_TRIAL_DAYS,
+    founder_spots_left,
+    live_subscription_q,
+)
 from .serializers import (
     SaloonOnboardingStepOneSerializer,
     SaloonOnboardingStepTwoSerializer,
@@ -43,6 +51,9 @@ from .utils import (
     build_service_slots,
     format_whatsapp_number,
     send_otp_whatsapp,
+    generate_otp,
+    mask_email,
+    send_salon_verification_code,
     sync_saloon_slug_from_name,
 )
 from django.utils.text import slugify
@@ -739,8 +750,16 @@ def verify_whatsapp(request):
                 "step": step,
                 "masked_phone": phone[-4:].rjust(len(phone), "*") if phone else "",
                 "is_existing_saloon": is_existing_saloon,
+                "otp_channel": request.session.get("vendor_otp_channel", "whatsapp"),
+                "masked_email": mask_email(request.user.email),
             },
         )
+
+    def deliver_code(code):
+        """Send the code by WhatsApp, or by email when WhatsApp OTP isn't available."""
+        channel = send_salon_verification_code(phone, code, request.user.email)
+        request.session["vendor_otp_channel"] = channel
+        return channel
 
     # Fresh partner flows should not inherit OTP session state from an older account/session.
     if not saloon and request.method == "GET":
@@ -776,7 +795,7 @@ def verify_whatsapp(request):
             messages.error(request, "This WhatsApp number is already linked to another salon.")
             return render_verify("phone")
 
-        new_otp = random.randint(100000, 999999)
+        new_otp = generate_otp()
         request.session.update({
             "vendor_otp": str(new_otp),
             "vendor_phone": phone,
@@ -784,7 +803,7 @@ def verify_whatsapp(request):
         })
         otp = str(new_otp)
         try:
-            send_otp_whatsapp(phone, new_otp)
+            deliver_code(new_otp)
         except Exception:
             messages.error(request, "We couldn't send the OTP right now. Please try again in a moment.")
             return render_verify("phone")
@@ -815,7 +834,7 @@ def verify_whatsapp(request):
             messages.error(request, "OTP locked. Try again later.")
             return render_verify("phone")
 
-        new_otp = random.randint(100000, 999999)
+        new_otp = generate_otp()
         request.session.update({
             "vendor_otp": str(new_otp),
             "vendor_phone": phone,
@@ -823,7 +842,7 @@ def verify_whatsapp(request):
         })
         otp = str(new_otp)
         try:
-            send_otp_whatsapp(phone, new_otp)
+            deliver_code(new_otp)
         except Exception:
             messages.error(request, "We couldn't send the OTP right now. Please try again in a moment.")
             return render_verify("phone")
@@ -872,7 +891,7 @@ def verify_whatsapp(request):
             samesite="Lax",
         )
 
-        for key in ["vendor_otp", "vendor_phone", "otp_attempts", "otp_locked_until"]:
+        for key in ["vendor_otp", "vendor_phone", "otp_attempts", "otp_locked_until", "vendor_otp_channel"]:
             request.session.pop(key, None)
 
         return redirect_to
@@ -1225,6 +1244,12 @@ def saloon_onboarding_step_four(request):
 
     return render(request, "saloons/onboarding/onboarding_step_4.html", {
         "saloon": saloon,
+        "founder_spots_left": founder_spots_left(),
+        "founder_limit": FOUNDER_PARTNER_LIMIT,
+        "founder_trial_days": FOUNDER_TRIAL_DAYS,
+        "founder_price": FOUNDER_MONTHLY_AMOUNT,
+        "standard_trial_days": STANDARD_TRIAL_DAYS,
+        "standard_price": STANDARD_MONTHLY_AMOUNT,
     })
 
 

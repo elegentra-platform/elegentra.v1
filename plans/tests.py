@@ -33,24 +33,53 @@ class BillingTrialTests(TestCase):
             registration_step=5,
         )
 
-    def test_first_approved_salon_gets_permanent_founder_trial(self):
-        subscription, _ = assign_subscription_trial_on_approval(self._saloon(1))
+    def test_first_approved_salon_gets_founder_trial_and_price(self):
+        subscription, plan = assign_subscription_trial_on_approval(self._saloon(1))
 
         self.assertTrue(subscription.is_founder_partner)
         self.assertEqual(subscription.founder_partner_number, 1)
-        self.assertEqual(subscription.approved_trial_days, 90)
+        self.assertEqual(subscription.approved_trial_days, 30)
         self.assertIsNotNone(subscription.trial_assigned_at)
         self.assertEqual(subscription.status, SaloonSubscription.STATUS_TRIALING)
+        self.assertEqual(str(plan.amount), "499.00")
+        self.assertEqual(subscription.plan_id, plan.id)
 
-    def test_salons_after_first_50_get_standard_trial(self):
-        for index in range(1, 51):
+    def test_salons_after_first_25_get_standard_trial_and_price(self):
+        for index in range(1, 26):
             assign_subscription_trial_on_approval(self._saloon(index))
 
-        subscription, _ = assign_subscription_trial_on_approval(self._saloon(51))
+        subscription, plan = assign_subscription_trial_on_approval(self._saloon(26))
 
         self.assertFalse(subscription.is_founder_partner)
         self.assertIsNone(subscription.founder_partner_number)
         self.assertEqual(subscription.approved_trial_days, 14)
+        self.assertEqual(str(plan.amount), "699.00")
+
+    def test_page_load_does_not_reset_founder_to_standard_price(self):
+        from .billing import get_or_create_saloon_subscription
+
+        saloon = self._saloon(1)
+        assign_subscription_trial_on_approval(saloon)
+
+        subscription, plan = get_or_create_saloon_subscription(saloon)
+
+        self.assertEqual(str(plan.amount), "499.00")
+        self.assertEqual(str(subscription.plan.amount), "499.00")
+
+    def test_live_mandate_keeps_its_plan(self):
+        from .billing import get_default_subscription_plan, get_or_create_saloon_subscription
+
+        saloon = self._saloon(1)
+        subscription, _ = assign_subscription_trial_on_approval(saloon)
+        # e.g. an older founder whose autopay was approved on the ₹699 plan
+        subscription.plan = get_default_subscription_plan()
+        subscription.razorpay_subscription_id = "sub_old_plan"
+        subscription.autopay_confirmed_at = timezone.now()
+        subscription.save()
+
+        _, plan = get_or_create_saloon_subscription(saloon)
+
+        self.assertEqual(str(plan.amount), "699.00")
 
     def test_trial_assignment_is_not_recalculated(self):
         saloon = self._saloon(1)
@@ -69,6 +98,7 @@ class RazorpaySubscriptionCheckoutTests(TestCase):
         os.environ["RAZORPAY_KEY_ID"] = "rzp_test_unit"
         os.environ["RAZORPAY_KEY_SECRET"] = "unit_secret"
         os.environ["RAZORPAY_SUBSCRIPTION_PLAN_ID"] = "plan_TSNahl35IvIB4c"
+        os.environ["RAZORPAY_FOUNDER_PLAN_ID"] = "plan_founder_unit"
         self.client = Client()
         self.user = get_user_model().objects.create_user(
             username="checkoutowner",
@@ -255,6 +285,63 @@ class RazorpaySubscriptionCheckoutTests(TestCase):
         api_request.assert_called_once_with("GET", "/v1/subscriptions/sub_unit_old")
         self.subscription.refresh_from_db()
         self.assertEqual(self.subscription.razorpay_subscription_id, "sub_unit_old")
+
+    def test_founder_checkout_uses_founder_plan(self):
+        self.assertTrue(self.subscription.is_founder_partner)
+        created_plans = []
+        subscription_payloads = []
+
+        def fake_api(method, path, payload=None):
+            if path == "/v1/plans":
+                created_plans.append(payload["item"]["amount"])
+                return {"id": "plan_founder_created"}
+            subscription_payloads.append(payload)
+            return {"id": "sub_unit_founder", "status": "created"}
+
+        # No preconfigured founder plan id: Elegentra creates the ₹499 plan in Razorpay.
+        with patch.dict(os.environ, {"RAZORPAY_FOUNDER_PLAN_ID": ""}), \
+                patch("saloons.dashboard_views._razorpay_api_request", side_effect=fake_api):
+            from .billing import get_founder_subscription_plan
+
+            founder_plan = get_founder_subscription_plan()
+            founder_plan.razorpay_plan_id = ""
+            founder_plan.save()
+            response = self.client.post(self._create_url())
+
+        self.assertTrue(response.json()["ok"])
+        self.assertEqual(created_plans, [49900])
+        self.assertEqual(subscription_payloads[0]["plan_id"], "plan_founder_created")
+        self.subscription.refresh_from_db()
+        self.assertEqual(str(self.subscription.plan.amount), "499.00")
+        self.assertIn("₹499", response.json()["description"])
+
+    def test_founder_who_paid_then_lapsed_renews_at_standard_price(self):
+        self._make_lapsed()
+        SubscriptionPaymentHistory.objects.create(
+            subscription=self.subscription,
+            saloon=self.saloon,
+            plan=self.subscription.plan,
+            amount="499.00",
+            payment_status=SubscriptionPaymentHistory.STATUS_SUCCESS,
+            razorpay_payment_id="pay_founder_1",
+        )
+        subscription_payloads = []
+
+        def fake_api(method, path, payload=None):
+            if method == "GET":
+                return {"id": "sub_unit_old", "status": "cancelled"}
+            subscription_payloads.append(payload)
+            return {"id": "sub_unit_new", "status": "created"}
+
+        with patch("saloons.dashboard_views._razorpay_api_request", side_effect=fake_api):
+            response = self.client.post(self._create_url())
+
+        self.assertTrue(response.json()["ok"])
+        self.subscription.refresh_from_db()
+        self.assertEqual(str(self.subscription.plan.amount), "699.00")
+        self.assertTrue(self.subscription.notes.get("founder_price_forfeited"))
+        self.assertTrue(self.subscription.is_founder_partner)  # badge/number kept
+        self.assertEqual(subscription_payloads[0]["plan_id"], "plan_TSNahl35IvIB4c")  # the ₹699 plan
 
     def test_one_time_standard_checkout_create_order_is_unaffected(self):
         response_payload = {

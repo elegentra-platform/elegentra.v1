@@ -64,7 +64,14 @@
 
     {% if step == "otp" %}
       <p class="mb-3 text-sm leading-6 text-gray-600 sm:text-[0.95rem]">
-        We sent an OTP to <strong>{{ masked_phone }}</strong>
+        {% if otp_channel == "email" %}
+          We sent your verification code to your email <strong>{{ masked_email }}</strong>.
+          Check your inbox (and spam folder).
+        {% elif otp_channel == "sms" %}
+          We sent your verification code by SMS to <strong>{{ masked_phone }}</strong>
+        {% else %}
+          We sent an OTP to <strong>{{ masked_phone }}</strong>
+        {% endif %}
       </p>
 
       <form method="post" id="otp-form">

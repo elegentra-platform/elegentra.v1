@@ -31,8 +31,19 @@
     <div>
       <h2 class="text-lg font-medium mb-2">Pricing</h2>
       <ul class="list-disc list-inside text-gray-700 space-y-1 text-sm">
-        <li>First month is <strong>FREE</strong></li>
-        <li>After the free period, <strong>₹699/month</strong> is required to keep your salon active</li>
+        {% if founder_spots_left %}
+          <li>
+            <strong>Founder offer</strong> for the first {{ founder_limit }} approved salons
+            ({{ founder_spots_left }} spot{{ founder_spots_left|pluralize }} left):
+            {{ founder_trial_days }} days <strong>FREE</strong>, then
+            <strong>₹{{ founder_price|floatformat:0 }}/month for life</strong> while your subscription stays active
+          </li>
+          <li>After the founder spots are filled: {{ standard_trial_days }} days <strong>FREE</strong>, then <strong>₹{{ standard_price|floatformat:0 }}/month</strong></li>
+        {% else %}
+          <li>{{ standard_trial_days }} days <strong>FREE</strong> after approval</li>
+          <li>After the free period, <strong>₹{{ standard_price|floatformat:0 }}/month</strong> is required to keep your salon active</li>
+        {% endif %}
+        <li>Founder spots and free periods are confirmed when your salon is approved</li>
         <li>You will be notified before any payment starts</li>
       </ul>
     </div>

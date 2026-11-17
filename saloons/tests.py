@@ -23,6 +23,142 @@ from services.models import ServiceCategory, Service, ServiceInterest
 User = get_user_model()
 
 
+class WhatsAppCloudOtpTests(TestCase):
+    """OTP goes through Meta's WhatsApp Cloud API using the authentication template."""
+
+    ENV = {
+        "WHATSAPP_ACCESS_TOKEN": "unit-token",
+        "WHATSAPP_PHONE_NUMBER_ID": "1384322154772584",
+        "WHATSAPP_OTP_TEMPLATE": "elegentra_otp",
+    }
+
+    def test_otp_is_sent_as_authentication_template(self):
+        import json
+
+        from .utils import send_otp_whatsapp
+
+        captured = {}
+
+        def fake_urlopen(request, timeout=None):
+            captured["url"] = request.full_url
+            captured["auth"] = request.get_header("Authorization")
+            captured["payload"] = json.loads(request.data.decode("utf-8"))
+
+            class Resp:
+                def __enter__(self_inner):
+                    return self_inner
+
+                def __exit__(self_inner, *args):
+                    return False
+
+                def read(self_inner):
+                    return json.dumps({"messages": [{"id": "wamid.unit"}]}).encode("utf-8")
+
+            return Resp()
+
+        with patch.dict("os.environ", self.ENV), patch("saloons.utils.urlopen", side_effect=fake_urlopen):
+            message_id = send_otp_whatsapp("+919074492286", 482913)
+
+        self.assertEqual(message_id, "wamid.unit")
+        self.assertIn("/1384322154772584/messages", captured["url"])
+        self.assertEqual(captured["auth"], "Bearer unit-token")
+        payload = captured["payload"]
+        self.assertEqual(payload["to"], "919074492286")
+        self.assertEqual(payload["template"]["name"], "elegentra_otp")
+        body, button = payload["template"]["components"]
+        self.assertEqual(body["parameters"][0]["text"], "482913")
+        self.assertEqual(button["sub_type"], "url")
+        self.assertEqual(button["parameters"][0]["text"], "482913")
+
+    def test_missing_credentials_raise_outside_debug(self):
+        from django.core.exceptions import ImproperlyConfigured
+
+        from .utils import send_otp_whatsapp
+
+        with patch.dict("os.environ", {"WHATSAPP_ACCESS_TOKEN": "", "WHATSAPP_PHONE_NUMBER_ID": ""}), \
+                self.settings(DEBUG=False):
+            with self.assertRaises(ImproperlyConfigured):
+                send_otp_whatsapp("+919074492286", 123456)
+
+    def test_meta_error_is_raised_with_reason(self):
+        import io
+        from urllib.error import HTTPError
+
+        from .utils import send_otp_whatsapp
+
+        error_body = io.BytesIO(b'{"error": {"code": 132001, "message": "Template name does not exist"}}')
+        error = HTTPError("https://graph.facebook.com", 404, "Not Found", {}, error_body)
+
+        with patch.dict("os.environ", self.ENV), patch("saloons.utils.urlopen", side_effect=error):
+            with self.assertRaisesRegex(RuntimeError, "132001"):
+                send_otp_whatsapp("+919074492286", 123456)
+
+    def test_sms_otp_uses_fast2sms_otp_route(self):
+        import json
+
+        from .utils import send_otp_sms
+
+        captured = {}
+
+        def fake_urlopen(request, timeout=None):
+            captured["url"] = request.full_url
+            captured["auth"] = request.get_header("Authorization")
+            captured["payload"] = json.loads(request.data.decode("utf-8"))
+
+            class Resp:
+                def __enter__(self_inner):
+                    return self_inner
+
+                def __exit__(self_inner, *args):
+                    return False
+
+                def read(self_inner):
+                    return b'{"return": true, "request_id": "req123", "message": ["SMS sent successfully."]}'
+
+            return Resp()
+
+        with patch.dict("os.environ", {"FAST2SMS_API_KEY": "unit-key"}), \
+                patch("saloons.utils.urlopen", side_effect=fake_urlopen):
+            request_id = send_otp_sms("+919074492286", 482913)
+
+        self.assertEqual(request_id, "req123")
+        self.assertEqual(captured["url"], "https://www.fast2sms.com/dev/bulkV2")
+        self.assertEqual(captured["auth"], "unit-key")
+        self.assertEqual(captured["payload"], {"route": "otp", "variables_values": "482913", "numbers": "9074492286"})
+
+    def test_sms_rejection_raises_with_reason(self):
+        from .utils import send_otp_sms
+
+        class Resp:
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *args):
+                return False
+
+            def read(self_inner):
+                return b'{"status_code": 996, "message": "Before using OTP Message API, complete website verification."}'
+
+        with patch.dict("os.environ", {"FAST2SMS_API_KEY": "unit-key"}), \
+                patch("saloons.utils.urlopen", return_value=Resp()):
+            with self.assertRaisesRegex(RuntimeError, "website verification"):
+                send_otp_sms("+919074492286", 123456)
+
+    def test_sms_only_for_indian_numbers(self):
+        from .utils import send_otp_sms
+
+        with patch.dict("os.environ", {"FAST2SMS_API_KEY": "unit-key"}):
+            with self.assertRaisesRegex(RuntimeError, r"\+91"):
+                send_otp_sms("+14155550123", 123456)
+
+    def test_generated_otps_are_six_digits(self):
+        from .utils import generate_otp
+
+        codes = {generate_otp() for _ in range(200)}
+        self.assertTrue(all(100000 <= code <= 999999 for code in codes))
+        self.assertGreater(len(codes), 150)
+
+
 class VerifyWhatsAppSecurityTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -40,7 +176,61 @@ class VerifyWhatsAppSecurityTests(TestCase):
         self.client.force_login(self.user)
         self.url = reverse("verify_whatsapp")
 
-    @patch("saloons.views.send_otp_whatsapp")
+    @patch("saloons.utils.send_otp_sms")
+    @patch("saloons.utils.send_otp_whatsapp", side_effect=RuntimeError("template not available"))
+    def test_falls_back_to_sms_when_whatsapp_otp_unavailable(self, send_otp_mock, send_sms_mock):
+        from django.core import mail
+
+        response = self.client.post(self.url, {"send_otp": "1"})
+
+        send_sms_mock.assert_called_once_with(self.saloon.whatsapp_number, int(self.client.session["vendor_otp"]))
+        self.assertEqual(self.client.session["vendor_otp_channel"], "sms")
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertContains(response, "by SMS")
+
+    @patch("saloons.utils.send_otp_sms", side_effect=RuntimeError("website verification pending"))
+    @patch("saloons.utils.send_otp_whatsapp", side_effect=RuntimeError("template not available"))
+    def test_falls_back_to_email_when_whatsapp_and_sms_unavailable(self, send_otp_mock, send_sms_mock):
+        from django.core import mail
+
+        response = self.client.post(self.url, {"send_otp": "1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["step"], "otp")
+        self.assertEqual(self.client.session["vendor_otp_channel"], "email")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["owner@example.com"])
+        self.assertIn(self.client.session["vendor_otp"], mail.outbox[0].body)
+        self.assertContains(response, "o***r@example.com")
+
+        # The emailed code verifies the salon like a WhatsApp code would.
+        verify = self.client.post(self.url, {"verify_otp": "1", "otp": self.client.session["vendor_otp"]})
+        self.assertEqual(verify.status_code, 302)
+
+    @patch("saloons.utils.send_otp_sms")
+    @patch("saloons.utils.send_otp_whatsapp", side_effect=RuntimeError("template not available"))
+    def test_whatsapp_only_mode_does_not_fall_back(self, send_otp_mock, send_sms_mock):
+        from django.core import mail
+
+        with patch.dict("os.environ", {"SALON_OTP_CHANNEL": "whatsapp"}):
+            response = self.client.post(self.url, {"send_otp": "1"})
+
+        self.assertEqual(response.context["step"], "phone")
+        send_sms_mock.assert_not_called()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @patch("saloons.utils.send_otp_whatsapp")
+    def test_email_only_mode_skips_whatsapp(self, send_otp_mock):
+        from django.core import mail
+
+        with patch.dict("os.environ", {"SALON_OTP_CHANNEL": "email"}):
+            response = self.client.post(self.url, {"send_otp": "1"})
+
+        send_otp_mock.assert_not_called()
+        self.assertEqual(response.context["step"], "otp")
+        self.assertEqual(len(mail.outbox), 1)
+
+    @patch("saloons.utils.send_otp_whatsapp")
     def test_existing_saloon_verification_uses_stored_number_only(self, send_otp_mock):
         response = self.client.post(
             self.url,
@@ -53,7 +243,7 @@ class VerifyWhatsAppSecurityTests(TestCase):
         self.assertContains(response, self.saloon.whatsapp_number[-4:])
         self.assertNotContains(response, 'name="phone"', html=False)
 
-    @patch("saloons.views.send_otp_whatsapp")
+    @patch("saloons.utils.send_otp_whatsapp")
     def test_existing_saloon_verification_never_changes_saved_whatsapp(self, send_otp_mock):
         session = self.client.session
         session["vendor_phone"] = self.saloon.whatsapp_number
@@ -71,7 +261,7 @@ class VerifyWhatsAppSecurityTests(TestCase):
         self.assertTrue(self.saloon.is_whatsapp_verified)
         self.assertTrue(TrustedDevice.objects.filter(user=self.user).exists())
 
-    @patch("saloons.views.send_otp_whatsapp")
+    @patch("saloons.utils.send_otp_whatsapp")
     def test_existing_saloon_get_resets_tampered_session_phone(self, send_otp_mock):
         session = self.client.session
         session["vendor_phone"] = "+911111111111"
