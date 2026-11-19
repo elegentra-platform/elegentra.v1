@@ -175,6 +175,9 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_PREVENT_ENUMERATION = False
 
+# Google has already verified the address, so social logins never need our
+# confirmation email. Email + password sign-ups still do (ACCOUNT_EMAIL_VERIFICATION).
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -277,16 +280,26 @@ if USE_R2:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ==================================================
-# EMAIL (GMAIL SMTP)
+# EMAIL
+# Railway blocks outbound SMTP on Hobby, so production sends through Brevo's
+# HTTPS API (BREVO_API_KEY). Without it, Gmail SMTP is used (fine locally).
 # ==================================================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+# Never let a stuck mail server hold a request (and the worker) for long.
+EMAIL_TIMEOUT = 10
 
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", 'zevralabs@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", f'Elegentra <{EMAIL_HOST_USER}>')
+
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()
+if BREVO_API_KEY and find_spec("anymail"):
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+    ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY, "REQUESTS_TIMEOUT": 10}
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 
 # ==================================================

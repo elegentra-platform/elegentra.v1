@@ -39,3 +39,22 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
 
         if not sociallogin.is_existing:
             sociallogin.connect(request, user)
+
+        # Google already verified this address: record it as verified so an old,
+        # never-confirmed email/password account doesn't trigger a confirmation email.
+        google_verified = any(
+            address.verified and address.email.lower() == email.lower()
+            for address in sociallogin.email_addresses
+        )
+        if google_verified:
+            mark_email_verified(user, email)
+
+
+def mark_email_verified(user, email):
+    from allauth.account.models import EmailAddress
+
+    existing = EmailAddress.objects.filter(user=user, email__iexact=email)
+    if existing.exists():
+        existing.update(verified=True)
+    else:
+        EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
