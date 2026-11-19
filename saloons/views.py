@@ -1,3 +1,4 @@
+import json
 import random
 from datetime import timedelta
 from urllib.parse import urlsplit
@@ -14,6 +15,7 @@ from django.db.models import Exists, OuterRef
 from django.views.decorators.http import require_POST
 
 from core.seo import build_absolute_url, build_image_url, build_seo_payload, truncate_text
+from .firebase_auth import FirebaseVerificationError, firebase_phone_auth_enabled, verify_phone_id_token
 from core.image_processing import optimize_public_image_upload
 from public.models import FavoriteSaloon
 from plans.models import SaloonSubscription
@@ -752,6 +754,10 @@ def verify_whatsapp(request):
                 "is_existing_saloon": is_existing_saloon,
                 "otp_channel": request.session.get("vendor_otp_channel", "whatsapp"),
                 "masked_email": mask_email(request.user.email),
+                "firebase_enabled": firebase_phone_auth_enabled(),
+                "firebase_config": settings.FIREBASE_WEB_CONFIG,
+                # The owner's own number, needed by the browser to request the SMS.
+                "existing_phone": current_phone if is_existing_saloon else "",
             },
         )
 
@@ -787,7 +793,10 @@ def verify_whatsapp(request):
         request.session.pop("otp_locked_until", None)
         attempts = 0
 
-    if request.method == "GET" and is_existing_saloon and phone and not otp:
+    use_firebase_sms = firebase_phone_auth_enabled()
+
+    # With Firebase SMS, the owner taps "Send OTP" on the page; don't auto-send another code.
+    if request.method == "GET" and is_existing_saloon and phone and not otp and not use_firebase_sms:
         if Saloon.objects.filter(
             whatsapp_number=phone,
             is_whatsapp_verified=True,
@@ -863,43 +872,93 @@ def verify_whatsapp(request):
             messages.error(request, "This WhatsApp number is already verified by another salon.")
             return render_verify("phone")
 
-        is_new_vendor = False
-        if not saloon:
-            saloon = Saloon.objects.create(
-                owner=request.user,
-                whatsapp_number=phone,
-                is_whatsapp_verified=True,
-                registration_step=1,
-            )
-            is_new_vendor = True
-        else:
-            saloon.is_whatsapp_verified = True
-            saloon.save(update_fields=["is_whatsapp_verified"])
-
-        trusted = TrustedDevice.objects.create(user=request.user)
-
-        if is_new_vendor:
-            redirect_to = redirect("saloon_onboarding_step_one")
-        else:
-            redirect_to = redirect("saloon_dashboard", username=request.user.username)
-
-        redirect_to.set_cookie(
-            "salon_device",
-            str(trusted.device_token),
-            max_age=60 * 60 * 24 * 60,
-            httponly=True,
-            samesite="Lax",
-        )
-
-        for key in ["vendor_otp", "vendor_phone", "otp_attempts", "otp_locked_until", "vendor_otp_channel"]:
-            request.session.pop(key, None)
-
+        redirect_url, device_token = _complete_salon_verification(request, saloon, phone)
+        redirect_to = redirect(redirect_url)
+        _set_trusted_device_cookie(redirect_to, device_token)
         return redirect_to
 
     if otp and phone:
         return render_verify("otp")
 
     return render_verify("phone")
+
+
+def _complete_salon_verification(request, saloon, phone):
+    """Mark the number verified (creating the salon for new partners) and trust this device."""
+    is_new_vendor = False
+    if not saloon:
+        saloon = Saloon.objects.create(
+            owner=request.user,
+            whatsapp_number=phone,
+            is_whatsapp_verified=True,
+            registration_step=1,
+        )
+        is_new_vendor = True
+    else:
+        saloon.is_whatsapp_verified = True
+        saloon.save(update_fields=["is_whatsapp_verified"])
+
+    trusted = TrustedDevice.objects.create(user=request.user)
+
+    for key in ["vendor_otp", "vendor_phone", "otp_attempts", "otp_locked_until", "vendor_otp_channel"]:
+        request.session.pop(key, None)
+
+    if is_new_vendor:
+        redirect_url = reverse("saloon_onboarding_step_one")
+    else:
+        redirect_url = reverse("saloon_dashboard", kwargs={"username": request.user.username})
+    return redirect_url, str(trusted.device_token)
+
+
+def _set_trusted_device_cookie(response, device_token):
+    response.set_cookie(
+        "salon_device",
+        device_token,
+        max_age=60 * 60 * 24 * 60,
+        httponly=True,
+        samesite="Lax",
+    )
+
+
+@login_required
+@require_POST
+def verify_whatsapp_firebase(request):
+    """
+    Finish verification after Firebase sent the SMS code and the owner confirmed it.
+    The page posts Firebase's ID token; we verify it with Google before trusting it.
+    """
+    if not firebase_phone_auth_enabled():
+        return JsonResponse({"ok": False, "message": "SMS verification isn't available right now."}, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (ValueError, UnicodeDecodeError):
+        payload = {}
+
+    try:
+        verified_phone = verify_phone_id_token(payload.get("id_token", ""))
+    except FirebaseVerificationError as exc:
+        return JsonResponse({"ok": False, "message": str(exc)}, status=400)
+
+    saloon = Saloon.objects.filter(owner=request.user).first()
+    current_phone = format_whatsapp_number(saloon.whatsapp_number) if saloon and saloon.whatsapp_number else ""
+
+    if current_phone and verified_phone != current_phone:
+        return JsonResponse(
+            {"ok": False, "message": "The verified number doesn't match your salon's WhatsApp number."},
+            status=400,
+        )
+
+    if Saloon.objects.filter(
+        whatsapp_number=verified_phone,
+        is_whatsapp_verified=True,
+    ).exclude(owner=request.user).exists():
+        return JsonResponse({"ok": False, "message": "This number is already linked to another salon."}, status=400)
+
+    redirect_url, device_token = _complete_salon_verification(request, saloon, verified_phone)
+    response = JsonResponse({"ok": True, "redirect_url": redirect_url})
+    _set_trusted_device_cookie(response, device_token)
+    return response
 
 
 @login_required

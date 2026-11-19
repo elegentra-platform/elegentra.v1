@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -159,6 +159,144 @@ class WhatsAppCloudOtpTests(TestCase):
         self.assertGreater(len(codes), 150)
 
 
+FIREBASE_TEST_CONFIG = {
+    "apiKey": "test-api-key",
+    "authDomain": "elegentra-app.firebaseapp.com",
+    "projectId": "elegentra-app",
+    "appId": "1:123:web:abc",
+}
+
+
+@override_settings(FIREBASE_WEB_CONFIG=FIREBASE_TEST_CONFIG)
+class FirebaseSmsVerificationTests(TestCase):
+    """SMS codes sent by Firebase; the server only trusts a Google-verified ID token."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="fbowner", email="fb@example.com", password="pass12345")
+        self.saloon = Saloon.objects.create(
+            owner=self.user,
+            name="Firebase Salon",
+            whatsapp_number="+919074492286",
+            is_whatsapp_verified=False,
+            registration_step=5,
+        )
+        self.client.force_login(self.user)
+        self.page_url = reverse("verify_whatsapp")
+        self.url = reverse("verify_whatsapp_firebase")
+
+    def _post(self, token="token"):
+        import json
+
+        return self.client.post(self.url, data=json.dumps({"id_token": token}), content_type="application/json")
+
+    @patch("saloons.utils.send_otp_whatsapp")
+    def test_page_shows_firebase_sms_and_does_not_auto_send(self, send_otp_mock):
+        from django.core import mail
+
+        response = self.client.get(self.page_url)
+
+        self.assertEqual(response.context["step"], "phone")
+        self.assertContains(response, "firebasejs/13.2.0/firebase-auth.js")
+        self.assertContains(response, "Get the code by email instead")
+        send_otp_mock.assert_not_called()
+        self.assertEqual(len(mail.outbox), 0)
+
+    @patch("saloons.views.verify_phone_id_token", return_value="+919074492286")
+    def test_matching_verified_number_completes_verification(self, verify_mock):
+        response = self._post()
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["redirect_url"], reverse("saloon_dashboard", kwargs={"username": "fbowner"}))
+        self.assertIn("salon_device", response.cookies)
+        self.saloon.refresh_from_db()
+        self.assertTrue(self.saloon.is_whatsapp_verified)
+
+    @patch("saloons.views.verify_phone_id_token", return_value="+919000000001")
+    def test_different_verified_number_is_rejected(self, verify_mock):
+        response = self._post()
+
+        self.assertEqual(response.status_code, 400)
+        self.saloon.refresh_from_db()
+        self.assertFalse(self.saloon.is_whatsapp_verified)
+
+    @patch("saloons.views.verify_phone_id_token", return_value="+919111111111")
+    def test_new_partner_creates_salon_with_verified_number(self, verify_mock):
+        new_user = User.objects.create_user(username="newpartner", email="np@example.com", password="pass12345")
+        self.client.force_login(new_user)
+
+        response = self._post()
+
+        self.assertEqual(response.json()["redirect_url"], reverse("saloon_onboarding_step_one"))
+        salon = Saloon.objects.get(owner=new_user)
+        self.assertEqual(salon.whatsapp_number, "+919111111111")
+        self.assertTrue(salon.is_whatsapp_verified)
+
+    @patch("saloons.views.verify_phone_id_token", return_value="+919222222222")
+    def test_number_of_another_verified_salon_is_rejected(self, verify_mock):
+        other = User.objects.create_user(username="other", email="o@example.com", password="pass12345")
+        Saloon.objects.create(owner=other, name="Other", whatsapp_number="+919222222222", is_whatsapp_verified=True)
+        new_user = User.objects.create_user(username="taker", email="t@example.com", password="pass12345")
+        self.client.force_login(new_user)
+
+        response = self._post()
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Saloon.objects.filter(owner=new_user).exists())
+
+    def test_invalid_token_is_rejected(self):
+        from .firebase_auth import FirebaseVerificationError
+
+        with patch("saloons.views.verify_phone_id_token", side_effect=FirebaseVerificationError("bad token")):
+            response = self._post()
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["message"], "bad token")
+
+    @override_settings(FIREBASE_WEB_CONFIG={})
+    def test_disabled_when_not_configured(self):
+        response = self._post()
+        self.assertEqual(response.status_code, 400)
+
+    def _claims(self, **overrides):
+        import time
+
+        claims = {
+            "iss": "https://securetoken.google.com/elegentra-app",
+            "aud": "elegentra-app",
+            "auth_time": time.time() - 30,
+            "phone_number": "+919074492286",
+            "firebase": {"sign_in_provider": "phone"},
+        }
+        claims.update(overrides)
+        return claims
+
+    def test_token_verifier_accepts_fresh_phone_sign_in(self):
+        from .firebase_auth import verify_phone_id_token
+
+        with patch("google.oauth2.id_token.verify_firebase_token", return_value=self._claims()) as google_mock:
+            self.assertEqual(verify_phone_id_token("token"), "+919074492286")
+        self.assertEqual(google_mock.call_args.kwargs["audience"], "elegentra-app")
+
+    def test_token_verifier_rejects_old_wrong_provider_or_wrong_project(self):
+        import time
+
+        from .firebase_auth import FirebaseVerificationError, verify_phone_id_token
+
+        bad_claims = [
+            self._claims(auth_time=time.time() - 3600),
+            self._claims(firebase={"sign_in_provider": "password"}),
+            self._claims(iss="https://securetoken.google.com/someone-else"),
+            self._claims(phone_number=""),
+        ]
+        for claims in bad_claims:
+            with patch("google.oauth2.id_token.verify_firebase_token", return_value=claims):
+                with self.assertRaises(FirebaseVerificationError):
+                    verify_phone_id_token("token")
+
+
+@override_settings(FIREBASE_WEB_CONFIG={})
 class VerifyWhatsAppSecurityTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -178,14 +316,23 @@ class VerifyWhatsAppSecurityTests(TestCase):
 
     @patch("saloons.utils.send_otp_sms")
     @patch("saloons.utils.send_otp_whatsapp", side_effect=RuntimeError("template not available"))
-    def test_falls_back_to_sms_when_whatsapp_otp_unavailable(self, send_otp_mock, send_sms_mock):
+    def test_auto_fallback_skips_fast2sms(self, send_otp_mock, send_sms_mock):
         from django.core import mail
 
-        response = self.client.post(self.url, {"send_otp": "1"})
+        self.client.post(self.url, {"send_otp": "1"})
 
+        send_sms_mock.assert_not_called()
+        self.assertEqual(self.client.session["vendor_otp_channel"], "email")
+        self.assertEqual(len(mail.outbox), 1)
+
+    @patch("saloons.utils.send_otp_sms")
+    @patch("saloons.utils.send_otp_whatsapp")
+    def test_sms_mode_uses_fast2sms(self, send_otp_mock, send_sms_mock):
+        with patch.dict("os.environ", {"SALON_OTP_CHANNEL": "sms"}):
+            response = self.client.post(self.url, {"send_otp": "1"})
+
+        send_otp_mock.assert_not_called()
         send_sms_mock.assert_called_once_with(self.saloon.whatsapp_number, int(self.client.session["vendor_otp"]))
-        self.assertEqual(self.client.session["vendor_otp_channel"], "sms")
-        self.assertEqual(len(mail.outbox), 0)
         self.assertContains(response, "by SMS")
 
     @patch("saloons.utils.send_otp_sms", side_effect=RuntimeError("website verification pending"))

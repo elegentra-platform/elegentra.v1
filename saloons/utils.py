@@ -218,10 +218,12 @@ SALON_OTP_CHANNELS = {"auto", "whatsapp", "sms", "email"}
 
 def salon_otp_channel_setting() -> str:
     """
+    Server-sent codes (the fallback when the page's Firebase SMS isn't used).
+
     SALON_OTP_CHANNEL:
-      auto     - WhatsApp, then SMS, then email: the first one that works (default)
+      auto     - WhatsApp, then email: the first one that works (default)
       whatsapp - WhatsApp only
-      sms      - SMS only
+      sms      - Fast2SMS only (its cheap OTP route was discontinued; kept for DLT later)
       email    - email only
     """
     value = os.getenv("SALON_OTP_CHANNEL", "auto").strip().lower()
@@ -236,7 +238,7 @@ def send_salon_verification_code(phone_number: str, otp: int, email: str) -> str
         "sms": lambda: send_otp_sms(phone_number, otp),
         "email": lambda: send_otp_email(email, otp),
     }
-    order = ["whatsapp", "sms", "email"] if mode == "auto" else [mode]
+    order = ["whatsapp", "email"] if mode == "auto" else [mode]
 
     for position, channel in enumerate(order):
         try:

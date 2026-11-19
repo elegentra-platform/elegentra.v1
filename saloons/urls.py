@@ -37,6 +37,7 @@ urlpatterns = [
 
 
     path("verify-whatsapp/", views.verify_whatsapp, name="verify_whatsapp"),
+    path("verify-whatsapp/firebase/", views.verify_whatsapp_firebase, name="verify_whatsapp_firebase"),
     path("resolve-map-location/", views.resolve_map_location, name="resolve_map_location"),
     path("billing/razorpay/webhook/", dashboard_views.razorpay_subscription_webhook, name="razorpay_subscription_webhook"),
 

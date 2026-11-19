@@ -34,7 +34,65 @@
 
     <h2 class="mb-4 text-2xl font-bold sm:text-[1.9rem]">Verify WhatsApp</h2>
 
-    {% if step == "phone" %}
+    {% if step == "phone" and firebase_enabled %}
+      {# SMS code sent by Google (Firebase Phone Auth); email/WhatsApp is the fallback below. #}
+      <div id="fb-phone-step">
+        {% if is_existing_saloon %}
+          <div class="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-700 sm:text-[0.95rem]">
+            We will send a code by SMS to your WhatsApp number:
+            <strong>{{ masked_phone }}</strong>
+          </div>
+        {% else %}
+          <input
+            type="tel"
+            id="phone"
+            placeholder="WhatsApp number"
+            class="mb-4 h-12 w-full rounded-xl border px-4 text-base"
+            required
+          />
+        {% endif %}
+        <button type="button" id="fb-send" class="h-12 w-full rounded-xl bg-black text-base font-semibold text-white">
+          Send OTP
+        </button>
+      </div>
+
+      <div id="fb-code-step" style="display:none">
+        <p class="mb-3 text-sm leading-6 text-gray-600 sm:text-[0.95rem]">
+          We sent a 6-digit code by SMS to <strong id="fb-sent-to"></strong>
+        </p>
+        <input
+          type="text"
+          id="fb-code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          placeholder="Enter OTP"
+          class="mb-4 h-12 w-full rounded-xl border px-4 text-base"
+        />
+        <button type="button" id="fb-verify" class="mb-3 h-12 w-full rounded-xl bg-black text-base font-semibold text-white">
+          Verify
+        </button>
+        <button type="button" id="fb-resend" class="text-sm text-gray-500 hover:text-black disabled:text-gray-300 sm:text-[0.95rem]" disabled>
+          Resend code
+        </button>
+        <p id="fb-cooldown" class="text-xs text-gray-400 mt-2"></p>
+      </div>
+
+      <p id="fb-error" class="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-700" style="display:none"></p>
+      <div id="fb-recaptcha"></div>
+
+      <form method="post" id="fallback-form" class="mt-5">
+        {% csrf_token %}
+        {% if not is_existing_saloon %}<input type="hidden" name="phone" id="fallback-phone">{% endif %}
+        <button name="send_otp" class="text-sm text-gray-500 underline hover:text-black sm:text-[0.95rem]">
+          Didn't get the SMS? Get the code by email instead
+        </button>
+      </form>
+
+      {{ firebase_config|json_script:"firebase-config" }}
+      {{ existing_phone|json_script:"existing-phone" }}
+      <span id="firebase-verify-url" data-url="{% url 'verify_whatsapp_firebase' %}" hidden></span>
+    {% elif step == "phone" %}
       <form method="post" id="phone-form">
         {% csrf_token %}
 
@@ -132,11 +190,153 @@
         "https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js",
     });
 
-    document
-      .querySelector("#phone-form")
-      .addEventListener("submit", function () {
+    window.elegentraPhoneInput = iti;
+
+    const phoneForm = document.querySelector("#phone-form");
+    if (phoneForm) {
+      phoneForm.addEventListener("submit", function () {
         phoneInput.value = iti.getNumber(); // E.164
       });
+    }
+
+    const fallbackForm = document.querySelector("#fallback-form");
+    if (fallbackForm) {
+      fallbackForm.addEventListener("submit", function (event) {
+        const number = iti.getNumber();
+        if (!number) {
+          event.preventDefault();
+          alert("Enter your WhatsApp number first.");
+          return;
+        }
+        document.querySelector("#fallback-phone").value = number;
+      });
+    }
+  </script>
+  {% endif %}
+
+  {% if step == "phone" and firebase_enabled %}
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+    import {
+      getAuth,
+      RecaptchaVerifier,
+      signInWithPhoneNumber,
+      signOut,
+    } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+
+    const config = JSON.parse(document.getElementById("firebase-config").textContent);
+    const existingPhone = JSON.parse(document.getElementById("existing-phone").textContent);
+    const verifyUrl = document.getElementById("firebase-verify-url").dataset.url;
+    const csrfToken = document.querySelector("#fallback-form [name=csrfmiddlewaretoken]").value;
+
+    const auth = getAuth(initializeApp(config));
+    auth.languageCode = "en";
+
+    const el = (id) => document.getElementById(id);
+    const sendBtn = el("fb-send");
+    const verifyBtn = el("fb-verify");
+    const resendBtn = el("fb-resend");
+    let confirmation = null;
+    let verifier = null;
+    let phoneNumber = "";
+
+    const messages = {
+      "auth/invalid-phone-number": "That phone number doesn't look right. Check the number and country code.",
+      "auth/missing-phone-number": "Enter your WhatsApp number first.",
+      "auth/too-many-requests": "Too many attempts. Please wait a few minutes, or get the code by email below.",
+      "auth/quota-exceeded": "SMS is busy right now. Please get the code by email below.",
+      "auth/invalid-verification-code": "That code is wrong. Check the SMS and try again.",
+      "auth/code-expired": "That code has expired. Tap \"Resend code\".",
+      "auth/captcha-check-failed": "Security check failed. Please reload the page and try again.",
+      "auth/operation-not-allowed": "SMS codes aren't available for this number. Please get the code by email below.",
+    };
+
+    function showError(error) {
+      const box = el("fb-error");
+      box.textContent = (error && messages[error.code]) || (error && error.message) || "Something went wrong. Please try again.";
+      box.style.display = "block";
+    }
+    function clearError() { el("fb-error").style.display = "none"; }
+
+    function freshVerifier() {
+      if (verifier) { try { verifier.clear(); } catch (e) {} }
+      const holder = el("fb-recaptcha");
+      holder.innerHTML = "";
+      const box = document.createElement("div");
+      holder.appendChild(box);
+      verifier = new RecaptchaVerifier(auth, box, { size: "invisible" });
+      return verifier;
+    }
+
+    function startCooldown(seconds) {
+      resendBtn.disabled = true;
+      let left = seconds;
+      el("fb-cooldown").textContent = `Resend available in ${left}s`;
+      const timer = setInterval(() => {
+        left -= 1;
+        el("fb-cooldown").textContent = left > 0 ? `Resend available in ${left}s` : "Didn't receive it? You can resend now.";
+        if (left <= 0) { clearInterval(timer); resendBtn.disabled = false; }
+      }, 1000);
+    }
+
+    async function sendCode() {
+      clearError();
+      phoneNumber = existingPhone || (window.elegentraPhoneInput ? window.elegentraPhoneInput.getNumber() : "");
+      if (!phoneNumber || !phoneNumber.startsWith("+")) {
+        showError({ code: "auth/missing-phone-number" });
+        return;
+      }
+      sendBtn.disabled = true;
+      resendBtn.disabled = true;
+      sendBtn.textContent = "Sending...";
+      try {
+        confirmation = await signInWithPhoneNumber(auth, phoneNumber, freshVerifier());
+        el("fb-sent-to").textContent = phoneNumber.slice(0, -4).replace(/\d/g, "*") + phoneNumber.slice(-4);
+        el("fb-phone-step").style.display = "none";
+        el("fb-code-step").style.display = "block";
+        el("fb-code").focus();
+        startCooldown(30);
+      } catch (error) {
+        showError(error);
+        resendBtn.disabled = false;
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send OTP";
+      }
+    }
+
+    async function verifyCode() {
+      clearError();
+      const code = el("fb-code").value.trim();
+      if (!/^\d{6}$/.test(code)) {
+        showError({ message: "Enter the 6-digit code from the SMS." });
+        return;
+      }
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = "Verifying...";
+      try {
+        const result = await confirmation.confirm(code);
+        const idToken = await result.user.getIdToken();
+        const response = await fetch(verifyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+          body: JSON.stringify({ id_token: idToken }),
+        });
+        const data = await response.json();
+        await signOut(auth); // Elegentra keeps its own login; the Firebase session isn't needed.
+        if (!data.ok) throw new Error(data.message || "We couldn't verify the code.");
+        window.location.href = data.redirect_url;
+      } catch (error) {
+        showError(error);
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = "Verify";
+      }
+    }
+
+    sendBtn.addEventListener("click", sendCode);
+    resendBtn.addEventListener("click", sendCode);
+    verifyBtn.addEventListener("click", verifyCode);
+    el("fb-code").addEventListener("keydown", (event) => { if (event.key === "Enter") verifyCode(); });
   </script>
   {% endif %}
 

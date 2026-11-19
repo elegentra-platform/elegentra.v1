@@ -290,6 +290,18 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", f'Elegentra <{EMAIL_HOST_US
 
 
 # ==================================================
+# FIREBASE PHONE AUTH (SMS verification codes sent by Google)
+# These web-config values are public by design (they ship in the page).
+# Phone sign-in is used only when apiKey and projectId are set.
+# ==================================================
+FIREBASE_WEB_CONFIG = {
+    "apiKey": os.getenv("FIREBASE_API_KEY", "").strip(),
+    "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "").strip(),
+    "projectId": os.getenv("FIREBASE_PROJECT_ID", "").strip(),
+    "appId": os.getenv("FIREBASE_APP_ID", "").strip(),
+}
+
+# ==================================================
 # LOGGING (shows up in Railway → service → Logs)
 # ==================================================
 LOGGING = {
