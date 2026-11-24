@@ -1987,6 +1987,14 @@ def dashboard_settings(request, username):
     subscription, _ = _get_or_create_saloon_subscription(saloon)
     access = _subscription_access_context(subscription)
     profile, _ = SaloonProfile.objects.get_or_create(saloon=saloon)
+    if request.method == "POST" and request.POST.get("form") == "monthly_report":
+        profile.monthly_report_enabled = request.POST.get("monthly_report_enabled") == "1"
+        profile.save(update_fields=["monthly_report_enabled"])
+        if profile.monthly_report_enabled:
+            messages.success(request, "Monthly WhatsApp report turned on.")
+        else:
+            messages.success(request, "Monthly WhatsApp report turned off.")
+        return redirect("saloon_dashboard_settings", username=saloon.owner.username)
     if request.method == "POST":
         profile.whatsapp_prefill_template = request.POST.get("whatsapp_prefill_template", "").strip()
         profile.save()

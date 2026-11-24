@@ -1,7 +1,9 @@
-from datetime import timedelta
+﻿from datetime import date, datetime, timedelta
+from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -601,3 +603,192 @@ class DashboardMetricsCutoffTests(TestCase):
 
         self.assertEqual(metrics["whatsapp_click_total"], 1)
         self.assertEqual(metrics["phone_click_total"], 0)
+
+
+class MonthlyReportTests(TestCase):
+    """Monthly WhatsApp report: wording, template choice, sending and opt-out."""
+
+    def setUp(self):
+        from plans.billing import get_or_create_saloon_subscription
+
+        self.report_date = date(2026, 12, 29)
+        self.owner = User.objects.create_user(
+            username="glowsalon", email="g@example.com", password="pass12345", first_name="Rahul"
+        )
+        self.saloon = Saloon.objects.create(
+            owner=self.owner,
+            name="Glow Salon",
+            whatsapp_number="+919800000002",
+            is_whatsapp_verified=True,
+            is_active=True,
+            approval_status=Saloon.APPROVAL_APPROVED,
+        )
+        SaloonProfile.objects.get_or_create(saloon=self.saloon)
+        subscription, _ = get_or_create_saloon_subscription(self.saloon)
+        SaloonSubscription.objects.filter(pk=subscription.pk).update(
+            trial_assigned_at=timezone.now() - timedelta(days=60),
+            trial_ends_at=timezone.now() + timedelta(days=60),
+        )
+
+    def _events(self, model, count, when, **fields):
+        for _ in range(count):
+            obj = model.objects.create(saloon=self.saloon, **fields)
+            model.objects.filter(pk=obj.pk).update(created_at=when)
+
+    def _at(self, month, day):
+        return timezone.make_aware(datetime(2026, month, day, 12, 0))
+
+    def test_wording(self):
+        from . import monthly_report as r
+
+        self.assertEqual(r.visitors_text(0), "No one")
+        self.assertEqual(r.visitors_text(1), "1 person")
+        self.assertEqual(r.visitors_text(4), "4 people")
+        self.assertEqual(r.enquiries_text(1), "1 WhatsApp enquiry")
+        self.assertEqual(r.enquiries_text(0), "No WhatsApp enquiries")
+        self.assertEqual(r.calls_text(1), "1 call")
+        self.assertEqual(r.customers_text(0), "No customers")
+        self.assertEqual(r.comparison_text(124, 154), "+30 visits (124 → 154)")
+        self.assertEqual(r.comparison_text(108, 96), "−12 visits (108 → 96)")
+        self.assertEqual(r.comparison_text(120, 120), "no change (120 → 120)")
+        self.assertEqual(r.comparison_text(3, 4), "+1 visit (3 → 4)")
+
+    def test_review_and_service_text(self):
+        from . import monthly_report as r
+
+        self.assertEqual(r.reviews_text(r.SalonStats()), "No new reviews this month")
+        self.assertEqual(
+            r.reviews_text(r.SalonStats(new_reviews=1, average_rating=5.0)), "1 new review · 5★"
+        )
+        self.assertEqual(
+            r.reviews_text(r.SalonStats(new_reviews=3, average_rating=4.6667)),
+            "3 new reviews · 4.7★ average",
+        )
+        self.assertEqual(r.top_service_text(r.SalonStats()), "No service interest yet")
+        self.assertEqual(
+            r.top_service_text(r.SalonStats(top_service="Bridal makeup", top_service_interest=21)),
+            "Bridal makeup · 21 people interested",
+        )
+
+    def test_period_compares_same_days(self):
+        from . import monthly_report as r
+
+        period = r.report_period(self.report_date)
+        self.assertEqual(period.key, "2026-12")
+        self.assertEqual(period.label, "December")
+        self.assertEqual(period.previous_label, "November")
+        self.assertEqual(timezone.localtime(period.end).day, 29)  # 1st-28th, end is exclusive
+        self.assertEqual(timezone.localtime(period.previous_end).day, 29)
+        march = r.report_period(date(2027, 3, 29))
+        self.assertEqual(timezone.localtime(march.previous_end).month, 3)  # all of Feb
+        self.assertTrue(r.is_report_day(date(2027, 2, 28)))
+        self.assertFalse(r.is_report_day(date(2026, 12, 28)))
+
+    def test_counts_only_this_period(self):
+        from . import monthly_report as r
+        from .models import SaloonContactClick
+
+        self._events(SaloonProfileView, 5, self._at(12, 10))
+        self._events(SaloonProfileView, 2, self._at(12, 29))  # report day itself: not counted
+        self._events(SaloonProfileView, 3, self._at(11, 15))  # previous month
+        self._events(SaloonProfileView, 4, self._at(11, 30))  # outside Nov 1-28
+        self._events(SaloonMapClick, 2, self._at(12, 3))
+        self._events(SaloonContactClick, 1, self._at(12, 4), kind=SaloonContactClick.WHATSAPP)
+        self._events(SaloonContactClick, 2, self._at(12, 4), kind=SaloonContactClick.CALL)
+
+        stats = r.collect_stats(self.saloon, r.report_period(self.report_date))
+        self.assertEqual((stats.visits, stats.previous_visits), (5, 3))
+        self.assertEqual((stats.location_checks, stats.whatsapp, stats.calls), (2, 1, 2))
+
+    def test_template_choice(self):
+        from . import monthly_report as r
+        from .models import SaloonMonthlyReport
+
+        self.assertEqual(r.choose_template(self.saloon, r.SalonStats(visits=1)), r.TEMPLATE_FIRST_MONTH)
+        SaloonMonthlyReport.objects.create(
+            saloon=self.saloon, period="2026-11", template_name=r.TEMPLATE_FIRST_MONTH,
+            status=SaloonMonthlyReport.STATUS_SENT,
+        )
+
+        def choose(prev, cur):
+            return r.choose_template(self.saloon, r.SalonStats(visits=cur, previous_visits=prev))
+
+        self.assertEqual(choose(100, 84), r.TEMPLATE_DOWN)  # 16% drop
+        self.assertEqual(choose(100, 85), r.TEMPLATE_UP)    # exactly 15%: not quieter
+        self.assertEqual(choose(10, 2), r.TEMPLATE_UP)      # small numbers never "quieter"
+        self.assertEqual(choose(20, 16), r.TEMPLATE_DOWN)
+        self.assertEqual(choose(50, 80), r.TEMPLATE_UP)
+
+    @patch("saloons.monthly_report.send_whatsapp_template", return_value="wamid.TEST")
+    def test_send_records_and_is_sent_once(self, send):
+        from .models import SaloonMonthlyReport
+
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+
+        self.assertEqual(send.call_count, 1)
+        phone, template, language, components = send.call_args.args
+        self.assertEqual(phone, "+919800000002")
+        self.assertEqual(template, "elegentra_first_month_report")
+        body = components[0]["parameters"]
+        self.assertEqual(len(body), 10)
+        self.assertEqual(body[0]["text"], "Rahul")
+        self.assertEqual(body[3]["text"], "No one")
+        self.assertEqual(components[1]["parameters"][0]["text"], "glowsalon")
+        report = SaloonMonthlyReport.objects.get(saloon=self.saloon)
+        self.assertEqual((report.period, report.status, report.message_id), ("2026-12", "sent", "wamid.TEST"))
+
+    @patch("saloons.monthly_report.send_whatsapp_template", return_value="wamid.TEST")
+    def test_not_sent_on_other_days_or_when_turned_off(self, send):
+        call_command("send_monthly_reports", date="2026-12-20", stdout=StringIO())
+        self.assertEqual(send.call_count, 0)
+
+        self.saloon.profile.monthly_report_enabled = False
+        self.saloon.profile.save()
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        self.assertEqual(send.call_count, 0)
+
+    @patch("saloons.monthly_report.send_whatsapp_template", return_value="wamid.TEST")
+    def test_skips_test_unverified_and_new_salons(self, send):
+        Saloon.objects.filter(pk=self.saloon.pk).update(is_test_saloon=True)
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        Saloon.objects.filter(pk=self.saloon.pk).update(is_test_saloon=False, is_whatsapp_verified=False)
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        Saloon.objects.filter(pk=self.saloon.pk).update(is_whatsapp_verified=True)
+        SaloonSubscription.objects.filter(saloon=self.saloon).update(trial_assigned_at=self._at(12, 26))
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        self.assertEqual(send.call_count, 0)
+
+    @patch("saloons.monthly_report.send_whatsapp_template", side_effect=RuntimeError("boom"))
+    def test_failure_is_recorded_and_retried(self, send):
+        from .models import SaloonMonthlyReport
+
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO(), stderr=StringIO())
+        self.assertEqual(SaloonMonthlyReport.objects.get(saloon=self.saloon).status, "failed")
+        send.side_effect = None
+        send.return_value = "wamid.OK"
+        call_command("send_monthly_reports", date="2026-12-29", stdout=StringIO())
+        self.assertEqual(SaloonMonthlyReport.objects.get(saloon=self.saloon).status, "sent")
+
+    @patch("saloons.monthly_report.send_whatsapp_template", return_value="wamid.PREVIEW")
+    def test_preview_is_not_recorded(self, send):
+        from .models import SaloonMonthlyReport
+
+        call_command(
+            "send_monthly_reports", date="2026-12-20", only_saloon=self.saloon.pk, to="9876543210",
+            stdout=StringIO(),
+        )
+        self.assertEqual(send.call_args.args[0], "+919876543210")
+        self.assertFalse(SaloonMonthlyReport.objects.exists())
+
+    def test_settings_toggle(self):
+        device = TrustedDevice.objects.create(user=self.owner)
+        self.client.force_login(self.owner)
+        self.client.cookies["salon_device"] = str(device.device_token)
+        url = reverse("saloon_dashboard_settings", kwargs={"username": "glowsalon"})
+        self.client.post(url, {"form": "monthly_report"})
+        self.saloon.profile.refresh_from_db()
+        self.assertFalse(self.saloon.profile.monthly_report_enabled)
+        self.client.post(url, {"form": "monthly_report", "monthly_report_enabled": "1"})
+        self.saloon.profile.refresh_from_db()
+        self.assertTrue(self.saloon.profile.monthly_report_enabled)

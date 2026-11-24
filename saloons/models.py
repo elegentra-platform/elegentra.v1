@@ -206,6 +206,10 @@ class SaloonProfile(models.Model):
         blank=True,
         help_text="Optional WhatsApp message template. Use {salon_name} and {services} placeholders.",
     )
+    monthly_report_enabled = models.BooleanField(
+        default=True,
+        help_text="Send the monthly performance summary to the salon's WhatsApp.",
+    )
 
     opening_time = models.TimeField(null=True, blank=True)
     closing_time = models.TimeField(null=True, blank=True)
@@ -581,3 +585,29 @@ class ApprovedSaloon(Saloon):
 
 
 
+
+
+class SaloonMonthlyReport(models.Model):
+    """One monthly WhatsApp summary per salon per month (prevents duplicates)."""
+
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [(STATUS_SENT, "Sent"), (STATUS_FAILED, "Failed")]
+
+    saloon = models.ForeignKey(Saloon, on_delete=models.CASCADE, related_name="monthly_reports")
+    period = models.CharField(max_length=7, help_text="Report month as YYYY-MM")
+    template_name = models.CharField(max_length=80)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES)
+    message_id = models.CharField(max_length=120, blank=True)
+    error = models.TextField(blank=True)
+    stats = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["saloon", "period"], name="unique_saloon_monthly_report"),
+        ]
+
+    def __str__(self):
+        return f"{self.saloon} {self.period} ({self.status})"

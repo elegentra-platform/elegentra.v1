@@ -32,6 +32,34 @@
     </form>
   </div>
 
+  <div class="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+    <h2 class="text-sm font-semibold text-gray-900 mb-2">Monthly WhatsApp report</h2>
+    <p class="text-sm text-gray-500 mb-4">
+      Once a month we send a short summary of your salon page on WhatsApp: visits,
+      location checks, enquiries, saves and new reviews.
+    </p>
+    <form method="post" action="{% url 'saloon_dashboard_settings' username=saloon.owner.username %}">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="monthly_report">
+      <label class="flex items-center gap-3 text-sm text-gray-700">
+        <input
+          type="checkbox"
+          name="monthly_report_enabled"
+          value="1"
+          class="h-4 w-4 rounded border-gray-300"
+          {% if profile.monthly_report_enabled %}checked{% endif %}
+        >
+        Send me the monthly report
+      </label>
+      <button
+        type="submit"
+        class="mt-4 bg-blue-500 text-white px-5 h-10 rounded-xl text-sm font-semibold"
+      >
+        Save
+      </button>
+    </form>
+  </div>
+
   <div class="bg-white rounded-2xl border border-gray-100 p-4">
     <h2 class="text-sm font-semibold text-gray-900 mb-2">Account</h2>
     <p class="text-sm text-gray-500 mb-4">Sign out from your account on this device.</p>

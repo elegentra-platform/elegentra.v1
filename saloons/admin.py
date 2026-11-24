@@ -8,6 +8,7 @@ from .models import (
     SaloonVerification,
     SaloonRejectionReason,
     TrustedDevice,
+    SaloonMonthlyReport,
 )
 
 from services.models import Service
@@ -240,3 +241,15 @@ class TrustedDeviceAdmin(admin.ModelAdmin):
         "created_at",
         "last_used_at",
     )
+
+
+# ==================================================
+# MONTHLY WHATSAPP REPORTS
+# ==================================================
+
+@admin.register(SaloonMonthlyReport)
+class SaloonMonthlyReportAdmin(admin.ModelAdmin):
+    list_display = ("saloon", "period", "template_name", "status", "created_at")
+    list_filter = ("status", "template_name", "period")
+    search_fields = ("saloon__name", "saloon__owner__username")
+    readonly_fields = ("saloon", "period", "template_name", "status", "message_id", "error", "stats", "created_at")
