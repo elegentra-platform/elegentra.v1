@@ -1,11 +1,10 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 from unittest.mock import patch
 
 from allauth.account.models import EmailAddress
 from allauth.socialaccount import app_settings as social_settings
 from django.contrib.auth import get_user_model
-from django.core import mail
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from .adapters import CustomSocialAccountAdapter
@@ -50,54 +49,98 @@ class GoogleLoginEmailVerificationTests(TestCase):
         self.assertFalse(EmailAddress.objects.get(user=user, email="old2@example.com").verified)
 
 
-class EmailSignupCodeVerificationTests(TestCase):
-    """Email + password sign-ups confirm with a 6-digit code typed on the page."""
+GOOGLE_TEST_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "APPS": [{"client_id": "test-client-id.apps.googleusercontent.com", "secret": "s", "key": ""}],
+    }
+}
 
-    def setUp(self):
-        # allauth rate-limits confirmation emails (kept in the cache); start each test clean.
-        from django.core.cache import cache
 
-        cache.clear()
+@override_settings(SOCIALACCOUNT_PROVIDERS=GOOGLE_TEST_PROVIDERS)
+class GoogleOnlyLoginTests(TestCase):
+    """Google is the only way in: no passwords, no sign-up form, plus One Tap."""
 
-    def _signup(self):
-        return self.client.post(
-            reverse("account_signup"),
-            {"email": "newcustomer@example.com", "password1": "Strong-pass-9137", "password2": "Strong-pass-9137"},
+    def test_login_page_has_google_only(self):
+        response = self.client.get(reverse("account_login") + "?next=/favorites/")
+        self.assertContains(response, "Continue with Google")
+        self.assertContains(response, "googleOneTapForm")  # One Tap popup is set up
+        self.assertContains(response, "accounts.google.com/gsi/client")
+        self.assertNotContains(response, 'type="password"')
+        self.assertNotContains(response, "Forgot password")
+
+    def test_password_login_is_refused(self):
+        User.objects.create_user(username="pw", email="pw@example.com", password="pass12345")
+        response = self.client.post(reverse("account_login"), {"login": "pw@example.com", "password": "pass12345"})
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_signup_link_goes_to_login(self):
+        response = self.client.get(reverse("account_signup") + "?next=/saloons/partner/")
+        self.assertRedirects(
+            response, reverse("account_login") + "?next=/saloons/partner/", fetch_redirect_response=False
         )
 
-    def _code_from_email(self):
-        import re
+    def test_one_tap_logs_in_and_returns_to_page(self):
+        identity = {
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id.apps.googleusercontent.com",
+            "sub": "1234567890",
+            "email": "onetap@gmail.com",
+            "email_verified": True,
+            "name": "One Tap",
+            "given_name": "One",
+            "family_name": "Tap",
+        }
+        with patch("allauth.socialaccount.providers.google.views._verify_and_decode", return_value=identity):
+            response = self.client.post(
+                reverse("google_one_tap"), {"credential": "fake.jwt.token", "next": "/salon/glow/"}
+            )
 
-        match = re.search(r"\b(\d{6})\b", mail.outbox[-1].body)
-        self.assertIsNotNone(match, "email should contain a 6-digit code")
-        return match.group(1)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/salon/glow/")
+        user = User.objects.get(email="onetap@gmail.com")
+        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
 
-    def test_signup_emails_a_numeric_code_and_shows_code_page(self):
-        response = self._signup()
+    def test_one_tap_links_existing_account_with_same_email(self):
+        existing = User.objects.create_user(username="old3", email="old3@gmail.com", password="pass12345")
+        identity = {
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id.apps.googleusercontent.com",
+            "sub": "999",
+            "email": "old3@gmail.com",
+            "email_verified": True,
+        }
+        with patch("allauth.socialaccount.providers.google.views._verify_and_decode", return_value=identity):
+            self.client.post(reverse("google_one_tap"), {"credential": "fake.jwt.token"})
 
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "Your Elegentra verification code")
-        self.assertIn("newcustomer@example.com", mail.outbox[0].to)
-        self._code_from_email()
-        self.assertNotIn("Localhost", mail.outbox[0].body)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), existing.pk)
+        self.assertEqual(User.objects.filter(email__iexact="old3@gmail.com").count(), 1)
 
-        page = self.client.get(response.url) if response.status_code == 302 else response
-        self.assertContains(page, "Enter 6-digit code")
-        self.assertFalse(EmailAddress.objects.get(email="newcustomer@example.com").verified)
+    def test_one_tap_rejects_bad_token(self):
+        from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 
-    def test_correct_code_verifies_email(self):
-        self._signup()
-        code = self._code_from_email()
+        with patch(
+            "allauth.socialaccount.providers.google.views._verify_and_decode", side_effect=OAuth2Error("bad")
+        ):
+            response = self.client.post(reverse("google_one_tap"), {"credential": "forged"})
 
-        self.client.post(reverse("account_email_verification_sent"), {"code": code})
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertNotEqual(response.status_code, 302)
 
-        self.assertTrue(EmailAddress.objects.get(email="newcustomer@example.com").verified)
+    def test_one_tap_ignores_outside_redirects(self):
+        identity = {
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id.apps.googleusercontent.com",
+            "sub": "555",
+            "email": "safe@gmail.com",
+            "email_verified": True,
+        }
+        with patch("allauth.socialaccount.providers.google.views._verify_and_decode", return_value=identity):
+            response = self.client.post(
+                reverse("google_one_tap"), {"credential": "t", "next": "https://evil.example.com/"}
+            )
+        self.assertNotIn("evil.example.com", response.url)
 
-    def test_wrong_code_does_not_verify(self):
-        self._signup()
-        code = self._code_from_email()
-        wrong = "000000" if code != "000000" else "111111"
-
-        self.client.post(reverse("account_email_verification_sent"), {"code": wrong})
-
-        self.assertFalse(EmailAddress.objects.get(email="newcustomer@example.com").verified)
+    def test_one_tap_get_not_allowed(self):
+        self.assertEqual(self.client.get(reverse("google_one_tap")).status_code, 405)

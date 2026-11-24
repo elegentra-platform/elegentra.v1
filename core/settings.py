@@ -164,26 +164,17 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.getenv(
 # ==================================================
 # DJANGO-ALLAUTH
 # ==================================================
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-# Email + password sign-ups confirm with a 6-digit code typed on the page (like an OTP),
-# not a link. Codes expire after 10 minutes.
-ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
-ACCOUNT_EMAIL_VERIFICATION_BY_CODE_TIMEOUT = 10 * 60
-ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'
-# Subjects are written in full in our templates (default prefix would be "[Localhost] ").
-ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+# Google is the only way to log in or sign up: no email + password, no
+# password resets, no confirmation emails. (Django admin keeps its own login.)
+SOCIALACCOUNT_ONLY = True
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_PREVENT_ENUMERATION = False
 
-# Google has already verified the address, so social logins never need our
-# confirmation email. Email + password sign-ups still do (ACCOUNT_EMAIL_VERIFICATION).
+# Google has already verified the address, so no confirmation email is needed.
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_QUERY_EMAIL = True

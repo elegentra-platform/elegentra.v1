@@ -1,0 +1,62 @@
+{% comment %}
+Google One Tap: the small "Continue as …" box Google shows at the top right
+(bottom sheet on phones). Nothing appears on its own: a page calls
+window.elegentraGoogleOneTap(nextUrl) when it wants it. Only rendered for
+visitors who aren't logged in.
+{% endcomment %}
+{% if google_oauth_enabled and google_client_id and not user.is_authenticated %}
+<form id="googleOneTapForm" method="post" action="{% url 'google_one_tap' %}" hidden>
+  {% csrf_token %}
+  <input type="hidden" name="credential" value="">
+  <input type="hidden" name="next" value="">
+</form>
+<script>
+  (function () {
+    var form = document.getElementById("googleOneTapForm");
+    var initialised = false;
+    var queuedNext = null;
+
+    function libraryReady() {
+      return window.google && google.accounts && google.accounts.id;
+    }
+
+    function show(nextUrl) {
+      form.elements.next.value = nextUrl || window.location.pathname;
+      if (!initialised) {
+        google.accounts.id.initialize({
+          client_id: "{{ google_client_id|escapejs }}",
+          callback: function (response) {
+            if (!response || !response.credential) return;
+            form.elements.credential.value = response.credential;
+            form.submit();
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin",
+          itp_support: true,
+          use_fedcm_for_prompt: true
+        });
+        initialised = true;
+      }
+      google.accounts.id.prompt();
+    }
+
+    window.elegentraGoogleOneTap = function (nextUrl) {
+      if (libraryReady()) {
+        show(nextUrl);
+      } else {
+        queuedNext = nextUrl || window.location.pathname;
+      }
+    };
+
+    window.onGoogleLibraryLoad = function () {
+      if (queuedNext !== null) {
+        var nextUrl = queuedNext;
+        queuedNext = null;
+        show(nextUrl);
+      }
+    };
+  })();
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+{% endif %}

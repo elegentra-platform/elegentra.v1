@@ -1,4 +1,5 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
+{% load socialaccount %}
 
 {% block title %}{{ seo.title|default:display_name }}{% endblock %}
 {% block main_class %}max-w-none px-0 pb-28 md:pb-24{% endblock %}
@@ -890,21 +891,24 @@
   </section>
 {% endif %}
 
+{% include "account/_google_one_tap.html" %}
+
 <div id="reviewLoginPrompt" class="pointer-events-none fixed inset-0 z-[80] hidden bg-black/35 opacity-0 transition">
   <div class="flex min-h-screen items-center justify-center px-4">
     <div class="w-full max-w-sm rounded-[1.4rem] bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="text-lg font-semibold text-[#1f1a15]">Login To Add Review</p>
-          <p class="mt-1 text-sm text-[#6a6a6a]">Please log in first to rate this salon and share your review.</p>
+          <p id="loginPromptTitle" class="text-lg font-semibold text-[#1f1a15]">Log in to add a review</p>
+          <p id="loginPromptText" class="mt-1 text-sm text-[#6a6a6a]">Log in with Google to rate this salon and share your review.</p>
         </div>
         <button type="button" id="reviewLoginPromptClose" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e7dac8] text-[#6a6a6a]">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div class="mt-5 flex gap-3">
-        <a id="reviewLoginPromptAction" href="{% url 'account_login' %}?next={{ request.path|urlencode }}#about" class="inline-flex h-11 flex-1 items-center justify-center rounded-[0.95rem] bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a88038]">
-          Log In
+        <a id="reviewLoginPromptAction" href="{% provider_login_url 'google' next=request.path %}" data-review-href="{% provider_login_url 'google' next=request.path|add:'#about' %}" data-save-href="{% provider_login_url 'google' next=request.path %}" class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[0.95rem] bg-[#b89247] px-5 text-sm font-semibold text-white transition hover:bg-[#a88038]">
+          <i class="fa-brands fa-google"></i>
+          Continue with Google
         </a>
         <button type="button" id="reviewLoginPromptCancel" class="inline-flex h-11 items-center justify-center rounded-[0.95rem] border border-[#e7dac8] px-5 text-sm font-semibold text-[#5a5a5a]">
           Cancel
@@ -996,8 +1000,31 @@
     const loginPromptClose = document.getElementById("reviewLoginPromptClose");
     const loginPromptCancel = document.getElementById("reviewLoginPromptCancel");
 
-    window.openLoginPrompt = function () {
+    const loginPromptTitle = document.getElementById("loginPromptTitle");
+    const loginPromptText = document.getElementById("loginPromptText");
+    const loginPromptAction = document.getElementById("reviewLoginPromptAction");
+    const loginPromptCopy = {
+      review: {
+        title: "Log in to add a review",
+        text: "Log in with Google to rate this salon and share your review.",
+        next: "{{ request.path|escapejs }}#about"
+      },
+      save: {
+        title: "Log in to save this salon",
+        text: "Log in with Google to keep your favourite salons in one place.",
+        next: "{{ request.path|escapejs }}"
+      }
+    };
+
+    window.openLoginPrompt = function (kind) {
       if (!loginPrompt) return;
+      const copy = loginPromptCopy[kind] || loginPromptCopy.review;
+      if (loginPromptTitle) loginPromptTitle.textContent = copy.title;
+      if (loginPromptText) loginPromptText.textContent = copy.text;
+      if (loginPromptAction) {
+        loginPromptAction.href = kind === "save" ? loginPromptAction.dataset.saveHref : loginPromptAction.dataset.reviewHref;
+      }
+      if (window.elegentraGoogleOneTap) window.elegentraGoogleOneTap(copy.next);
       loginPrompt.classList.remove("hidden", "pointer-events-none", "opacity-0");
       requestAnimationFrame(function () {
         loginPrompt.classList.add("opacity-100");
@@ -1083,7 +1110,11 @@
     favoriteButtons.forEach(function (button) {
       button.addEventListener("click", function () {
         if (!{{ user.is_authenticated|yesno:"true,false" }}) {
-          window.location.href = button.dataset.loginUrl;
+          if (window.openLoginPrompt) {
+            window.openLoginPrompt("save");
+          } else {
+            window.location.href = button.dataset.loginUrl;
+          }
           return;
         }
 

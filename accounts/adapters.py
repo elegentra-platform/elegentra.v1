@@ -1,18 +1,9 @@
-import secrets
-
-from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.account.utils import user_email
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-
-
-class CustomAccountAdapter(DefaultAccountAdapter):
-    def generate_email_verification_code(self) -> str:
-        """6-digit numeric code, like the salon OTP (allauth's default mixes letters)."""
-        return f"{secrets.randbelow(10**6):06d}"
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):

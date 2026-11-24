@@ -1,4 +1,4 @@
-﻿from django.conf import settings
+from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
 
 from allauth.socialaccount.models import SocialApp
@@ -12,10 +12,15 @@ def google_oauth_enabled(request):
         .get("google", {})
         .get("APPS", [])
     )
-    enabled = bool(settings_apps) or SocialApp.objects.filter(provider="google", sites=site).exists()
+    google_client_id = next((app.get("client_id") for app in settings_apps if app.get("client_id")), "")
+    if not google_client_id:
+        db_app = SocialApp.objects.filter(provider="google", sites=site).only("client_id").first()
+        google_client_id = db_app.client_id if db_app else ""
+    enabled = bool(google_client_id)
     root_url = build_public_root_url(request)
     return {
         "google_oauth_enabled": enabled,
+        "google_client_id": google_client_id,
         "public_root_url": root_url,
         "public_home_url": f"{root_url}/",
         "public_search_url": f"{root_url}/search/",
