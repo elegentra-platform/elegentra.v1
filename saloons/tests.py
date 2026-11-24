@@ -579,3 +579,25 @@ class PublicReviewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(SaloonMapClick.objects.filter(saloon=self.saloon).count(), 1)
+
+
+class DashboardMetricsCutoffTests(TestCase):
+    """Analytics shown up to a cut-off date must ignore every later event."""
+
+    def test_contact_clicks_after_cutoff_are_not_counted(self):
+        from .dashboard_views import _build_dashboard_metrics
+        from .models import SaloonContactClick
+
+        owner = User.objects.create_user(username="cutoff", email="c@example.com", password="pass12345")
+        saloon = Saloon.objects.create(owner=owner, name="Cutoff Salon", whatsapp_number="+919800000001")
+        cutoff = timezone.now() - timedelta(days=5)
+
+        before = SaloonContactClick.objects.create(saloon=saloon, kind=SaloonContactClick.WHATSAPP)
+        SaloonContactClick.objects.filter(pk=before.pk).update(created_at=cutoff - timedelta(days=1))
+        SaloonContactClick.objects.create(saloon=saloon, kind=SaloonContactClick.WHATSAPP)  # after cut-off
+        SaloonContactClick.objects.create(saloon=saloon, kind=SaloonContactClick.CALL)  # after cut-off
+
+        metrics = _build_dashboard_metrics(saloon, analytics_until=cutoff)
+
+        self.assertEqual(metrics["whatsapp_click_total"], 1)
+        self.assertEqual(metrics["phone_click_total"], 0)

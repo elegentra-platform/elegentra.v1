@@ -190,16 +190,21 @@ def _build_dashboard_metrics(saloon, analytics_until=None):
         .select_related("service")
     )
 
+    gallery_view_events = GalleryView.objects.filter(saloon=saloon)
+
     if analytics_until:
         profile_views = profile_views.filter(created_at__lte=analytics_until)
         map_clicks = map_clicks.filter(created_at__lte=analytics_until)
+        whatsapp_clicks = whatsapp_clicks.filter(created_at__lte=analytics_until)
+        phone_clicks = phone_clicks.filter(created_at__lte=analytics_until)
+        gallery_view_events = gallery_view_events.filter(created_at__lte=analytics_until)
         interests = interests.filter(created_at__lte=analytics_until)
         interest_count = Count("interest_events", filter=Q(interest_events__created_at__lte=analytics_until))
     else:
         interest_count = Count("interest_events")
     service_total = services.count()
     gallery_post_total = gallery_posts.count()
-    gallery_views_total = GalleryView.objects.filter(saloon=saloon).count() + (gallery_posts.aggregate(total=Sum("views")).get("total") or 0)
+    gallery_views_total = gallery_view_events.count() + (gallery_posts.aggregate(total=Sum("views")).get("total") or 0)
     review_total = reviews.count()
     profile_view_total = profile_views.count()
     map_click_total = map_clicks.count()
@@ -221,7 +226,7 @@ def _build_dashboard_metrics(saloon, analytics_until=None):
         top_interest_count = top_service.interest_total
         top_share = round((top_service.interest_total / interest_total) * 100) if interest_total else 0
         interest_word = "person" if top_interest_count == 1 else "people"
-        top_support = f"{top_interest_count} {interest_word} showed interest ? {top_share}% of total interest"
+        top_support = f"{top_interest_count} {interest_word} showed interest · {top_share}% of total interest"
 
     month_labels = []
     monthly_view_counts = []
