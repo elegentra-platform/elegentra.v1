@@ -729,7 +729,7 @@ class MonthlyReportTests(TestCase):
         self.assertEqual(send.call_count, 1)
         phone, template, language, components = send.call_args.args
         self.assertEqual(phone, "+919800000002")
-        self.assertEqual(template, "elegentra_first_month_report")
+        self.assertEqual(template, "elegentra_salon_report_first")
         body = components[0]["parameters"]
         self.assertEqual(len(body), 10)
         self.assertEqual(body[0]["text"], "Rahul")
