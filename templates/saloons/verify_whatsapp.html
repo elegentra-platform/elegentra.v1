@@ -179,13 +179,10 @@
     const phoneInput = document.querySelector("#phone");
 
     const iti = window.intlTelInput(phoneInput, {
-      initialCountry: "auto",
-      geoIpLookup: function (callback) {
-        fetch("https://ipapi.co/json/")
-          .then(res => res.json())
-          .then(data => callback(data.country_code.toLowerCase()))
-          .catch(() => callback("in"));
-      },
+      // Salons are in India: start on +91 instead of guessing from the visitor's
+      // IP (VPNs and rate-limited lookups picked the wrong country code).
+      initialCountry: "in",
+      preferredCountries: ["in"],
       utilsScript:
         "https://cdn.jsdelivr.net/npm/intl-tel-input@18.1.1/build/js/utils.js",
     });
