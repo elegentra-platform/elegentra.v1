@@ -792,3 +792,63 @@ class MonthlyReportTests(TestCase):
         self.client.post(url, {"form": "monthly_report", "monthly_report_enabled": "1"})
         self.saloon.profile.refresh_from_db()
         self.assertTrue(self.saloon.profile.monthly_report_enabled)
+
+
+class PhoneNumberValidationTests(TestCase):
+    def test_indian_numbers_must_have_ten_digits_starting_6_to_9(self):
+        from .utils import format_whatsapp_number as fmt
+
+        self.assertEqual(fmt("+919074492286"), "+919074492286")
+        self.assertEqual(fmt("+91 90744 92286"), "+919074492286")
+        self.assertEqual(fmt("+9190874492286"), "")   # extra digit (real typo found locally)
+        self.assertEqual(fmt("+91907449228"), "")     # one digit short
+        self.assertEqual(fmt("+915074492286"), "")    # Indian mobiles start 6-9
+        self.assertEqual(fmt("+14155552671"), "+14155552671")  # other countries unchanged
+
+
+@override_settings(FIREBASE_WEB_CONFIG=FIREBASE_TEST_CONFIG)
+class InvalidSavedNumberRepairTests(TestCase):
+    """A salon saved with an impossible number re-enters and proves the right one."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="typo", email="typo@example.com", password="pass12345")
+        self.saloon = Saloon.objects.create(
+            owner=self.user, name="Typo Salon", whatsapp_number="+9190874492286",
+            is_whatsapp_verified=True, registration_step=5,
+        )
+        self.client.force_login(self.user)
+
+    def _verify(self, number):
+        import json
+
+        with patch("saloons.views.verify_phone_id_token", return_value=number):
+            return self.client.post(
+                reverse("verify_whatsapp_firebase"), data=json.dumps({"id_token": "t"}),
+                content_type="application/json",
+            )
+
+    def test_page_asks_for_the_number_again(self):
+        response = self.client.get(reverse("verify_whatsapp"))
+        self.assertContains(response, "doesn't look right")
+        self.assertContains(response, 'id="phone"')
+
+    def test_verified_correct_number_replaces_the_typo(self):
+        response = self._verify("+919074492286")
+        self.assertEqual(response.status_code, 200)
+        self.saloon.refresh_from_db()
+        self.assertEqual(self.saloon.whatsapp_number, "+919074492286")
+
+    def test_cannot_take_a_number_another_salon_uses(self):
+        other = User.objects.create_user(username="other", email="o@example.com", password="pass12345")
+        Saloon.objects.create(owner=other, whatsapp_number="+919074492286", is_whatsapp_verified=True)
+        response = self._verify("+919074492286")
+        self.assertEqual(response.status_code, 400)
+        self.saloon.refresh_from_db()
+        self.assertEqual(self.saloon.whatsapp_number, "+9190874492286")
+
+    def test_valid_saved_number_is_never_replaced(self):
+        Saloon.objects.filter(pk=self.saloon.pk).update(whatsapp_number="+919074492286")
+        response = self._verify("+919999999999")
+        self.assertEqual(response.status_code, 400)
+        self.saloon.refresh_from_db()
+        self.assertEqual(self.saloon.whatsapp_number, "+919074492286")

@@ -43,6 +43,12 @@
             <strong>{{ masked_phone }}</strong>
           </div>
         {% else %}
+          {% if saved_number_invalid %}
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800 sm:text-[0.95rem]">
+              The WhatsApp number saved for your salon doesn't look right. Please enter it again
+              and we'll send a code to confirm it.
+            </div>
+          {% endif %}
           <input
             type="tel"
             id="phone"

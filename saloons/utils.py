@@ -59,6 +59,11 @@ def format_whatsapp_number(raw_phone: str) -> str:
     if len(digits) < 8 or len(digits) > 15:
         return ""
 
+    # Indian mobiles: +91 then exactly 10 digits starting 6-9. Anything else
+    # (e.g. a typo with an extra digit) can't receive the SMS code.
+    if digits.startswith("91") and not re.fullmatch(r"91[6-9]\d{9}", digits):
+        return ""
+
     return phone
 
 

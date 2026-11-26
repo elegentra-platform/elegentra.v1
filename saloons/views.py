@@ -752,6 +752,7 @@ def verify_whatsapp(request):
                 "step": step,
                 "masked_phone": phone[-4:].rjust(len(phone), "*") if phone else "",
                 "is_existing_saloon": is_existing_saloon,
+                "saved_number_invalid": bool(saloon and saloon.whatsapp_number and not current_phone),
                 "otp_channel": request.session.get("vendor_otp_channel", "whatsapp"),
                 "masked_email": mask_email(request.user.email),
                 "firebase_enabled": firebase_phone_auth_enabled(),
@@ -826,7 +827,7 @@ def verify_whatsapp(request):
             phone = format_whatsapp_number(raw_phone) if raw_phone else request.session.get("vendor_phone")
 
         if not phone:
-            messages.error(request, "Phone number is required")
+            messages.error(request, "Enter a valid mobile number (10 digits for India).")
             return render_verify("phone")
 
         if Saloon.objects.filter(
@@ -896,7 +897,14 @@ def _complete_salon_verification(request, saloon, phone):
         is_new_vendor = True
     else:
         saloon.is_whatsapp_verified = True
-        saloon.save(update_fields=["is_whatsapp_verified"])
+        update_fields = ["is_whatsapp_verified"]
+        # A salon whose saved number was invalid (e.g. a typo) re-entered and
+        # proved a correct one; valid saved numbers can't reach here changed,
+        # because both verify paths require a match with the saved number.
+        if format_whatsapp_number(saloon.whatsapp_number) != phone:
+            saloon.whatsapp_number = phone
+            update_fields.append("whatsapp_number")
+        saloon.save(update_fields=update_fields)
 
     trusted = TrustedDevice.objects.create(user=request.user)
 
